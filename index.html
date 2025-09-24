@@ -292,6 +292,43 @@
                     <h2>Gestión del Sistema</h2>
                     <button class="primary" id="printReport" type="button"><i data-lucide="printer"></i> Imprimir Reporte</button>
                 </div>
+                <!-- FORMULARIO PARA AÑADIR USUARIOS (NUEVO) -->
+                <div id="admin-management-forms" style="margin-bottom: 2rem;">
+                  <form id="inviteUserForm" class="card" style="padding: 1.5rem; background: #fafafa;">
+                    <h3 style="margin-top: 0;">Invitar Nuevo Usuario</h3>
+                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                      <div class="form-field">
+                        <label for="inviteName">Nombre Completo</label>
+                        <input type="text" id="inviteName" required>
+                      </div>
+                      <div class="form-field">
+                        <label for="inviteEmail">Correo Electrónico</label>
+                        <input type="email" id="inviteEmail" placeholder="usuario@potros.itson.edu.mx" required>
+                      </div>
+                      <div class="form-field">
+                        <label for="inviteCareer">Carrera</label>
+                        <select id="inviteCareer" required>
+                          <option value="software">Ing. en Software</option>
+                          <option value="manufactura">Ing. en Manufactura</option>
+                          <option value="mecatronica">Ing. en Mecatrónica</option>
+                        </select>
+                      </div>
+                      <div class="form-field">
+                        <label for="inviteRole">Rol del Sistema</label>
+                        <select id="inviteRole" required>
+                          <option value="docente">Docente</option>
+                          <option value="auxiliar">Profesor Auxiliar</option>
+                          <option value="administrador">Administrador</option>
+                        </select>
+                      </div>
+                    </div>
+                    <button class="primary" type="submit" style="margin-top: 1rem;">
+                      <i data-lucide="send"></i>
+                      <span>Enviar Invitación</span>
+                    </button>
+                    <div id="inviteAlert"></div>
+                  </form>
+                </div>
                 <!-- ... el resto del contenido de admin ... -->
                 <div id="admin-user-management">
                   <h3>Usuarios Registrados</h3>
@@ -376,6 +413,8 @@
       const sidebarCareer = document.getElementById("sidebarCareer");
       const navigation = document.getElementById("navigation");
       const userTableContainer = document.getElementById("userTableContainer");
+      const inviteUserForm = document.getElementById('inviteUserForm'); // Nueva referencia
+      const inviteAlert = document.getElementById('inviteAlert'); // Nueva referencia
 
       let currentUser = null;
       let currentUserData = null;
@@ -519,13 +558,41 @@
               let userDoc = await getDoc(userRef);
 
               if (!userDoc.exists()) {
-                  // Creación de usuario por primera vez
+                  // Flujo de creación para un usuario nuevo
+                  const invitationsRef = collection(db, "invitations");
+                  const q = query(invitationsRef, where("email", "==", user.email));
+                  const invitationSnapshot = await getDocs(q);
+
+                  let role = 'docente';
+                  let career = 'software';
+                  let displayName = user.displayName;
+
+                  if (!invitationSnapshot.empty) {
+                      const invitation = invitationSnapshot.docs[0].data();
+                      role = invitation.role;
+                      career = invitation.career;
+                      displayName = invitation.name; // Usar el nombre de la invitación
+                      
+                      // Borrar la invitación para que no se pueda volver a usar
+                      await deleteDoc(doc(db, "invitations", invitationSnapshot.docs[0].id));
+                  } else if (!ADMIN_EMAILS.has(user.email)) {
+                      // Si no es un admin y no tiene invitación, no puede entrar
+                      showAlert(loginError, "Tu cuenta no tiene una invitación. Contacta a un administrador.");
+                      await signOut(auth);
+                      return;
+                  }
+
+                  // Si el email está en la lista de admins, se asegura de que tenga ese rol
+                  if (ADMIN_EMAILS.has(user.email)) {
+                    role = 'administrador';
+                  }
+                  
                   const newUser = {
                       uid: user.uid,
-                      displayName: user.displayName,
+                      displayName: displayName,
                       email: user.email,
-                      career: 'software', // Carrera por defecto
-                      role: ADMIN_EMAILS.has(user.email) ? 'administrador' : 'docente',
+                      career: career,
+                      role: role,
                       createdAt: serverTimestamp()
                   };
                   await setDoc(userRef, newUser);
@@ -567,9 +634,48 @@
       logoutBtn.addEventListener('click', () => signOut(auth));
       document.getElementById('printReport').addEventListener('click', () => window.print());
 
+      // --- Event Listener para el formulario de invitación (NUEVO) ---
+      inviteUserForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        showLoader(true);
+
+        const name = document.getElementById('inviteName').value;
+        const email = document.getElementById('inviteEmail').value.toLowerCase();
+        const career = document.getElementById('inviteCareer').value;
+        const role = document.getElementById('inviteRole').value;
+
+        if (!email.endsWith(ALLOWED_DOMAIN)) {
+            showAlert(inviteAlert, "El correo debe ser del dominio @potros.itson.edu.mx.", 'error');
+            showLoader(false);
+            return;
+        }
+
+        try {
+            // Verificar si el usuario ya existe
+            const usersQuery = query(collection(db, "users"), where("email", "==", email));
+            const userSnapshot = await getDocs(usersQuery);
+            if (!userSnapshot.empty) {
+                showAlert(inviteAlert, "Este usuario ya se encuentra registrado.", 'error');
+                showLoader(false);
+                return;
+            }
+
+            // Crear la invitación
+            await addDoc(collection(db, "invitations"), { name, email, career, role, createdAt: serverTimestamp() });
+            showAlert(inviteAlert, `Invitación enviada a ${name}. El usuario podrá acceder al iniciar sesión.`, 'success');
+            inviteUserForm.reset();
+        } catch (error) {
+            showAlert(inviteAlert, "Ocurrió un error al enviar la invitación.", 'error');
+            console.error("Error creating invitation:", error);
+        } finally {
+            showLoader(false);
+        }
+      });
+
       // --- Inicialización ---
       lucide.createIcons();
       showLoader(true); // Mostrar loader al cargar la página
     </script>
 </body>
 </html>
+
