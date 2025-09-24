@@ -1,222 +1,23 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tablero de Control Docente</title>
+    <!-- Fuentes y Librerías -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <!-- Librerías añadidas -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-      :root {
-        --bg: #f4f1ea;
-        --card: #ffffff;
-        --primary: #2a9d8f;
-        --primary-dark: #1f776d;
-        --text: #2d3142;
-        --muted: #6f737b;
-        --success: #2b9348;
-        --warning: #e9c46a;
-        --danger: #e76f51;
-        --auth-info-min-width: 280px;
-        --auth-form-min-width: 320px;
-        --auth-form-max-width: 400px;
-        font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background-color: var(--bg);
-        color: var(--text);
-      }
-
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        background: linear-gradient(160deg, #264653 0%, #2a9d8f 45%, #f4f1ea 100%);
-      }
-      header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 1.5rem clamp(1rem, 2vw + 0.5rem, 3rem); color: white;
-        position: sticky; top: 0; backdrop-filter: blur(18px);
-        background: color-mix(in srgb, var(--primary) 70%, transparent);
-        z-index: 10;
-      }
-      header h1 {
-        margin: 0; font-size: clamp(1.5rem, 2.5vw, 2.4rem);
-        font-weight: 700; letter-spacing: -0.03em;
-      }
-      header .user-meta { display: flex; gap: 1.25rem; align-items: center; font-size: 0.95rem; }
-      header button {
-        border: none; border-radius: 999px; padding: 0.65rem 1.35rem; font-weight: 600;
-        cursor: pointer; transition: transform 0.18s ease, box-shadow 0.18s ease;
-        background: white; color: var(--primary);
-        box-shadow: 0 8px 20px -12px rgba(38, 70, 83, 0.35);
-        display: inline-flex; align-items: center; gap: 0.5rem;
-      }
-      header button:hover { transform: translateY(-1px); box-shadow: 0 12px 24px -12px rgba(38, 70, 83, 0.45); }
-      main { padding: clamp(1rem, 3vw, 2.5rem); max-width: 1280px; margin: 0 auto; }
-      .hidden { display: none !important; }
-
-      /* --- Estilos de Autenticación --- */
-      #authSection { display: flex; align-items: center; justify-content: center; padding: clamp(2rem, 6vw, 5rem) 0; }
-      .auth-grid {
-        display: grid; grid-template-columns: minmax(var(--auth-info-min-width), 1fr) minmax(var(--auth-form-min-width), var(--auth-form-max-width));
-        align-items: stretch; gap: clamp(1.5rem, 4vw, 3rem);
-        max-width: 980px; margin: 0 auto; width: 100%;
-      }
-      .auth-hero {
-        position: relative; border-radius: 28px; padding: clamp(1.75rem, 4vw, 3rem);
-        background: linear-gradient(150deg, rgba(38, 70, 83, 0.92), rgba(42, 157, 143, 0.9));
-        color: white; display: flex; flex-direction: column; gap: 1.5rem;
-        box-shadow: 0 35px 70px -45px rgba(17, 51, 61, 0.75); overflow: hidden;
-      }
-      .auth-hero::after {
-        content: ""; position: absolute; inset: 0;
-        background: radial-gradient(circle at top right, rgba(233, 196, 106, 0.35), transparent 55%);
-        pointer-events: none;
-      }
-      .auth-hero > * { position: relative; z-index: 1; }
-      .eyebrow {
-        display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem;
-        letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600;
-        color: rgba(255, 255, 255, 0.75);
-      }
-      .auth-hero h2 { margin: 0; font-size: clamp(1.8rem, 3vw, 2.5rem); line-height: 1.2; }
-      .auth-hero p { margin: 0; font-size: 1rem; color: rgba(255, 255, 255, 0.85); }
-      .auth-highlights { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.85rem; }
-      .auth-highlights li { display: flex; gap: 0.75rem; align-items: flex-start; font-weight: 500; }
-      .auth-highlights li::before {
-        content: "✔"; display: inline-flex; width: 1.5rem; height: 1.5rem; border-radius: 999px;
-        align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.2);
-        color: white; font-size: 0.9rem; margin-top: 0.15rem;
-      }
-      
-      /* --- Estilos de Componentes --- */
-      .card {
-        background: var(--card); border-radius: 24px;
-        padding: clamp(1.5rem, 3vw, 2.5rem);
-        box-shadow: 0 30px 60px -40px rgba(38, 70, 83, 0.45);
-        border: 1px solid rgba(42, 157, 143, 0.12);
-      }
-      .card h2 { margin-top: 0; font-size: 1.45rem; font-weight: 600; letter-spacing: -0.02em; }
-      form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; }
-      label { font-size: 0.9rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-      input, select, textarea {
-        border: 1px solid rgba(42, 157, 143, 0.25); border-radius: 14px;
-        padding: 0.85rem 1rem; font-size: 1rem; font-family: inherit;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        background: rgba(255, 255, 255, 0.8); color: var(--text);
-      }
-      input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--text) 60%, transparent); }
-      input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(42, 157, 143, 0.2); }
-      button.primary {
-        border: none; border-radius: 16px; padding: 0.85rem 1.5rem;
-        font-size: 1rem; font-weight: 600; cursor: pointer;
-        background: linear-gradient(120deg, var(--primary), #3fb9a9); color: white;
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
-        box-shadow: 0 20px 35px -22px rgba(38, 70, 83, 0.45);
-        display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-      }
-      button.primary:hover { transform: translateY(-1px); box-shadow: 0 22px 40px -20px rgba(38, 70, 83, 0.5); }
-      .alert {
-        border-radius: 16px; padding: 0.95rem 1.25rem; font-size: 0.92rem;
-        font-weight: 500; display: flex; gap: 0.75rem; align-items: center;
-        opacity: 0; transform: translateY(-10px); transition: opacity 0.3s ease, transform 0.3s ease;
-      }
-      .alert.show { opacity: 1; transform: translateY(0); }
-      .alert.info { background: rgba(42, 157, 143, 0.12); color: var(--primary); border: 1px solid rgba(42, 157, 143, 0.2); }
-      .alert.error { background: rgba(231, 111, 81, 0.12); color: var(--danger); border: 1px solid rgba(231, 111, 81, 0.18); }
-      .alert.success { background: rgba(43, 147, 72, 0.12); color: var(--success); border: 1px solid rgba(43, 147, 72, 0.18); }
-
-      /* --- Estilos del Dashboard --- */
-      .dashboard { display: grid; grid-template-columns: minmax(260px, 300px) 1fr; gap: 1.75rem; margin-top: 2rem; }
-      .sidebar { background: rgba(255, 255, 255, 0.92); border-radius: 24px; padding: 1.75rem; display: flex; flex-direction: column; gap: 1.5rem; border: 1px solid rgba(42, 157, 143, 0.1); }
-      .user-card h3 { margin: 0; font-size: 1.25rem; }
-      nav ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.65rem; }
-      nav button {
-        border: none; border-radius: 14px; padding: 0.75rem 1rem; font-size: 0.95rem; font-weight: 600;
-        text-align: left; cursor: pointer; background: rgba(42, 157, 143, 0.08); color: var(--primary);
-        transition: background 0.2s ease, transform 0.18s ease; display: flex; align-items: center; gap: 0.6rem;
-      }
-      nav button:hover, nav button.active { background: rgba(42, 157, 143, 0.16); transform: translateX(2px); }
-      .content-area { display: grid; gap: 1.75rem; }
-      .grid { display: grid; gap: 1rem; }
-      table {
-        width: 100%; border-collapse: collapse; border-radius: 18px; overflow: hidden;
-        background: rgba(255, 255, 255, 0.92); border: 1px solid rgba(42, 157, 143, 0.12);
-      }
-      th, td { padding: 0.9rem 1.1rem; text-align: left; font-size: 0.95rem; vertical-align: middle; }
-      tr:nth-child(even) { background: rgba(42, 157, 143, 0.06); }
-      .badge {
-        display: inline-flex; align-items: center; justify-content: center; border-radius: 999px;
-        padding: 0.35rem 0.85rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
-      }
-      .badge.admin { background: rgba(42, 157, 143, 0.18); color: var(--primary); }
-      .badge.docente { background: rgba(43, 147, 72, 0.14); color: var(--success); }
-      .badge.auxiliar { background: rgba(233, 196, 106, 0.2); color: var(--warning); }
-      .empty-state {
-        padding: 2rem; text-align: center; background: rgba(42, 157, 143, 0.08);
-        border-radius: 18px; border: 1px dashed rgba(42, 157, 143, 0.25); color: var(--muted);
-      }
-      .action-buttons { display: flex; gap: 0.5rem; }
-      .action-buttons button { background: transparent; border: none; cursor: pointer; padding: 0.4rem; border-radius: 8px; transition: background 0.2s; }
-      .action-buttons button:hover { background: rgba(0,0,0,0.08); }
-      .action-buttons .edit-btn { color: var(--primary); }
-      .action-buttons .delete-btn { color: var(--danger); }
-      
-      /* --- Estilos de Loading y Modal (Nuevos) --- */
-      #loader {
-        position: fixed; inset: 0; background: rgba(255, 255, 255, 0.8);
-        display: flex; align-items: center; justify-content: center;
-        z-index: 9999; backdrop-filter: blur(8px);
-      }
-      .spinner {
-        width: 56px; height: 56px; border-radius: 50%;
-        border: 6px solid rgba(42, 157, 143, 0.2);
-        border-top-color: var(--primary);
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-
-      #modal-backdrop {
-        position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6);
-        z-index: 1000; backdrop-filter: blur(5px);
-        display: flex; align-items: center; justify-content: center;
-      }
-      .modal-content {
-        background: white; border-radius: 24px; padding: 2rem;
-        width: 100%; max-width: 500px;
-        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-        transform: scale(0.95); opacity: 0;
-        animation: modal-in 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
-      }
-      @keyframes modal-in { to { transform: scale(1); opacity: 1; } }
-      .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-      .modal-header h3 { margin: 0; font-size: 1.35rem; }
-      .modal-header button { background: transparent; border: none; cursor: pointer; }
-      
-      /* --- Estilos de Impresión (Nuevos) --- */
-      @media print {
-        body { background: none; }
-        header, .sidebar, form, .action-buttons, .tab-group, #printReport, .welcome-card { display: none; }
-        main { padding: 0; max-width: 100%; }
-        .dashboard { grid-template-columns: 1fr; }
-        .card { box-shadow: none; border: 1px solid #ccc; }
-        h1 { color: black; text-align: center; }
-        @page { size: auto; margin: 0.5in; }
-      }
-
-      @media (max-width: 980px) {
-        header { flex-direction: column; gap: 1rem; }
-        .auth-grid { grid-template-columns: 1fr; }
-        .dashboard { grid-template-columns: 1fr; }
-        nav button { text-align: center; justify-content: center; }
-      }
-    </style>
-</head>
-<body>
-    <!-- Elementos nuevos para loader y modal -->
+    <!-- Hoja de Estilos Propia -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Elementos para loader y modal -->
     <div id="loader">
       <div class="spinner"></div>
     </div>
@@ -227,17 +28,23 @@
       <div class="user-meta hidden" id="headerUserMeta">
         <span id="headerUserName"></span>
         <span class="badge" id="headerUserRole"></span>
-        <button id="logoutBtn" type="button"><i data-lucide="log-out"></i><span>Cerrar sesión</span></button>
+        <button id="logoutBtn" type="button">
+          <i data-lucide="log-out"></i><span>Cerrar sesión</span>
+        </button>
       </div>
     </header>
 
     <main>
+      <!-- Sección de Autenticación -->
       <section id="authSection">
         <div class="auth-grid">
           <div class="auth-hero">
             <span class="eyebrow">Gestión académica</span>
             <h2>Organiza el trabajo docente con claridad</h2>
-            <p>Centraliza indicadores, actividades y seguimientos en un solo lugar.</p>
+            <p>
+              Centraliza indicadores, actividades y seguimientos en un solo
+              lugar.
+            </p>
             <ul class="auth-highlights">
               <li>Visualiza el avance de las actividades en tiempo real.</li>
               <li>Coordina responsabilidades entre docentes y auxiliares.</li>
@@ -247,18 +54,26 @@
 
           <div class="card" id="loginCard">
             <h2>Bienvenido de nuevo</h2>
-            <p>Accede con tu correo institucional <strong>@potros.itson.edu.mx</strong>.</p>
+            <p>
+              Accede con tu correo institucional
+              <strong>@potros.itson.edu.mx</strong>.
+            </p>
             <form>
               <button class="primary" type="button" id="googleLoginButton">
                 <i data-lucide="log-in"></i>
                 <span>Ingresar con Google</span>
               </button>
             </form>
-            <div class="alert error" id="loginError" style="margin-top: 1rem"></div>
+            <div
+              class="alert error"
+              id="loginError"
+              style="margin-top: 1rem"
+            ></div>
           </div>
         </div>
       </section>
 
+      <!-- Dashboard Principal -->
       <section id="dashboard" class="hidden">
         <div class="dashboard">
           <aside class="sidebar">
@@ -276,7 +91,10 @@
             <div id="adminView" class="hidden">
               <div class="card">
                 <h2>Reporte General</h2>
-                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div
+                  class="grid"
+                  style="grid-template-columns: 1fr 1fr; gap: 2rem"
+                >
                   <div>
                     <h4>Usuarios por Carrera</h4>
                     <canvas id="usersChart"></canvas>
@@ -288,29 +106,54 @@
                 </div>
               </div>
               <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <h2>Gestión del Sistema</h2>
-                    <button class="primary" id="printReport" type="button"><i data-lucide="printer"></i> Imprimir Reporte</button>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                  "
+                >
+                  <h2>Gestión del Sistema</h2>
+                  <button class="primary" id="printReport" type="button">
+                    <i data-lucide="printer"></i> Imprimir Reporte
+                  </button>
                 </div>
-                <!-- FORMULARIO PARA AÑADIR USUARIOS (NUEVO) -->
-                <div id="admin-management-forms" style="margin-bottom: 2rem;">
-                  <form id="inviteUserForm" class="card" style="padding: 1.5rem; background: #fafafa;">
-                    <h3 style="margin-top: 0;">Invitar Nuevo Usuario</h3>
-                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <!-- Formulario para Invitar Usuario -->
+                <div id="admin-management-forms" style="margin-bottom: 2rem">
+                  <form
+                    id="inviteUserForm"
+                    class="card"
+                    style="padding: 1.5rem; background: #fafafa"
+                  >
+                    <h3 style="margin-top: 0">Invitar Nuevo Usuario</h3>
+                    <div
+                      class="grid"
+                      style="grid-template-columns: 1fr 1fr; gap: 1rem"
+                    >
                       <div class="form-field">
                         <label for="inviteName">Nombre Completo</label>
-                        <input type="text" id="inviteName" required>
+                        <input type="text" id="inviteName" required />
                       </div>
                       <div class="form-field">
                         <label for="inviteEmail">Correo Electrónico</label>
-                        <input type="email" id="inviteEmail" placeholder="usuario@potros.itson.edu.mx" required>
+                        <input
+                          type="email"
+                          id="inviteEmail"
+                          placeholder="usuario@potros.itson.edu.mx"
+                          required
+                        />
                       </div>
                       <div class="form-field">
                         <label for="inviteCareer">Carrera</label>
                         <select id="inviteCareer" required>
                           <option value="software">Ing. en Software</option>
-                          <option value="manufactura">Ing. en Manufactura</option>
-                          <option value="mecatronica">Ing. en Mecatrónica</option>
+                          <option value="manufactura">
+                            Ing. en Manufactura
+                          </option>
+                          <option value="mecatronica">
+                            Ing. en Mecatrónica
+                          </option>
                         </select>
                       </div>
                       <div class="form-field">
@@ -322,14 +165,18 @@
                         </select>
                       </div>
                     </div>
-                    <button class="primary" type="submit" style="margin-top: 1rem;">
+                    <button
+                      class="primary"
+                      type="submit"
+                      style="margin-top: 1rem"
+                    >
                       <i data-lucide="send"></i>
                       <span>Enviar Invitación</span>
                     </button>
                     <div id="inviteAlert"></div>
                   </form>
                 </div>
-                <!-- ... el resto del contenido de admin ... -->
+                <!-- Tabla de Usuarios Registrados -->
                 <div id="admin-user-management">
                   <h3>Usuarios Registrados</h3>
                   <div id="userTableContainer"></div>
@@ -357,409 +204,7 @@
       </section>
     </main>
 
-    <script type="module">
-      // Usamos una versión más reciente de Firebase para mejoras de rendimiento y seguridad
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-      import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, getDocs, onSnapshot, query, where, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyBWa6nNgWGdsqS12OhqAfIlJcSbT59cLGs",
-        authDomain: "tablerocontroldocente.firebaseapp.com",
-        projectId: "tablerocontroldocente",
-        storageBucket: "tablerocontroldocente.appspot.com", // Corregido el dominio
-        messagingSenderId: "184781501380",
-        appId: "1:184781501380:web:cc14875f679e077f28ea91"
-      };
-
-      // --- Constantes y Configuración ---
-      const ALLOWED_DOMAIN = "@potros.itson.edu.mx";
-      const ADMIN_EMAILS = new Set(["isaac.paniagua@potros.itson.edu.mx"]);
-      const CAREER_LABELS = {
-        software: "Ing. en Software",
-        manufactura: "Ing. en Manufactura",
-        mecatronica: "Ing. en Mecatrónica",
-        global: "Global"
-      };
-      const ROLE_LABELS = {
-        administrador: "Admin",
-        docente: "Docente",
-        auxiliar: "Auxiliar"
-      };
-      const ROLE_BADGE_CLASS = {
-        administrador: "badge admin",
-        docente: "badge docente",
-        auxiliar: "badge auxiliar"
-      };
-      
-      // --- Inicialización de Firebase ---
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const db = getFirestore(app);
-
-      // --- Referencias a Elementos del DOM ---
-      const loader = document.getElementById('loader');
-      const authSection = document.getElementById('authSection');
-      const dashboard = document.getElementById('dashboard');
-      const googleLoginButton = document.getElementById('googleLoginButton');
-      const loginError = document.getElementById('loginError');
-      const headerUserMeta = document.getElementById("headerUserMeta");
-      const headerUserName = document.getElementById("headerUserName");
-      const headerUserRole = document.getElementById("headerUserRole");
-      const logoutBtn = document.getElementById("logoutBtn");
-      const sidebarName = document.getElementById("sidebarName");
-      const sidebarEmail = document.getElementById("sidebarEmail");
-      const sidebarCareer = document.getElementById("sidebarCareer");
-      const navigation = document.getElementById("navigation");
-      const userTableContainer = document.getElementById("userTableContainer");
-      const inviteUserForm = document.getElementById('inviteUserForm');
-      const inviteAlert = document.getElementById('inviteAlert');
-      const adminView = document.getElementById('adminView');
-      const docenteView = document.getElementById('docenteView');
-      const auxiliarView = document.getElementById('auxiliarView');
-
-
-      let currentUser = null;
-      let currentUserData = null;
-      let usersChart = null;
-      let activitiesChart = null;
-      let unsubscribers = [];
-
-      // --- Funciones de Utilidad ---
-      const showLoader = (show) => loader.classList.toggle('hidden', !show);
-
-      const showAlert = (element, message, type = 'error', duration = 4000) => {
-          element.textContent = message;
-          element.className = `alert ${type} show`;
-          setTimeout(() => {
-              element.classList.remove('show');
-          }, duration);
-      };
-      const openModal = (title, content, footer = '') => {
-        const backdrop = document.getElementById('modal-backdrop');
-        backdrop.innerHTML = `
-          <div class="modal-content">
-            <div class="modal-header">
-              <h3>${title}</h3>
-              <button id="closeModalBtn"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body">${content}</div>
-            <div class="modal-footer" style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">${footer}</div>
-          </div>
-        `;
-        backdrop.classList.remove('hidden');
-        lucide.createIcons();
-        document.getElementById('closeModalBtn').addEventListener('click', closeModal);
-      };
-
-      const closeModal = () => {
-        document.getElementById('modal-backdrop').classList.add('hidden');
-      };
-
-      const cleanupSubscriptions = () => {
-        unsubscribers.forEach(unsub => unsub());
-        unsubscribers = [];
-      };
-
-      // --- Lógica de Renderizado ---
-      const renderUserTable = () => {
-        const q = query(collection(db, "users"), orderBy("displayName"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          if (snapshot.empty) {
-            userTableContainer.innerHTML = `<div class="empty-state">No hay usuarios registrados.</div>`;
-            return;
-          }
-          let tableHTML = `
-            <table>
-              <thead><tr><th>Nombre</th><th>Carrera</th><th>Rol</th><th>Acciones</th></tr></thead>
-              <tbody>
-          `;
-          snapshot.docs.forEach(docSnap => {
-            const user = docSnap.data();
-            tableHTML += `
-              <tr>
-                <td>${user.displayName}<br><small>${user.email}</small></td>
-                <td>${CAREER_LABELS[user.career] || user.career}</td>
-                <td><span class="${ROLE_BADGE_CLASS[user.role]}">${ROLE_LABELS[user.role]}</span></td>
-                <td>
-                  <div class="action-buttons">
-                    <button class="edit-btn" data-id="${docSnap.id}" title="Editar usuario"><i data-lucide="edit"></i></button>
-                    <button class="delete-btn" data-id="${docSnap.id}" title="Eliminar usuario"><i data-lucide="trash-2"></i></button>
-                  </div>
-                </td>
-              </tr>
-            `;
-          });
-          tableHTML += `</tbody></table>`;
-          userTableContainer.innerHTML = tableHTML;
-          lucide.createIcons();
-        });
-        unsubscribers.push(unsubscribe);
-      };
-
-      const renderDashboard = (user, userData) => {
-        currentUser = user;
-        currentUserData = userData;
-
-        // Limpiar suscripciones anteriores
-        cleanupSubscriptions();
-
-        // Actualizar UI
-        sidebarName.textContent = userData.displayName;
-        sidebarEmail.textContent = userData.email;
-        sidebarCareer.textContent = CAREER_LABELS[userData.career];
-        headerUserName.textContent = userData.displayName;
-        headerUserRole.className = ROLE_BADGE_CLASS[userData.role];
-        headerUserRole.textContent = ROLE_LABELS[userData.role];
-        
-        authSection.classList.add('hidden');
-        dashboard.classList.remove('hidden');
-        headerUserMeta.classList.remove('hidden');
-
-        adminView.classList.add('hidden');
-        docenteView.classList.add('hidden');
-        auxiliarView.classList.add('hidden');
-
-        // Lógica específica de roles
-        if (userData.role === 'administrador') {
-            adminView.classList.remove('hidden');
-            renderUserTable();
-            // Aquí irían las funciones para renderizar gráficos, etc.
-        } else if (userData.role === 'docente') {
-            docenteView.classList.remove('hidden');
-            // Aquí iría la función para renderizar actividades del docente
-        } else if (userData.role === 'auxiliar') {
-            auxiliarView.classList.remove('hidden');
-            // Aquí iría la función para renderizar actividades del auxiliar
-        }
-
-        showLoader(false);
-      };
-
-      // --- Lógica de Autenticación ---
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            if (!user.email.endsWith(ALLOWED_DOMAIN)) {
-                showAlert(loginError, "Debes usar una cuenta @potros.itson.edu.mx.");
-                await signOut(auth);
-                return;
-            }
-            const userRef = doc(db, "users", user.uid);
-            let userDoc = await getDoc(userRef);
-
-            if (!userDoc.exists()) {
-                const invitationsRef = collection(db, "invitations");
-                const q = query(invitationsRef, where("email", "==", user.email));
-                const invitationSnapshot = await getDocs(q);
-
-                let role = 'docente';
-                let career = 'software';
-                let displayName = user.displayName;
-
-                if (!invitationSnapshot.empty) {
-                    const invitation = invitationSnapshot.docs[0].data();
-                    role = invitation.role;
-                    career = invitation.career;
-                    displayName = invitation.name;
-                    await deleteDoc(doc(db, "invitations", invitationSnapshot.docs[0].id));
-                } else if (!ADMIN_EMAILS.has(user.email)) {
-                    showAlert(loginError, "Tu cuenta no tiene una invitación. Contacta a un administrador.");
-                    await signOut(auth);
-                    return;
-                }
-
-                if (ADMIN_EMAILS.has(user.email)) {
-                  role = 'administrador';
-                }
-                
-                const newUser = {
-                    uid: user.uid,
-                    displayName: displayName,
-                    email: user.email,
-                    career: career,
-                    role: role,
-                    createdAt: serverTimestamp()
-                };
-                await setDoc(userRef, newUser);
-                userDoc = await getDoc(userRef);
-            }
-            
-            const userData = userDoc.data();
-            if(ADMIN_EMAILS.has(userData.email) && userData.role !== 'administrador'){
-              await updateDoc(userRef, { role: 'administrador' });
-              userData.role = 'administrador';
-            }
-
-            renderDashboard(user, userData);
-        } else {
-            currentUser = null;
-            currentUserData = null;
-            dashboard.classList.add('hidden');
-            authSection.classList.remove('hidden');
-            headerUserMeta.classList.add('hidden');
-            cleanupSubscriptions();
-            showLoader(false);
-        }
-      });
-      
-      googleLoginButton.addEventListener('click', async () => {
-          const provider = new GoogleAuthProvider();
-          provider.setCustomParameters({ hd: 'potros.itson.edu.mx' });
-          try {
-              await signInWithPopup(auth, provider);
-          } catch(error) {
-              if (error.code !== 'auth/popup-closed-by-user') {
-                showAlert(loginError, 'Error al iniciar sesión con Google.');
-                console.error(error);
-              }
-          }
-      });
-      
-      logoutBtn.addEventListener('click', () => signOut(auth));
-      document.getElementById('printReport').addEventListener('click', () => window.print());
-
-      // --- Delegación de eventos para acciones de usuario (EDITAR/ELIMINAR) ---
-      userTableContainer.addEventListener('click', async (e) => {
-          const target = e.target.closest('button');
-          if (!target) return;
-
-          const userId = target.dataset.id;
-          if (!userId) return;
-
-          if (target.classList.contains('delete-btn')) {
-              handleDeleteUser(userId);
-          } else if (target.classList.contains('edit-btn')) {
-              handleEditUser(userId);
-          }
-      });
-
-      const handleDeleteUser = (userId) => {
-          const content = `<p>¿Estás seguro de que quieres eliminar a este usuario? Esta acción no se puede deshacer.</p>`;
-          const footer = `
-              <button type="button" class="primary" id="confirmDeleteBtn" style="background: var(--danger);">Eliminar</button>
-              <button type="button" id="cancelDeleteBtn" style="background: var(--muted);">Cancelar</button>
-          `;
-          openModal('Confirmar Eliminación', content, footer);
-
-          document.getElementById('cancelDeleteBtn').addEventListener('click', closeModal);
-          document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
-              showLoader(true);
-              try {
-                  await deleteDoc(doc(db, "users", userId));
-                  showAlert(inviteAlert, "Usuario eliminado correctamente.", 'success');
-              } catch (error) {
-                  showAlert(inviteAlert, "Error al eliminar el usuario.", 'error');
-                  console.error("Error deleting user:", error);
-              } finally {
-                  closeModal();
-                  showLoader(false);
-              }
-          });
-      };
-
-      const handleEditUser = async (userId) => {
-          showLoader(true);
-          const userRef = doc(db, "users", userId);
-          const userSnap = await getDoc(userRef);
-          if (!userSnap.exists()) {
-              showAlert(inviteAlert, "No se encontró el usuario.", 'error');
-              showLoader(false);
-              return;
-          }
-          const user = userSnap.data();
-
-          const content = `
-              <form id="editUserForm">
-                  <div class="form-field">
-                      <label for="editName">Nombre Completo</label>
-                      <input type="text" id="editName" value="${user.displayName}" required>
-                  </div>
-                  <div class="form-field">
-                      <label for="editCareer">Carrera</label>
-                      <select id="editCareer" required>
-                          <option value="software" ${user.career === 'software' ? 'selected' : ''}>Ing. en Software</option>
-                          <option value="manufactura" ${user.career === 'manufactura' ? 'selected' : ''}>Ing. en Manufactura</option>
-                          <option value="mecatronica" ${user.career === 'mecatronica' ? 'selected' : ''}>Ing. en Mecatrónica</option>
-                      </select>
-                  </div>
-                  <div class="form-field">
-                      <label for="editRole">Rol del Sistema</label>
-                      <select id="editRole" required>
-                          <option value="docente" ${user.role === 'docente' ? 'selected' : ''}>Docente</option>
-                          <option value="auxiliar" ${user.role === 'auxiliar' ? 'selected' : ''}>Profesor Auxiliar</option>
-                          <option value="administrador" ${user.role === 'administrador' ? 'selected' : ''}>Administrador</option>
-                      </select>
-                  </div>
-              </form>
-          `;
-          const footer = `<button type="submit" form="editUserForm" class="primary">Guardar Cambios</button>`;
-          openModal('Editar Usuario', content, footer);
-
-          document.getElementById('editUserForm').addEventListener('submit', async (e) => {
-              e.preventDefault();
-              const updatedData = {
-                  displayName: document.getElementById('editName').value,
-                  career: document.getElementById('editCareer').value,
-                  role: document.getElementById('editRole').value,
-              };
-              showLoader(true);
-              try {
-                  await updateDoc(userRef, updatedData);
-                  showAlert(inviteAlert, "Usuario actualizado.", 'success');
-              } catch (error) {
-                  showAlert(inviteAlert, "Error al actualizar.", 'error');
-                  console.error("Error updating user:", error);
-              } finally {
-                  closeModal();
-                  showLoader(false);
-              }
-          });
-
-          showLoader(false);
-      };
-
-      // --- Event Listener para el formulario de invitación (NUEVO) ---
-      inviteUserForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        showLoader(true);
-
-        const name = document.getElementById('inviteName').value;
-        const email = document.getElementById('inviteEmail').value.toLowerCase();
-        const career = document.getElementById('inviteCareer').value;
-        const role = document.getElementById('inviteRole').value;
-
-        if (!email.endsWith(ALLOWED_DOMAIN)) {
-            showAlert(inviteAlert, "El correo debe ser del dominio @potros.itson.edu.mx.", 'error');
-            showLoader(false);
-            return;
-        }
-
-        try {
-            // Verificar si el usuario ya existe
-            const usersQuery = query(collection(db, "users"), where("email", "==", email));
-            const userSnapshot = await getDocs(usersQuery);
-            if (!userSnapshot.empty) {
-                showAlert(inviteAlert, "Este usuario ya se encuentra registrado.", 'error');
-                showLoader(false);
-                return;
-            }
-
-            // Crear la invitación
-            await addDoc(collection(db, "invitations"), { name, email, career, role, createdAt: serverTimestamp() });
-            showAlert(inviteAlert, `Invitación enviada a ${name}. El usuario podrá acceder al iniciar sesión.`, 'success');
-            inviteUserForm.reset();
-        } catch (error) {
-            showAlert(inviteAlert, "Ocurrió un error al enviar la invitación.", 'error');
-            console.error("Error creating invitation:", error);
-        } finally {
-            showLoader(false);
-        }
-      });
-
-      // --- Inicialización ---
-      lucide.createIcons();
-      showLoader(true); // Mostrar loader al cargar la página
-    </script>
-</body>
+    <!-- Lógica de la Aplicación -->
+    <script src="script.js" type="module"></script>
+  </body>
 </html>
-
