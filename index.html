@@ -993,8 +993,12 @@
         }).format(date);
 
       const resetAlerts = (...elements) => {
-        elements.forEach((el) => {
-          if (!el) return;
+        elements.forEach((el, idx) => {
+          if (!el) {
+            throw new Error(
+              `resetAlerts: element at index ${idx} is null or undefined`,
+            );
+          }
           el.classList.add("hidden");
           el.textContent = "";
         });
