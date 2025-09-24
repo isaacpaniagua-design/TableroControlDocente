@@ -104,9 +104,11 @@
 
       .auth-grid {
         display: grid;
+
         grid-template-columns:
           minmax(var(--auth-info-min-width), 1fr)
           minmax(var(--auth-form-min-width), var(--auth-form-max-width));
+
         align-items: stretch;
         gap: clamp(1.5rem, 4vw, 3rem);
         max-width: 980px;
