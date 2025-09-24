@@ -22,6 +22,9 @@
         --success: #2b9348;
         --warning: #e9c46a;
         --danger: #e76f51;
+        --auth-info-min-width: 280px;
+        --auth-form-min-width: 320px;
+        --auth-form-max-width: 400px;
         font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
         background-color: var(--bg);
@@ -92,11 +95,155 @@
         display: none !important;
       }
 
+      #authSection {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(2rem, 6vw, 5rem) 0;
+      }
+
       .auth-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        grid-template-columns:
+          minmax(var(--auth-info-min-width), 1fr)
+          minmax(var(--auth-form-min-width), var(--auth-form-max-width));
+        align-items: stretch;
+        gap: clamp(1.5rem, 4vw, 3rem);
+        max-width: 980px;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      .auth-hero {
+        position: relative;
+        border-radius: 28px;
+        padding: clamp(1.75rem, 4vw, 3rem);
+        background: linear-gradient(150deg, rgba(38, 70, 83, 0.92), rgba(42, 157, 143, 0.9));
+        color: white;
+        display: flex;
+        flex-direction: column;
         gap: 1.5rem;
-        margin-top: clamp(2rem, 6vw, 5rem);
+        box-shadow: 0 35px 70px -45px rgba(17, 51, 61, 0.75);
+        overflow: hidden;
+      }
+
+      .auth-hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at top right,
+          rgba(233, 196, 106, 0.35),
+          transparent 55%
+        );
+        pointer-events: none;
+      }
+
+      .auth-hero > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .auth-hero h2 {
+        margin: 0;
+        font-size: clamp(1.8rem, 3vw, 2.5rem);
+        line-height: 1.2;
+      }
+
+      .auth-hero p {
+        margin: 0;
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.85);
+      }
+
+      .auth-highlights {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .auth-highlights li {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+        font-weight: 500;
+      }
+
+      .auth-highlights li::before {
+        content: "✔";
+        display: inline-flex;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 999px;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        font-size: 0.9rem;
+        margin-top: 0.15rem;
+      }
+
+      .admin-notice {
+        border-radius: 20px;
+        padding: 1rem 1.25rem;
+        background: rgba(255, 255, 255, 0.1);
+        display: grid;
+        gap: 0.4rem;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+      }
+
+      .admin-notice .badge {
+        width: fit-content;
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+      }
+
+      .card-header {
+        display: grid;
+        gap: 0.6rem;
+      }
+
+      .card-header .eyebrow {
+        color: var(--muted);
+        letter-spacing: 0.18em;
+      }
+
+      .card-header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .form-field {
+        display: grid;
+        gap: 0.35rem;
+      }
+
+      .admin-note {
+        margin-top: 1.5rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+        line-height: 1.5;
+        text-align: center;
+      }
+
+      .login-card .alert {
+        margin-top: 1.25rem;
+        justify-content: center;
+        text-align: center;
       }
 
       .card {
@@ -165,21 +312,6 @@
       button.primary:hover {
         transform: translateY(-1px);
         box-shadow: 0 22px 40px -20px rgba(38, 70, 83, 0.5);
-      }
-
-      .link-action {
-        margin-top: 1rem;
-        font-size: 0.9rem;
-        text-align: center;
-        color: var(--muted);
-      }
-
-      .link-action button {
-        background: none;
-        border: none;
-        color: var(--primary);
-        font-weight: 600;
-        cursor: pointer;
       }
 
       .alert {
@@ -448,6 +580,14 @@
           gap: 1rem;
         }
 
+        #authSection {
+          padding: clamp(2rem, 8vw, 4rem) 0;
+        }
+
+        .auth-grid {
+          grid-template-columns: 1fr;
+        }
+
         .dashboard {
           grid-template-columns: 1fr;
         }
@@ -471,14 +611,37 @@
     <main>
       <section id="authSection">
         <div class="auth-grid">
-          <div class="card" id="loginCard">
-            <h2>Bienvenido de nuevo</h2>
-            <p class="alert info">
-              Accede con tu correo institucional <strong>@potros.itson.edu.mx</strong>
-              para continuar.
+          <div class="auth-hero">
+            <span class="eyebrow">Gestión académica</span>
+            <h2>Organiza el trabajo docente con claridad</h2>
+            <p>
+              Centraliza indicadores, actividades y seguimientos en un solo lugar
+              pensado para coordinadores y administradores académicos.
             </p>
+            <ul class="auth-highlights">
+              <li>Visualiza el avance de las actividades en tiempo real.</li>
+              <li>Coordina responsabilidades entre docentes y auxiliares.</li>
+              <li>Genera reportes claros para la toma de decisiones.</li>
+            </ul>
+            <div class="admin-notice">
+              <span class="badge">Acceso restringido</span>
+              <p>
+                Solo el equipo administrador puede crear y asignar nuevas cuentas.
+              </p>
+            </div>
+          </div>
+
+          <div class="card login-card" id="loginCard">
+            <div class="card-header">
+              <span class="eyebrow">Inicio de sesión</span>
+              <h2>Bienvenido de nuevo</h2>
+              <p>
+                Accede con tu correo institucional
+                <strong>@potros.itson.edu.mx</strong> para continuar.
+              </p>
+            </div>
             <form id="loginForm">
-              <div>
+              <div class="form-field">
                 <label for="loginEmail">Correo institucional</label>
                 <input
                   type="email"
@@ -487,7 +650,7 @@
                   placeholder="nombre.apellido@potros.itson.edu.mx"
                 />
               </div>
-              <div>
+              <div class="form-field">
                 <label for="loginPassword">Contraseña</label>
                 <input
                   type="password"
@@ -498,79 +661,12 @@
                 />
               </div>
               <button class="primary" type="submit">Ingresar</button>
-              <p class="link-action">
-                ¿Aún no tienes cuenta?
-                <button type="button" id="showRegister">Crear cuenta</button>
-              </p>
-              <div class="alert error hidden" id="loginError"></div>
             </form>
-          </div>
-
-          <div class="card hidden" id="registerCard">
-            <h2>Crear cuenta institucional</h2>
-            <p class="alert info">
-              Si eres el administrador principal utiliza exactamente el correo
-              <strong>isaac.paniagua@potros.itson.edu.mx</strong> para registrar el
-              primer acceso.
+            <p class="admin-note">
+              ¿Necesitas una cuenta? Ponte en contacto con el administrador del sistema
+              para gestionar el acceso.
             </p>
-            <form id="registerForm">
-              <div class="grid">
-                <div>
-                  <label for="registerName">Nombre completo</label>
-                  <input type="text" id="registerName" required minlength="4" />
-                </div>
-                <div>
-                  <label for="registerEmail">Correo institucional</label>
-                  <input
-                    type="email"
-                    id="registerEmail"
-                    required
-                    placeholder="nombre.apellido@potros.itson.edu.mx"
-                  />
-                </div>
-              </div>
-              <div class="grid">
-                <div>
-                  <label for="registerCareer">Carrera</label>
-                  <select id="registerCareer" required>
-                    <option value="">Selecciona una opción</option>
-                    <option value="software">Ingeniería en Software</option>
-                    <option value="manufactura">Ingeniería en Manufactura</option>
-                    <option value="mecatronica">Ingeniería en Mecatrónica</option>
-                  </select>
-                </div>
-                <div>
-                  <label for="registerRole">Rol</label>
-                  <select id="registerRole" required>
-                    <option value="docente">Docente</option>
-                    <option value="auxiliar">Profesor auxiliar</option>
-                    <option value="administrador">Administrador</option>
-                  </select>
-                </div>
-              </div>
-              <div class="grid">
-                <div>
-                  <label for="registerPassword">Contraseña</label>
-                  <input type="password" id="registerPassword" required minlength="6" />
-                </div>
-                <div>
-                  <label for="registerPasswordConfirm">Confirmar contraseña</label>
-                  <input
-                    type="password"
-                    id="registerPasswordConfirm"
-                    required
-                    minlength="6"
-                  />
-                </div>
-              </div>
-              <button class="primary" type="submit">Crear cuenta</button>
-              <p class="link-action">
-                ¿Ya tienes cuenta?
-                <button type="button" id="showLogin">Iniciar sesión</button>
-              </p>
-              <div class="alert error hidden" id="registerError"></div>
-              <div class="alert success hidden" id="registerSuccess"></div>
-            </form>
+            <div class="alert error hidden" id="loginError"></div>
           </div>
         </div>
       </section>
@@ -780,9 +876,7 @@
         getAuth,
         onAuthStateChanged,
         signInWithEmailAndPassword,
-        createUserWithEmailAndPassword,
         signOut,
-        updateProfile,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
       import {
         getFirestore,
@@ -810,7 +904,6 @@
       };
 
       const ALLOWED_DOMAIN = "@potros.itson.edu.mx";
-      const ROOT_ADMIN_EMAIL = "isaac.paniagua@potros.itson.edu.mx";
       const CAREER_LABELS = {
         software: "Ingeniería en Software",
         manufactura: "Ingeniería en Manufactura",
@@ -835,14 +928,8 @@
       const db = getFirestore(app);
 
       const loginForm = document.getElementById("loginForm");
-      const registerForm = document.getElementById("registerForm");
       const loginCard = document.getElementById("loginCard");
-      const registerCard = document.getElementById("registerCard");
-      const showRegister = document.getElementById("showRegister");
-      const showLogin = document.getElementById("showLogin");
       const loginError = document.getElementById("loginError");
-      const registerError = document.getElementById("registerError");
-      const registerSuccess = document.getElementById("registerSuccess");
 
       const authSection = document.getElementById("authSection");
       const dashboard = document.getElementById("dashboard");
@@ -905,6 +992,7 @@
 
       const resetAlerts = (...elements) => {
         elements.forEach((el) => {
+          if (!el) return;
           el.classList.add("hidden");
           el.textContent = "";
         });
@@ -912,22 +1000,6 @@
 
       const ensureDomain = (email) =>
         email.trim().toLowerCase().endsWith(ALLOWED_DOMAIN);
-
-      const isRootAdmin = (email) => email.trim().toLowerCase() === ROOT_ADMIN_EMAIL;
-
-      const toggleAuthCards = (showRegisterCard) => {
-        resetAlerts(loginError, registerError, registerSuccess);
-        if (showRegisterCard) {
-          loginCard.classList.add("hidden");
-          registerCard.classList.remove("hidden");
-        } else {
-          registerCard.classList.add("hidden");
-          loginCard.classList.remove("hidden");
-        }
-      };
-
-      showRegister.addEventListener("click", () => toggleAuthCards(true));
-      showLogin.addEventListener("click", () => toggleAuthCards(false));
 
       const renderNavigation = (role) => {
         navigation.innerHTML = "";
@@ -1267,57 +1339,6 @@
           loginError.textContent =
             "No fue posible iniciar sesión. Verifica tus credenciales o espera a que tu invitación sea aprobada.";
           loginError.classList.remove("hidden");
-        }
-      });
-
-      registerForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        resetAlerts(registerError, registerSuccess);
-        const name = registerForm.registerName.value.trim();
-        const email = registerForm.registerEmail.value.trim().toLowerCase();
-        const career = registerForm.registerCareer.value;
-        const role = registerForm.registerRole.value;
-        const password = registerForm.registerPassword.value;
-        const passwordConfirm = registerForm.registerPasswordConfirm.value;
-
-        if (!ensureDomain(email)) {
-          registerError.textContent = "Solo se permiten cuentas institucionales @potros.itson.edu.mx";
-          registerError.classList.remove("hidden");
-          return;
-        }
-
-        if (password !== passwordConfirm) {
-          registerError.textContent = "Las contraseñas no coinciden.";
-          registerError.classList.remove("hidden");
-          return;
-        }
-
-        if (role === "administrador" && !isRootAdmin(email)) {
-          registerError.textContent =
-            "Solo el administrador raíz puede registrarse con rol de administrador desde este formulario.";
-          registerError.classList.remove("hidden");
-          return;
-        }
-
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          await updateProfile(userCredential.user, { displayName: name });
-          await setDoc(doc(db, "users", userCredential.user.uid), {
-            uid: userCredential.user.uid,
-            displayName: name,
-            email,
-            career: isRootAdmin(email) ? "global" : career,
-            role: isRootAdmin(email) ? "administrador" : role,
-            createdAt: serverTimestamp(),
-          });
-          registerSuccess.textContent =
-            "Cuenta creada correctamente. Ya puedes acceder al tablero.";
-          registerSuccess.classList.remove("hidden");
-          registerForm.reset();
-        } catch (error) {
-          registerError.textContent =
-            "Ocurrió un error al crear tu cuenta. Verifica la información o intenta más tarde.";
-          registerError.classList.remove("hidden");
         }
       });
 
