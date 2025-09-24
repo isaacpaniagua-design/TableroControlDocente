@@ -359,9 +359,9 @@
 
     <script type="module">
       // Usamos una versión más reciente de Firebase para mejoras de rendimiento y seguridad
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-      import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-      import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, getDocs, onSnapshot, query, where, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, getDocs, onSnapshot, query, where, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyBWa6nNgWGdsqS12OhqAfIlJcSbT59cLGs",
@@ -401,7 +401,6 @@
       const loader = document.getElementById('loader');
       const authSection = document.getElementById('authSection');
       const dashboard = document.getElementById('dashboard');
-      // ... más referencias a elementos
       const googleLoginButton = document.getElementById('googleLoginButton');
       const loginError = document.getElementById('loginError');
       const headerUserMeta = document.getElementById("headerUserMeta");
@@ -413,8 +412,12 @@
       const sidebarCareer = document.getElementById("sidebarCareer");
       const navigation = document.getElementById("navigation");
       const userTableContainer = document.getElementById("userTableContainer");
-      const inviteUserForm = document.getElementById('inviteUserForm'); // Nueva referencia
-      const inviteAlert = document.getElementById('inviteAlert'); // Nueva referencia
+      const inviteUserForm = document.getElementById('inviteUserForm');
+      const inviteAlert = document.getElementById('inviteAlert');
+      const adminView = document.getElementById('adminView');
+      const docenteView = document.getElementById('docenteView');
+      const auxiliarView = document.getElementById('auxiliarView');
+
 
       let currentUser = null;
       let currentUserData = null;
@@ -432,8 +435,7 @@
               element.classList.remove('show');
           }, duration);
       };
-
-      const openModal = (title, content) => {
+      const openModal = (title, content, footer = '') => {
         const backdrop = document.getElementById('modal-backdrop');
         backdrop.innerHTML = `
           <div class="modal-content">
@@ -442,6 +444,7 @@
               <button id="closeModalBtn"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">${content}</div>
+            <div class="modal-footer" style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">${footer}</div>
           </div>
         `;
         backdrop.classList.remove('hidden');
@@ -480,159 +483,240 @@
                 <td><span class="${ROLE_BADGE_CLASS[user.role]}">${ROLE_LABELS[user.role]}</span></td>
                 <td>
                   <div class="action-buttons">
-                    <button class="edit-btn" data-id="${docSnap.id}"><i data-lucide="edit"></i></button>
-                    <button class="delete-btn" data-id="${docSnap.id}"><i data-lucide="trash-2"></i></button>
+                    <button class="edit-btn" data-id="${docSnap.id}" title="Editar usuario"><i data-lucide="edit"></i></button>
+                    <button class="delete-btn" data-id="${docSnap.id}" title="Eliminar usuario"><i data-lucide="trash-2"></i></button>
                   </div>
                 </td>
               </tr>
             `;
           });
-          tableHTML += '</tbody></table>';
+          tableHTML += `</tbody></table>`;
           userTableContainer.innerHTML = tableHTML;
           lucide.createIcons();
         });
         unsubscribers.push(unsubscribe);
       };
-      
-      const renderAdminCharts = () => {
-        const unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
-          const careerCounts = { software: 0, manufactura: 0, mecatronica: 0 };
-          snapshot.forEach(doc => {
-            const user = doc.data();
-            if(careerCounts[user.career] !== undefined) careerCounts[user.career]++;
-          });
-          const userCtx = document.getElementById('usersChart').getContext('2d');
-          if(usersChart) usersChart.destroy();
-          usersChart = new Chart(userCtx, {
-            type: 'doughnut',
-            data: {
-              labels: Object.keys(careerCounts).map(c => CAREER_LABELS[c]),
-              datasets: [{ data: Object.values(careerCounts), backgroundColor: ['#2a9d8f', '#e9c46a', '#e76f51'] }]
-            }
-          });
-        });
-        unsubscribers.push(unsubscribeUsers);
+
+      const renderDashboard = (user, userData) => {
+        currentUser = user;
+        currentUserData = userData;
+
+        // Limpiar suscripciones anteriores
+        cleanupSubscriptions();
+
+        // Actualizar UI
+        sidebarName.textContent = userData.displayName;
+        sidebarEmail.textContent = userData.email;
+        sidebarCareer.textContent = CAREER_LABELS[userData.career];
+        headerUserName.textContent = userData.displayName;
+        headerUserRole.className = ROLE_BADGE_CLASS[userData.role];
+        headerUserRole.textContent = ROLE_LABELS[userData.role];
+        
+        authSection.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+        headerUserMeta.classList.remove('hidden');
+
+        adminView.classList.add('hidden');
+        docenteView.classList.add('hidden');
+        auxiliarView.classList.add('hidden');
+
+        // Lógica específica de roles
+        if (userData.role === 'administrador') {
+            adminView.classList.remove('hidden');
+            renderUserTable();
+            // Aquí irían las funciones para renderizar gráficos, etc.
+        } else if (userData.role === 'docente') {
+            docenteView.classList.remove('hidden');
+            // Aquí iría la función para renderizar actividades del docente
+        } else if (userData.role === 'auxiliar') {
+            auxiliarView.classList.remove('hidden');
+            // Aquí iría la función para renderizar actividades del auxiliar
+        }
+
+        showLoader(false);
       };
 
-      const renderDashboard = async (user, userData) => {
-          currentUser = user;
-          currentUserData = userData;
-          
-          // Actualizar UI
-          headerUserName.textContent = userData.displayName;
-          headerUserRole.className = ROLE_BADGE_CLASS[userData.role];
-          headerUserRole.textContent = ROLE_LABELS[userData.role];
-          sidebarName.textContent = userData.displayName;
-          sidebarEmail.textContent = user.email;
-          sidebarCareer.textContent = CAREER_LABELS[userData.career];
-          headerUserMeta.classList.remove('hidden');
-
-          cleanupSubscriptions();
-
-          // Lógica de vistas por rol
-          if (userData.role === 'administrador') {
-              document.getElementById('adminView').classList.remove('hidden');
-              renderUserTable();
-              renderAdminCharts();
-          } else if (userData.role === 'docente') {
-              document.getElementById('docenteView').classList.remove('hidden');
-          } else {
-              document.getElementById('auxiliarView').classList.remove('hidden');
-          }
-
-          dashboard.classList.remove('hidden');
-          authSection.classList.add('hidden');
-          lucide.createIcons();
-          showLoader(false);
-      };
-
-      // --- Lógica de Autenticación y Carga de Usuario ---
+      // --- Lógica de Autenticación ---
       onAuthStateChanged(auth, async (user) => {
-          if (user) {
-              if(!user.email.endsWith(ALLOWED_DOMAIN)) {
-                  showAlert(loginError, "Debes usar una cuenta @potros.itson.edu.mx.");
-                  await signOut(auth);
-                  return;
-              }
-              const userRef = doc(db, "users", user.uid);
-              let userDoc = await getDoc(userRef);
+        if (user) {
+            if (!user.email.endsWith(ALLOWED_DOMAIN)) {
+                showAlert(loginError, "Debes usar una cuenta @potros.itson.edu.mx.");
+                await signOut(auth);
+                return;
+            }
+            const userRef = doc(db, "users", user.uid);
+            let userDoc = await getDoc(userRef);
 
-              if (!userDoc.exists()) {
-                  // Flujo de creación para un usuario nuevo
-                  const invitationsRef = collection(db, "invitations");
-                  const q = query(invitationsRef, where("email", "==", user.email));
-                  const invitationSnapshot = await getDocs(q);
+            if (!userDoc.exists()) {
+                const invitationsRef = collection(db, "invitations");
+                const q = query(invitationsRef, where("email", "==", user.email));
+                const invitationSnapshot = await getDocs(q);
 
-                  let role = 'docente';
-                  let career = 'software';
-                  let displayName = user.displayName;
+                let role = 'docente';
+                let career = 'software';
+                let displayName = user.displayName;
 
-                  if (!invitationSnapshot.empty) {
-                      const invitation = invitationSnapshot.docs[0].data();
-                      role = invitation.role;
-                      career = invitation.career;
-                      displayName = invitation.name; // Usar el nombre de la invitación
-                      
-                      // Borrar la invitación para que no se pueda volver a usar
-                      await deleteDoc(doc(db, "invitations", invitationSnapshot.docs[0].id));
-                  } else if (!ADMIN_EMAILS.has(user.email)) {
-                      // Si no es un admin y no tiene invitación, no puede entrar
-                      showAlert(loginError, "Tu cuenta no tiene una invitación. Contacta a un administrador.");
-                      await signOut(auth);
-                      return;
-                  }
+                if (!invitationSnapshot.empty) {
+                    const invitation = invitationSnapshot.docs[0].data();
+                    role = invitation.role;
+                    career = invitation.career;
+                    displayName = invitation.name;
+                    await deleteDoc(doc(db, "invitations", invitationSnapshot.docs[0].id));
+                } else if (!ADMIN_EMAILS.has(user.email)) {
+                    showAlert(loginError, "Tu cuenta no tiene una invitación. Contacta a un administrador.");
+                    await signOut(auth);
+                    return;
+                }
 
-                  // Si el email está en la lista de admins, se asegura de que tenga ese rol
-                  if (ADMIN_EMAILS.has(user.email)) {
-                    role = 'administrador';
-                  }
-                  
-                  const newUser = {
-                      uid: user.uid,
-                      displayName: displayName,
-                      email: user.email,
-                      career: career,
-                      role: role,
-                      createdAt: serverTimestamp()
-                  };
-                  await setDoc(userRef, newUser);
-                  userDoc = await getDoc(userRef);
-              }
-              
-              const userData = userDoc.data();
-              // Forzar rol de admin si el email está en la lista (seguridad extra)
-              if(ADMIN_EMAILS.has(userData.email) && userData.role !== 'administrador'){
-                await updateDoc(userRef, { role: 'administrador' });
-                userData.role = 'administrador';
-              }
+                if (ADMIN_EMAILS.has(user.email)) {
+                  role = 'administrador';
+                }
+                
+                const newUser = {
+                    uid: user.uid,
+                    displayName: displayName,
+                    email: user.email,
+                    career: career,
+                    role: role,
+                    createdAt: serverTimestamp()
+                };
+                await setDoc(userRef, newUser);
+                userDoc = await getDoc(userRef);
+            }
+            
+            const userData = userDoc.data();
+            if(ADMIN_EMAILS.has(userData.email) && userData.role !== 'administrador'){
+              await updateDoc(userRef, { role: 'administrador' });
+              userData.role = 'administrador';
+            }
 
-              renderDashboard(user, userData);
-          } else {
-              // Limpiar UI para estado de no-autenticado
-              currentUser = null;
-              currentUserData = null;
-              dashboard.classList.add('hidden');
-              authSection.classList.remove('hidden');
-              headerUserMeta.classList.add('hidden');
-              cleanupSubscriptions();
-              showLoader(false);
-          }
+            renderDashboard(user, userData);
+        } else {
+            currentUser = null;
+            currentUserData = null;
+            dashboard.classList.add('hidden');
+            authSection.classList.remove('hidden');
+            headerUserMeta.classList.add('hidden');
+            cleanupSubscriptions();
+            showLoader(false);
+        }
       });
       
       googleLoginButton.addEventListener('click', async () => {
           const provider = new GoogleAuthProvider();
           provider.setCustomParameters({ hd: 'potros.itson.edu.mx' });
           try {
-              showLoader(true);
               await signInWithPopup(auth, provider);
-          } catch (error) {
-              showAlert(loginError, 'Error al iniciar sesión. Intenta de nuevo.');
-              showLoader(false);
+          } catch(error) {
+              if (error.code !== 'auth/popup-closed-by-user') {
+                showAlert(loginError, 'Error al iniciar sesión con Google.');
+                console.error(error);
+              }
           }
       });
       
       logoutBtn.addEventListener('click', () => signOut(auth));
       document.getElementById('printReport').addEventListener('click', () => window.print());
+
+      // --- Delegación de eventos para acciones de usuario (EDITAR/ELIMINAR) ---
+      userTableContainer.addEventListener('click', async (e) => {
+          const target = e.target.closest('button');
+          if (!target) return;
+
+          const userId = target.dataset.id;
+          if (!userId) return;
+
+          if (target.classList.contains('delete-btn')) {
+              handleDeleteUser(userId);
+          } else if (target.classList.contains('edit-btn')) {
+              handleEditUser(userId);
+          }
+      });
+
+      const handleDeleteUser = (userId) => {
+          const content = `<p>¿Estás seguro de que quieres eliminar a este usuario? Esta acción no se puede deshacer.</p>`;
+          const footer = `
+              <button type="button" class="primary" id="confirmDeleteBtn" style="background: var(--danger);">Eliminar</button>
+              <button type="button" id="cancelDeleteBtn" style="background: var(--muted);">Cancelar</button>
+          `;
+          openModal('Confirmar Eliminación', content, footer);
+
+          document.getElementById('cancelDeleteBtn').addEventListener('click', closeModal);
+          document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+              showLoader(true);
+              try {
+                  await deleteDoc(doc(db, "users", userId));
+                  showAlert(inviteAlert, "Usuario eliminado correctamente.", 'success');
+              } catch (error) {
+                  showAlert(inviteAlert, "Error al eliminar el usuario.", 'error');
+                  console.error("Error deleting user:", error);
+              } finally {
+                  closeModal();
+                  showLoader(false);
+              }
+          });
+      };
+
+      const handleEditUser = async (userId) => {
+          showLoader(true);
+          const userRef = doc(db, "users", userId);
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) {
+              showAlert(inviteAlert, "No se encontró el usuario.", 'error');
+              showLoader(false);
+              return;
+          }
+          const user = userSnap.data();
+
+          const content = `
+              <form id="editUserForm">
+                  <div class="form-field">
+                      <label for="editName">Nombre Completo</label>
+                      <input type="text" id="editName" value="${user.displayName}" required>
+                  </div>
+                  <div class="form-field">
+                      <label for="editCareer">Carrera</label>
+                      <select id="editCareer" required>
+                          <option value="software" ${user.career === 'software' ? 'selected' : ''}>Ing. en Software</option>
+                          <option value="manufactura" ${user.career === 'manufactura' ? 'selected' : ''}>Ing. en Manufactura</option>
+                          <option value="mecatronica" ${user.career === 'mecatronica' ? 'selected' : ''}>Ing. en Mecatrónica</option>
+                      </select>
+                  </div>
+                  <div class="form-field">
+                      <label for="editRole">Rol del Sistema</label>
+                      <select id="editRole" required>
+                          <option value="docente" ${user.role === 'docente' ? 'selected' : ''}>Docente</option>
+                          <option value="auxiliar" ${user.role === 'auxiliar' ? 'selected' : ''}>Profesor Auxiliar</option>
+                          <option value="administrador" ${user.role === 'administrador' ? 'selected' : ''}>Administrador</option>
+                      </select>
+                  </div>
+              </form>
+          `;
+          const footer = `<button type="submit" form="editUserForm" class="primary">Guardar Cambios</button>`;
+          openModal('Editar Usuario', content, footer);
+
+          document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const updatedData = {
+                  displayName: document.getElementById('editName').value,
+                  career: document.getElementById('editCareer').value,
+                  role: document.getElementById('editRole').value,
+              };
+              showLoader(true);
+              try {
+                  await updateDoc(userRef, updatedData);
+                  showAlert(inviteAlert, "Usuario actualizado.", 'success');
+              } catch (error) {
+                  showAlert(inviteAlert, "Error al actualizar.", 'error');
+                  console.error("Error updating user:", error);
+              } finally {
+                  closeModal();
+                  showLoader(false);
+              }
+          });
+
+          showLoader(false);
+      };
 
       // --- Event Listener para el formulario de invitación (NUEVO) ---
       inviteUserForm.addEventListener('submit', async (e) => {
