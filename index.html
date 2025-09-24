@@ -256,6 +256,80 @@
         border: 1px solid rgba(42, 157, 143, 0.12);
       }
 
+      .welcome-card {
+        position: relative;
+        overflow: hidden;
+        color: white;
+        padding: clamp(1.75rem, 4vw, 2.75rem);
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        border: none;
+        margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+      }
+
+      .welcome-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at top right,
+          rgba(255, 255, 255, 0.28),
+          transparent 55%
+        );
+        pointer-events: none;
+      }
+
+      .welcome-card > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .welcome-card h2 {
+        margin: 0;
+        font-size: clamp(1.4rem, 2.4vw, 2.05rem);
+        font-weight: 700;
+      }
+
+      .welcome-card p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.88);
+        line-height: 1.6;
+      }
+
+      .welcome-card .welcome-actions {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .welcome-card .welcome-actions li {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-weight: 500;
+      }
+
+      .welcome-card .welcome-actions li::before {
+        content: "•";
+        font-size: 1.4rem;
+        line-height: 1;
+      }
+
+      .welcome-card.admin {
+        background: linear-gradient(150deg, rgba(38, 70, 83, 0.96), rgba(42, 157, 143, 0.9));
+      }
+
+      .welcome-card.docente {
+        background: linear-gradient(150deg, rgba(9, 132, 227, 0.92), rgba(45, 197, 253, 0.88));
+      }
+
+      .welcome-card.auxiliar {
+        background: linear-gradient(150deg, rgba(244, 162, 97, 0.95), rgba(233, 196, 106, 0.85));
+      }
+
       .card h2 {
         margin-top: 0;
         font-size: 1.45rem;
@@ -677,6 +751,19 @@
             </nav>
           </aside>
           <section class="content-area">
+            <div id="adminWelcome" class="card welcome-card admin hidden">
+              <span class="eyebrow">Panel administrativo</span>
+              <h2>Supervisa y coordina el tablero institucional</h2>
+              <p>
+                Accede a las métricas consolidadas del equipo y asigna nuevas responsabilidades
+                para mantener los indicadores académicos al día.
+              </p>
+              <ul class="welcome-actions">
+                <li>Revisa el estado de cada programa académico.</li>
+                <li>Gestiona usuarios, materias y actividades en segundos.</li>
+                <li>Descarga reportes listos para tus juntas de seguimiento.</li>
+              </ul>
+            </div>
             <div id="adminView" class="hidden">
               <div class="grid stats" id="adminStats"></div>
               <div class="card">
@@ -836,6 +923,19 @@
               </div>
             </div>
 
+            <div id="docenteWelcome" class="card welcome-card docente hidden">
+              <span class="eyebrow">Panel docente</span>
+              <h2>Organiza tu docencia con claridad</h2>
+              <p>
+                Consulta tus actividades pendientes, registra avances y mantén comunicación con el equipo
+                académico desde un solo lugar.
+              </p>
+              <ul class="welcome-actions">
+                <li>Visualiza entregables próximos y actividades críticas.</li>
+                <li>Actualiza el progreso para informar a la coordinación.</li>
+                <li>Identifica apoyos asignados por programa académico.</li>
+              </ul>
+            </div>
             <div id="docenteView" class="hidden">
               <div class="grid stats" id="teacherStats"></div>
               <div class="card">
@@ -847,6 +947,19 @@
               </div>
             </div>
 
+            <div id="auxiliarWelcome" class="card welcome-card auxiliar hidden">
+              <span class="eyebrow">Panel de apoyo docente</span>
+              <h2>Acompaña a los docentes en sus actividades clave</h2>
+              <p>
+                Revisa las tareas en las que colaboras, registra tus avances y comparte comentarios
+                para mantener la continuidad académica.
+              </p>
+              <ul class="welcome-actions">
+                <li>Prioriza actividades que requieren seguimiento inmediato.</li>
+                <li>Reporta incidencias o bloqueos al administrador.</li>
+                <li>Coordina entregables con los docentes responsables.</li>
+              </ul>
+            </div>
             <div id="auxiliarView" class="hidden">
               <div class="card">
                 <div class="section-title">
@@ -896,6 +1009,10 @@
       };
 
       const ALLOWED_DOMAIN = "@potros.itson.edu.mx";
+      const ADMIN_EMAILS = new Set([
+        "coordinacion.programa@potros.itson.edu.mx",
+        "isaac.paniagua@potros.itson.edu.mx",
+      ]);
       const CAREER_LABELS = {
         software: "Ingeniería en Software",
         manufactura: "Ingeniería en Manufactura",
@@ -937,6 +1054,9 @@
       const adminView = document.getElementById("adminView");
       const docenteView = document.getElementById("docenteView");
       const auxiliarView = document.getElementById("auxiliarView");
+      const adminWelcome = document.getElementById("adminWelcome");
+      const docenteWelcome = document.getElementById("docenteWelcome");
+      const auxiliarWelcome = document.getElementById("auxiliarWelcome");
 
       const adminStats = document.getElementById("adminStats");
       const teacherStats = document.getElementById("teacherStats");
@@ -999,20 +1119,31 @@
       const renderNavigation = (role) => {
         navigation.innerHTML = "";
         const navItems = [];
+
+        const pushItem = (item) => {
+          if (!item?.target) return;
+          navItems.push(item);
+        };
+
         if (role === "administrador") {
-          navItems.push({ id: "admin", label: "Panel administrativo", target: adminView });
+          pushItem({ id: "admin-welcome", label: "Bienvenida", target: adminWelcome });
+          pushItem({ id: "admin", label: "Panel administrativo", target: adminView });
         }
         if (role === "docente") {
-          navItems.push({ id: "docente", label: "Panel docente", target: docenteView });
+          pushItem({ id: "docente-welcome", label: "Bienvenida", target: docenteWelcome });
+          pushItem({ id: "docente", label: "Panel docente", target: docenteView });
         }
         if (role === "auxiliar") {
-          navItems.push({ id: "auxiliar", label: "Panel de apoyo", target: auxiliarView });
+          pushItem({ id: "auxiliar-welcome", label: "Bienvenida", target: auxiliarWelcome });
+          pushItem({ id: "auxiliar", label: "Panel de apoyo", target: auxiliarView });
         }
         if (navItems.length === 0) {
-          navItems.push({ id: "docente", label: "Panel docente", target: docenteView });
+          pushItem({ id: "docente-welcome", label: "Bienvenida", target: docenteWelcome });
+          pushItem({ id: "docente", label: "Panel docente", target: docenteView });
         }
 
         navItems.forEach((item, index) => {
+          item.target.classList.add("hidden");
           const button = document.createElement("button");
           button.type = "button";
           button.textContent = item.label;
@@ -1468,6 +1599,21 @@
         return userDoc.data();
       };
 
+      const applyRoleOverrides = async (user, userData) => {
+        const normalizedEmail = user.email?.trim().toLowerCase();
+        if (normalizedEmail && ADMIN_EMAILS.has(normalizedEmail)) {
+          if (userData.role !== "administrador") {
+            await setDoc(
+              doc(db, "users", user.uid),
+              { role: "administrador" },
+              { merge: true }
+            );
+            return { ...userData, role: "administrador" };
+          }
+        }
+        return userData;
+      };
+
       const renderDashboard = async (user, userData) => {
         currentUser = user;
         currentUserData = userData;
@@ -1481,20 +1627,30 @@
         authSection.classList.add("hidden");
         dashboard.classList.remove("hidden");
 
+        adminWelcome.classList.add("hidden");
+        docenteWelcome.classList.add("hidden");
+        auxiliarWelcome.classList.add("hidden");
+        adminView.classList.add("hidden");
+        docenteView.classList.add("hidden");
+        auxiliarView.classList.add("hidden");
+
         renderNavigation(userData.role);
 
         if (userData.role === "administrador") {
-          adminView.classList.remove("hidden");
+          adminWelcome.classList.remove("hidden");
+          adminView.classList.add("hidden");
           await renderAdminStats();
           await renderUserTable();
           await populateAssignees();
           renderActivitiesForAdmin();
           await renderSubjects();
         } else if (userData.role === "docente") {
-          docenteView.classList.remove("hidden");
+          docenteWelcome.classList.remove("hidden");
+          docenteView.classList.add("hidden");
           renderActivitiesForTeacher(user.uid);
         } else if (userData.role === "auxiliar") {
-          auxiliarView.classList.remove("hidden");
+          auxiliarWelcome.classList.remove("hidden");
+          auxiliarView.classList.add("hidden");
           renderActivitiesForAssistant(userData.career);
         }
       };
@@ -1506,6 +1662,12 @@
           authSection.classList.remove("hidden");
           dashboard.classList.add("hidden");
           headerUserMeta.classList.add("hidden");
+          adminWelcome.classList.add("hidden");
+          docenteWelcome.classList.add("hidden");
+          auxiliarWelcome.classList.add("hidden");
+          adminView.classList.add("hidden");
+          docenteView.classList.add("hidden");
+          auxiliarView.classList.add("hidden");
           if (unsubscribeActivities) unsubscribeActivities();
           if (unsubscribeSubjects) unsubscribeSubjects();
           return;
@@ -1513,7 +1675,8 @@
 
         try {
           const userData = await loadUserData(user.uid);
-          await renderDashboard(user, userData);
+          const resolvedData = await applyRoleOverrides(user, userData);
+          await renderDashboard(user, resolvedData);
         } catch (error) {
           if (error?.code === "permission-denied") {
             loginError.textContent =
@@ -1531,13 +1694,16 @@
                 displayName: user.displayName || user.email,
                 email: user.email,
                 career: "software",
-                role: "docente",
+                role: ADMIN_EMAILS.has(user.email?.trim().toLowerCase())
+                  ? "administrador"
+                  : "docente",
                 createdAt: serverTimestamp(),
               },
               { merge: true }
             );
             const userData = await loadUserData(user.uid);
-            await renderDashboard(user, userData);
+            const resolvedData = await applyRoleOverrides(user, userData);
+            await renderDashboard(user, resolvedData);
           } catch (setUserError) {
             loginError.textContent =
               "No fue posible registrar tu perfil automáticamente. Contacta al administrador para completar tu alta.";
