@@ -1515,20 +1515,36 @@
           const userData = await loadUserData(user.uid);
           await renderDashboard(user, userData);
         } catch (error) {
-          await setDoc(
-            doc(db, "users", user.uid),
-            {
-              uid: user.uid,
-              displayName: user.displayName || user.email,
-              email: user.email,
-              career: "software",
-              role: "docente",
-              createdAt: serverTimestamp(),
-            },
-            { merge: true }
-          );
-          const userData = await loadUserData(user.uid);
-          await renderDashboard(user, userData);
+          if (error?.code === "permission-denied") {
+            loginError.textContent =
+              "Tu cuenta aún no cuenta con permisos para acceder al tablero. Solicita acceso al administrador.";
+            loginError.classList.remove("hidden");
+            await signOut(auth);
+            return;
+          }
+
+          try {
+            await setDoc(
+              doc(db, "users", user.uid),
+              {
+                uid: user.uid,
+                displayName: user.displayName || user.email,
+                email: user.email,
+                career: "software",
+                role: "docente",
+                createdAt: serverTimestamp(),
+              },
+              { merge: true }
+            );
+            const userData = await loadUserData(user.uid);
+            await renderDashboard(user, userData);
+          } catch (setUserError) {
+            loginError.textContent =
+              "No fue posible registrar tu perfil automáticamente. Contacta al administrador para completar tu alta.";
+            loginError.classList.remove("hidden");
+            console.error("No se pudo crear el perfil del usuario", setUserError);
+            await signOut(auth);
+          }
         }
       });
     </script>
