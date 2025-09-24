@@ -648,28 +648,11 @@
                 <strong>@potros.itson.edu.mx</strong> para continuar.
               </p>
             </div>
-            <form id="loginForm">
-              <div class="form-field">
-                <label for="loginEmail">Correo institucional</label>
-                <input
-                  type="email"
-                  id="loginEmail"
-                  required
-                  placeholder="nombre.apellido@potros.itson.edu.mx"
-                />
-              </div>
-              <div class="form-field">
-                <label for="loginPassword">Contraseña</label>
-                <input
-                  type="password"
-                  id="loginPassword"
-                  required
-                  minlength="6"
-                  autocomplete="current-password"
-                />
-              </div>
-              <button class="primary" type="submit">Ingresar</button>
-            </form>
+            <div class="form-field">
+              <button class="primary" type="button" id="googleLoginButton">
+                Ingresar con Google
+              </button>
+            </div>
             <p class="admin-note">
               ¿Necesitas una cuenta? Ponte en contacto con el administrador del sistema
               para gestionar el acceso.
@@ -883,7 +866,8 @@
       import {
         getAuth,
         onAuthStateChanged,
-        signInWithEmailAndPassword,
+        signInWithPopup,
+        GoogleAuthProvider,
         signOut,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
       import {
@@ -935,8 +919,7 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
 
-      const loginForm = document.getElementById("loginForm");
-      const loginCard = document.getElementById("loginCard");
+      const googleLoginButton = document.getElementById("googleLoginButton");
       const loginError = document.getElementById("loginError");
 
       const authSection = document.getElementById("authSection");
@@ -1334,23 +1317,28 @@
         });
       };
 
-      loginForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
+      const googleProvider = new GoogleAuthProvider();
+      googleProvider.setCustomParameters({
+        prompt: "select_account",
+        hd: "potros.itson.edu.mx",
+      });
+
+      googleLoginButton.addEventListener("click", async () => {
         resetAlerts(loginError);
-        const email = loginForm.loginEmail.value.trim().toLowerCase();
-        const password = loginForm.loginPassword.value;
-        if (!ensureDomain(email)) {
-          loginError.textContent = "Debes utilizar tu correo institucional @potros.itson.edu.mx";
-          loginError.classList.remove("hidden");
-          return;
-        }
         try {
-          await signInWithEmailAndPassword(auth, email, password);
-          loginForm.reset();
+          const result = await signInWithPopup(auth, googleProvider);
+          const email = (result.user.email || "").toLowerCase();
+          if (!ensureDomain(email)) {
+            await signOut(auth);
+            loginError.textContent = "Debes utilizar tu correo institucional @potros.itson.edu.mx";
+            loginError.classList.remove("hidden");
+          }
         } catch (error) {
-          loginError.textContent =
-            "No fue posible iniciar sesión. Verifica tus credenciales o espera a que tu invitación sea aprobada.";
-          loginError.classList.remove("hidden");
+          if (error.code !== "auth/popup-closed-by-user") {
+            loginError.textContent =
+              "No fue posible iniciar sesión con Google. Intenta nuevamente con tu cuenta institucional.";
+            loginError.classList.remove("hidden");
+          }
         }
       });
 
