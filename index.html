@@ -13,15 +13,15 @@
     <style>
       :root {
         color-scheme: light dark;
-        --bg: #f5f7fb;
+        --bg: #f4f1ea;
         --card: #ffffff;
-        --primary: #1554f6;
-        --primary-dark: #0e3eb7;
-        --text: #1c1f2b;
-        --muted: #6b7280;
-        --success: #0f9d58;
-        --warning: #fbbc04;
-        --danger: #ea4335;
+        --primary: #2a9d8f;
+        --primary-dark: #1f776d;
+        --text: #2d3142;
+        --muted: #6f737b;
+        --success: #2b9348;
+        --warning: #e9c46a;
+        --danger: #e76f51;
         font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
         background-color: var(--bg);
@@ -35,7 +35,7 @@
       body {
         margin: 0;
         min-height: 100vh;
-        background: linear-gradient(160deg, #1554f6 0%, #1e88e5 40%, #f5f7fb 100%);
+        background: linear-gradient(160deg, #264653 0%, #2a9d8f 45%, #f4f1ea 100%);
       }
 
       header {
@@ -47,7 +47,7 @@
         position: sticky;
         top: 0;
         backdrop-filter: blur(18px);
-        background: color-mix(in srgb, #1554f6 65%, transparent);
+        background: color-mix(in srgb, var(--primary) 70%, transparent);
         z-index: 10;
       }
 
@@ -73,13 +73,13 @@
         cursor: pointer;
         transition: transform 0.18s ease, box-shadow 0.18s ease;
         background: white;
-        color: #1554f6;
-        box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.45);
+        color: var(--primary);
+        box-shadow: 0 8px 20px -12px rgba(38, 70, 83, 0.35);
       }
 
       header button:hover {
         transform: translateY(-1px);
-        box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.45);
+        box-shadow: 0 12px 24px -12px rgba(38, 70, 83, 0.45);
       }
 
       main {
@@ -103,8 +103,8 @@
         background: var(--card);
         border-radius: 24px;
         padding: clamp(1.5rem, 3vw, 2.5rem);
-        box-shadow: 0 30px 60px -40px rgba(15, 23, 42, 0.55);
-        border: 1px solid rgba(21, 84, 246, 0.08);
+        box-shadow: 0 30px 60px -40px rgba(38, 70, 83, 0.45);
+        border: 1px solid rgba(42, 157, 143, 0.12);
       }
 
       .card h2 {
@@ -132,7 +132,7 @@
       input,
       select,
       textarea {
-        border: 1px solid rgba(21, 84, 246, 0.2);
+        border: 1px solid rgba(42, 157, 143, 0.25);
         border-radius: 14px;
         padding: 0.85rem 1rem;
         font-size: 1rem;
@@ -146,7 +146,7 @@
       textarea:focus {
         outline: none;
         border-color: var(--primary);
-        box-shadow: 0 0 0 4px rgba(21, 84, 246, 0.15);
+        box-shadow: 0 0 0 4px rgba(42, 157, 143, 0.2);
       }
 
       button.primary {
@@ -156,15 +156,15 @@
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
-        background: linear-gradient(120deg, var(--primary), #1b6ff8);
+        background: linear-gradient(120deg, var(--primary), #3fb9a9);
         color: white;
         transition: transform 0.18s ease, box-shadow 0.18s ease;
-        box-shadow: 0 20px 35px -22px rgba(21, 84, 246, 0.8);
+        box-shadow: 0 20px 35px -22px rgba(38, 70, 83, 0.45);
       }
 
       button.primary:hover {
         transform: translateY(-1px);
-        box-shadow: 0 22px 40px -20px rgba(21, 84, 246, 0.8);
+        box-shadow: 0 22px 40px -20px rgba(38, 70, 83, 0.5);
       }
 
       .link-action {
@@ -193,21 +193,21 @@
       }
 
       .alert.info {
-        background: rgba(21, 84, 246, 0.08);
+        background: rgba(42, 157, 143, 0.12);
         color: var(--primary);
-        border: 1px solid rgba(21, 84, 246, 0.15);
+        border: 1px solid rgba(42, 157, 143, 0.2);
       }
 
       .alert.error {
-        background: rgba(234, 67, 53, 0.1);
+        background: rgba(231, 111, 81, 0.12);
         color: var(--danger);
-        border: 1px solid rgba(234, 67, 53, 0.15);
+        border: 1px solid rgba(231, 111, 81, 0.18);
       }
 
       .alert.success {
-        background: rgba(15, 157, 88, 0.1);
+        background: rgba(43, 147, 72, 0.12);
         color: var(--success);
-        border: 1px solid rgba(15, 157, 88, 0.15);
+        border: 1px solid rgba(43, 147, 72, 0.18);
       }
 
       .dashboard {
@@ -224,7 +224,7 @@
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
-        border: 1px solid rgba(21, 84, 246, 0.08);
+        border: 1px solid rgba(42, 157, 143, 0.1);
       }
 
       .user-card h3 {
@@ -258,14 +258,14 @@
         font-weight: 600;
         text-align: left;
         cursor: pointer;
-        background: rgba(21, 84, 246, 0.07);
+        background: rgba(42, 157, 143, 0.08);
         color: var(--primary);
         transition: background 0.2s ease, transform 0.18s ease;
       }
 
       nav button:hover,
       nav button.active {
-        background: rgba(21, 84, 246, 0.15);
+        background: rgba(42, 157, 143, 0.16);
         transform: translateX(2px);
       }
 
@@ -287,8 +287,8 @@
         padding: 1.5rem;
         border-radius: 22px;
         background: rgba(255, 255, 255, 0.95);
-        border: 1px solid rgba(21, 84, 246, 0.12);
-        box-shadow: 0 20px 50px -38px rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(42, 157, 143, 0.16);
+        box-shadow: 0 20px 50px -38px rgba(38, 70, 83, 0.55);
       }
 
       .stat-card h4 {
@@ -328,7 +328,7 @@
         border-radius: 18px;
         overflow: hidden;
         background: rgba(255, 255, 255, 0.92);
-        border: 1px solid rgba(21, 84, 246, 0.1);
+        border: 1px solid rgba(42, 157, 143, 0.12);
       }
 
       th,
@@ -339,7 +339,7 @@
       }
 
       tr:nth-child(even) {
-        background: rgba(21, 84, 246, 0.05);
+        background: rgba(42, 157, 143, 0.06);
       }
 
       .badge {
@@ -355,17 +355,17 @@
       }
 
       .badge.admin {
-        background: rgba(21, 84, 246, 0.12);
+        background: rgba(42, 157, 143, 0.18);
         color: var(--primary);
       }
 
       .badge.docente {
-        background: rgba(15, 157, 88, 0.12);
+        background: rgba(43, 147, 72, 0.14);
         color: var(--success);
       }
 
       .badge.auxiliar {
-        background: rgba(251, 188, 4, 0.15);
+        background: rgba(233, 196, 106, 0.2);
         color: var(--warning);
       }
 
@@ -379,7 +379,7 @@
         background: rgba(255, 255, 255, 0.92);
         border-radius: 20px;
         padding: 1.25rem;
-        border: 1px solid rgba(21, 84, 246, 0.1);
+        border: 1px solid rgba(42, 157, 143, 0.12);
         display: grid;
         gap: 0.75rem;
       }
@@ -399,7 +399,7 @@
         width: 100%;
         height: 10px;
         border-radius: 999px;
-        background: rgba(21, 84, 246, 0.1);
+        background: rgba(38, 70, 83, 0.12);
         overflow: hidden;
       }
 
@@ -407,13 +407,13 @@
         display: block;
         height: 100%;
         border-radius: inherit;
-        background: linear-gradient(120deg, #0f9d58, #34a853);
+        background: linear-gradient(120deg, #2b9348, #55b46f);
       }
 
       .tab-group {
         display: inline-flex;
         border-radius: 999px;
-        background: rgba(21, 84, 246, 0.1);
+        background: rgba(42, 157, 143, 0.14);
         padding: 0.25rem;
       }
 
@@ -428,17 +428,17 @@
       }
 
       .tab-group button.active {
-        background: white;
+        background: rgba(255, 255, 255, 0.85);
         color: var(--primary);
-        box-shadow: 0 4px 15px -12px rgba(15, 23, 42, 0.5);
+        box-shadow: 0 4px 15px -12px rgba(38, 70, 83, 0.4);
       }
 
       .empty-state {
         padding: 2rem;
         text-align: center;
-        background: rgba(21, 84, 246, 0.04);
+        background: rgba(42, 157, 143, 0.08);
         border-radius: 18px;
-        border: 1px dashed rgba(21, 84, 246, 0.2);
+        border: 1px dashed rgba(42, 157, 143, 0.25);
         color: var(--muted);
       }
 
