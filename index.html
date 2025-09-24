@@ -1009,6 +1009,10 @@
       };
 
       const ALLOWED_DOMAIN = "@potros.itson.edu.mx";
+      const ADMIN_EMAILS = new Set([
+        "coordinacion.programa@potros.itson.edu.mx",
+        "isaac.paniagua@potros.itson.edu.mx",
+      ]);
       const CAREER_LABELS = {
         software: "Ingeniería en Software",
         manufactura: "Ingeniería en Manufactura",
@@ -1595,6 +1599,21 @@
         return userDoc.data();
       };
 
+      const applyRoleOverrides = async (user, userData) => {
+        const normalizedEmail = user.email?.trim().toLowerCase();
+        if (normalizedEmail && ADMIN_EMAILS.has(normalizedEmail)) {
+          if (userData.role !== "administrador") {
+            await setDoc(
+              doc(db, "users", user.uid),
+              { role: "administrador" },
+              { merge: true }
+            );
+            return { ...userData, role: "administrador" };
+          }
+        }
+        return userData;
+      };
+
       const renderDashboard = async (user, userData) => {
         currentUser = user;
         currentUserData = userData;
@@ -1656,7 +1675,8 @@
 
         try {
           const userData = await loadUserData(user.uid);
-          await renderDashboard(user, userData);
+          const resolvedData = await applyRoleOverrides(user, userData);
+          await renderDashboard(user, resolvedData);
         } catch (error) {
           if (error?.code === "permission-denied") {
             loginError.textContent =
@@ -1674,13 +1694,16 @@
                 displayName: user.displayName || user.email,
                 email: user.email,
                 career: "software",
-                role: "docente",
+                role: ADMIN_EMAILS.has(user.email?.trim().toLowerCase())
+                  ? "administrador"
+                  : "docente",
                 createdAt: serverTimestamp(),
               },
               { merge: true }
             );
             const userData = await loadUserData(user.uid);
-            await renderDashboard(user, userData);
+            const resolvedData = await applyRoleOverrides(user, userData);
+            await renderDashboard(user, resolvedData);
           } catch (setUserError) {
             loginError.textContent =
               "No fue posible registrar tu perfil automáticamente. Contacta al administrador para completar tu alta.";
