@@ -1,1 +1,1515 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tablero de Control Docente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --primary: #1554f6;
+        --primary-dark: #0e3eb7;
+        --text: #1c1f2b;
+        --muted: #6b7280;
+        --success: #0f9d58;
+        --warning: #fbbc04;
+        --danger: #ea4335;
+        font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+      }
 
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(160deg, #1554f6 0%, #1e88e5 40%, #f5f7fb 100%);
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem clamp(1rem, 2vw + 0.5rem, 3rem);
+        color: white;
+        position: sticky;
+        top: 0;
+        backdrop-filter: blur(18px);
+        background: color-mix(in srgb, #1554f6 65%, transparent);
+        z-index: 10;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: clamp(1.5rem, 2.5vw, 2.4rem);
+        font-weight: 700;
+        letter-spacing: -0.03em;
+      }
+
+      header .user-meta {
+        display: flex;
+        gap: 1.25rem;
+        align-items: center;
+        font-size: 0.95rem;
+      }
+
+      header button {
+        border: none;
+        border-radius: 999px;
+        padding: 0.65rem 1.35rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        background: white;
+        color: #1554f6;
+        box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.45);
+      }
+
+      header button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.45);
+      }
+
+      main {
+        padding: clamp(1rem, 3vw, 2.5rem);
+        max-width: 1280px;
+        margin: 0 auto;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .auth-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-top: clamp(2rem, 6vw, 5rem);
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 24px;
+        padding: clamp(1.5rem, 3vw, 2.5rem);
+        box-shadow: 0 30px 60px -40px rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(21, 84, 246, 0.08);
+      }
+
+      .card h2 {
+        margin-top: 0;
+        font-size: 1.45rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      input,
+      select,
+      textarea {
+        border: 1px solid rgba(21, 84, 246, 0.2);
+        border-radius: 14px;
+        padding: 0.85rem 1rem;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        background: rgba(255, 255, 255, 0.8);
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(21, 84, 246, 0.15);
+      }
+
+      button.primary {
+        border: none;
+        border-radius: 16px;
+        padding: 0.85rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        background: linear-gradient(120deg, var(--primary), #1b6ff8);
+        color: white;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        box-shadow: 0 20px 35px -22px rgba(21, 84, 246, 0.8);
+      }
+
+      button.primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 22px 40px -20px rgba(21, 84, 246, 0.8);
+      }
+
+      .link-action {
+        margin-top: 1rem;
+        font-size: 0.9rem;
+        text-align: center;
+        color: var(--muted);
+      }
+
+      .link-action button {
+        background: none;
+        border: none;
+        color: var(--primary);
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .alert {
+        border-radius: 16px;
+        padding: 0.95rem 1.25rem;
+        font-size: 0.92rem;
+        font-weight: 500;
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+      }
+
+      .alert.info {
+        background: rgba(21, 84, 246, 0.08);
+        color: var(--primary);
+        border: 1px solid rgba(21, 84, 246, 0.15);
+      }
+
+      .alert.error {
+        background: rgba(234, 67, 53, 0.1);
+        color: var(--danger);
+        border: 1px solid rgba(234, 67, 53, 0.15);
+      }
+
+      .alert.success {
+        background: rgba(15, 157, 88, 0.1);
+        color: var(--success);
+        border: 1px solid rgba(15, 157, 88, 0.15);
+      }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: minmax(260px, 300px) 1fr;
+        gap: 1.75rem;
+        margin-top: 2rem;
+      }
+
+      .sidebar {
+        background: rgba(255, 255, 255, 0.92);
+        border-radius: 24px;
+        padding: 1.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        border: 1px solid rgba(21, 84, 246, 0.08);
+      }
+
+      .user-card h3 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+
+      .meta-list {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .meta-list span {
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      nav ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      nav button {
+        border: none;
+        border-radius: 14px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        background: rgba(21, 84, 246, 0.07);
+        color: var(--primary);
+        transition: background 0.2s ease, transform 0.18s ease;
+      }
+
+      nav button:hover,
+      nav button.active {
+        background: rgba(21, 84, 246, 0.15);
+        transform: translateX(2px);
+      }
+
+      .content-area {
+        display: grid;
+        gap: 1.75rem;
+      }
+
+      .grid {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .grid.stats {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .stat-card {
+        padding: 1.5rem;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(21, 84, 246, 0.12);
+        box-shadow: 0 20px 50px -38px rgba(15, 23, 42, 0.6);
+      }
+
+      .stat-card h4 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--muted);
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .stat-card strong {
+        display: block;
+        margin-top: 0.75rem;
+        font-size: 2.25rem;
+        font-weight: 700;
+      }
+
+      .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .section-title span {
+        font-size: 0.9rem;
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        border-radius: 18px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(21, 84, 246, 0.1);
+      }
+
+      th,
+      td {
+        padding: 0.9rem 1.1rem;
+        text-align: left;
+        font-size: 0.95rem;
+      }
+
+      tr:nth-child(even) {
+        background: rgba(21, 84, 246, 0.05);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0.35rem 0.85rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .badge.admin {
+        background: rgba(21, 84, 246, 0.12);
+        color: var(--primary);
+      }
+
+      .badge.docente {
+        background: rgba(15, 157, 88, 0.12);
+        color: var(--success);
+      }
+
+      .badge.auxiliar {
+        background: rgba(251, 188, 4, 0.15);
+        color: var(--warning);
+      }
+
+      .activities-grid {
+        display: grid;
+        gap: 1.1rem;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+
+      .activity-card {
+        background: rgba(255, 255, 255, 0.92);
+        border-radius: 20px;
+        padding: 1.25rem;
+        border: 1px solid rgba(21, 84, 246, 0.1);
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .activity-card h4 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+
+      .activity-card p {
+        margin: 0;
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(21, 84, 246, 0.1);
+        overflow: hidden;
+      }
+
+      .progress-bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(120deg, #0f9d58, #34a853);
+      }
+
+      .tab-group {
+        display: inline-flex;
+        border-radius: 999px;
+        background: rgba(21, 84, 246, 0.1);
+        padding: 0.25rem;
+      }
+
+      .tab-group button {
+        border: none;
+        border-radius: 999px;
+        padding: 0.5rem 1.35rem;
+        background: transparent;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--muted);
+      }
+
+      .tab-group button.active {
+        background: white;
+        color: var(--primary);
+        box-shadow: 0 4px 15px -12px rgba(15, 23, 42, 0.5);
+      }
+
+      .empty-state {
+        padding: 2rem;
+        text-align: center;
+        background: rgba(21, 84, 246, 0.04);
+        border-radius: 18px;
+        border: 1px dashed rgba(21, 84, 246, 0.2);
+        color: var(--muted);
+      }
+
+      @media (max-width: 980px) {
+        header {
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .dashboard {
+          grid-template-columns: 1fr;
+        }
+
+        nav button {
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Tablero de Control Docente</h1>
+      <div class="user-meta hidden" id="headerUserMeta">
+        <span id="headerUserName"></span>
+        <span class="badge" id="headerUserRole"></span>
+        <button id="logoutBtn" type="button">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="authSection">
+        <div class="auth-grid">
+          <div class="card" id="loginCard">
+            <h2>Bienvenido de nuevo</h2>
+            <p class="alert info">
+              Accede con tu correo institucional <strong>@potros.itson.edu.mx</strong>
+              para continuar.
+            </p>
+            <form id="loginForm">
+              <div>
+                <label for="loginEmail">Correo institucional</label>
+                <input
+                  type="email"
+                  id="loginEmail"
+                  required
+                  placeholder="nombre.apellido@potros.itson.edu.mx"
+                />
+              </div>
+              <div>
+                <label for="loginPassword">Contraseña</label>
+                <input
+                  type="password"
+                  id="loginPassword"
+                  required
+                  minlength="6"
+                  autocomplete="current-password"
+                />
+              </div>
+              <button class="primary" type="submit">Ingresar</button>
+              <p class="link-action">
+                ¿Aún no tienes cuenta?
+                <button type="button" id="showRegister">Crear cuenta</button>
+              </p>
+              <div class="alert error hidden" id="loginError"></div>
+            </form>
+          </div>
+
+          <div class="card hidden" id="registerCard">
+            <h2>Crear cuenta institucional</h2>
+            <p class="alert info">
+              Si eres el administrador principal utiliza exactamente el correo
+              <strong>isaac.paniagua@potros.itson.edu.mx</strong> para registrar el
+              primer acceso.
+            </p>
+            <form id="registerForm">
+              <div class="grid">
+                <div>
+                  <label for="registerName">Nombre completo</label>
+                  <input type="text" id="registerName" required minlength="4" />
+                </div>
+                <div>
+                  <label for="registerEmail">Correo institucional</label>
+                  <input
+                    type="email"
+                    id="registerEmail"
+                    required
+                    placeholder="nombre.apellido@potros.itson.edu.mx"
+                  />
+                </div>
+              </div>
+              <div class="grid">
+                <div>
+                  <label for="registerCareer">Carrera</label>
+                  <select id="registerCareer" required>
+                    <option value="">Selecciona una opción</option>
+                    <option value="software">Ingeniería en Software</option>
+                    <option value="manufactura">Ingeniería en Manufactura</option>
+                    <option value="mecatronica">Ingeniería en Mecatrónica</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="registerRole">Rol</label>
+                  <select id="registerRole" required>
+                    <option value="docente">Docente</option>
+                    <option value="auxiliar">Profesor auxiliar</option>
+                    <option value="administrador">Administrador</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid">
+                <div>
+                  <label for="registerPassword">Contraseña</label>
+                  <input type="password" id="registerPassword" required minlength="6" />
+                </div>
+                <div>
+                  <label for="registerPasswordConfirm">Confirmar contraseña</label>
+                  <input
+                    type="password"
+                    id="registerPasswordConfirm"
+                    required
+                    minlength="6"
+                  />
+                </div>
+              </div>
+              <button class="primary" type="submit">Crear cuenta</button>
+              <p class="link-action">
+                ¿Ya tienes cuenta?
+                <button type="button" id="showLogin">Iniciar sesión</button>
+              </p>
+              <div class="alert error hidden" id="registerError"></div>
+              <div class="alert success hidden" id="registerSuccess"></div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="dashboard" class="hidden">
+        <div class="dashboard">
+          <aside class="sidebar">
+            <div class="user-card">
+              <h3 id="sidebarName">Nombre del usuario</h3>
+              <div class="meta-list">
+                <span id="sidebarEmail"></span>
+                <span id="sidebarCareer"></span>
+              </div>
+            </div>
+            <nav>
+              <ul id="navigation"></ul>
+            </nav>
+          </aside>
+          <section class="content-area">
+            <div id="adminView" class="hidden">
+              <div class="grid stats" id="adminStats"></div>
+              <div class="card">
+                <div class="section-title">
+                  <span>Gestión estratégica</span>
+                  <button class="primary" id="printReport" type="button">
+                    Imprimir reporte general
+                  </button>
+                </div>
+                <div class="tab-group" role="tablist">
+                  <button class="active" data-tab="usuarios" type="button">
+                    Usuarios
+                  </button>
+                  <button data-tab="actividades" type="button">Actividades</button>
+                  <button data-tab="materias" type="button">Materias</button>
+                </div>
+                <div id="adminPanels">
+                  <div data-panel="usuarios" class="grid" style="margin-top: 1.5rem">
+                    <form id="inviteForm" class="card" style="padding: 1.25rem">
+                      <h3 style="margin-top: 0">Invitar nuevo usuario</h3>
+                      <p style="margin: 0; color: var(--muted); font-size: 0.9rem">
+                        Se enviará una invitación interna para que complete su registro.
+                      </p>
+                      <div class="grid" style="margin-top: 1rem">
+                        <div>
+                          <label for="inviteName">Nombre</label>
+                          <input type="text" id="inviteName" required />
+                        </div>
+                        <div>
+                          <label for="inviteEmail">Correo</label>
+                          <input
+                            type="email"
+                            id="inviteEmail"
+                            required
+                            placeholder="usuario@potros.itson.edu.mx"
+                          />
+                        </div>
+                      </div>
+                      <div class="grid">
+                        <div>
+                          <label for="inviteCareer">Carrera</label>
+                          <select id="inviteCareer" required>
+                            <option value="software">Ingeniería en Software</option>
+                            <option value="manufactura">Ingeniería en Manufactura</option>
+                            <option value="mecatronica">Ingeniería en Mecatrónica</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label for="inviteRole">Rol</label>
+                          <select id="inviteRole" required>
+                            <option value="docente">Docente</option>
+                            <option value="auxiliar">Profesor auxiliar</option>
+                            <option value="administrador">Administrador</option>
+                          </select>
+                        </div>
+                      </div>
+                      <button class="primary" type="submit">Registrar invitación</button>
+                      <div class="alert success hidden" id="inviteSuccess"></div>
+                      <div class="alert error hidden" id="inviteError"></div>
+                    </form>
+                    <div class="card" style="padding: 1.25rem">
+                      <h3 style="margin-top: 0">Usuarios registrados</h3>
+                      <div id="userTableContainer" style="margin-top: 1rem"></div>
+                    </div>
+                  </div>
+                  <div data-panel="actividades" class="hidden" style="margin-top: 1.5rem">
+                    <div class="grid">
+                      <form id="activityForm" class="card" style="padding: 1.25rem">
+                        <h3 style="margin-top: 0">Asignar nueva actividad</h3>
+                        <div class="grid" style="margin-top: 1rem">
+                          <div>
+                            <label for="activityTitle">Título</label>
+                            <input type="text" id="activityTitle" required />
+                          </div>
+                          <div>
+                            <label for="activityDueDate">Fecha límite</label>
+                            <input type="date" id="activityDueDate" required />
+                          </div>
+                        </div>
+                        <div>
+                          <label for="activityDescription">Descripción</label>
+                          <textarea
+                            id="activityDescription"
+                            rows="3"
+                            placeholder="Descripción y expectativas de la actividad"
+                            required
+                          ></textarea>
+                        </div>
+                        <div class="grid">
+                          <div>
+                            <label for="activityCareer">Carrera</label>
+                            <select id="activityCareer" required>
+                              <option value="software">Ingeniería en Software</option>
+                              <option value="manufactura">Ingeniería en Manufactura</option>
+                              <option value="mecatronica">Ingeniería en Mecatrónica</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label for="activityAssignee">Asignar a</label>
+                            <select id="activityAssignee" required>
+                              <option value="">Selecciona un docente</option>
+                            </select>
+                          </div>
+                        </div>
+                        <button class="primary" type="submit">Asignar actividad</button>
+                        <div class="alert success hidden" id="activitySuccess"></div>
+                        <div class="alert error hidden" id="activityError"></div>
+                      </form>
+                      <div class="card" style="padding: 1.25rem">
+                        <div class="section-title">
+                          <span>Actividades recientes</span>
+                          <span id="adminActivityCount"></span>
+                        </div>
+                        <div id="adminActivityList" style="margin-top: 1rem"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div data-panel="materias" class="hidden" style="margin-top: 1.5rem">
+                    <div class="card" style="padding: 1.25rem">
+                      <h3 style="margin-top: 0">Gestión de materias</h3>
+                      <p style="color: var(--muted); font-size: 0.95rem">
+                        Registra materias por carrera y asigna responsables para mantener la
+                        trazabilidad académica.
+                      </p>
+                      <form id="subjectForm" style="margin-top: 1.25rem">
+                        <div class="grid">
+                          <div>
+                            <label for="subjectName">Materia</label>
+                            <input type="text" id="subjectName" required />
+                          </div>
+                          <div>
+                            <label for="subjectCareer">Carrera</label>
+                            <select id="subjectCareer" required>
+                              <option value="software">Ingeniería en Software</option>
+                              <option value="manufactura">Ingeniería en Manufactura</option>
+                              <option value="mecatronica">Ingeniería en Mecatrónica</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label for="subjectOwner">Responsable</label>
+                          <input
+                            type="text"
+                            id="subjectOwner"
+                            placeholder="Nombre del docente responsable"
+                            required
+                          />
+                        </div>
+                        <button class="primary" type="submit">Agregar materia</button>
+                        <div class="alert success hidden" id="subjectSuccess"></div>
+                        <div class="alert error hidden" id="subjectError"></div>
+                      </form>
+                      <div id="subjectList" style="margin-top: 1.5rem"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="docenteView" class="hidden">
+              <div class="grid stats" id="teacherStats"></div>
+              <div class="card">
+                <div class="section-title">
+                  <span>Actividades asignadas</span>
+                  <span id="teacherActivityCount"></span>
+                </div>
+                <div id="teacherActivities" style="margin-top: 1.25rem"></div>
+              </div>
+            </div>
+
+            <div id="auxiliarView" class="hidden">
+              <div class="card">
+                <div class="section-title">
+                  <span>Actividades de apoyo</span>
+                  <span id="assistantActivityCount"></span>
+                </div>
+                <div id="assistantActivities" style="margin-top: 1.25rem"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signInWithEmailAndPassword,
+        createUserWithEmailAndPassword,
+        signOut,
+        updateProfile,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+        updateDoc,
+        addDoc,
+        collection,
+        getDocs,
+        onSnapshot,
+        query,
+        where,
+        serverTimestamp,
+        orderBy,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyBWa6nNgWGdsqS12OhqAfIlJcSbT59cLGs",
+        authDomain: "tablerocontroldocente.firebaseapp.com",
+        projectId: "tablerocontroldocente",
+        storageBucket: "tablerocontroldocente.firebasestorage.app",
+        messagingSenderId: "184781501380",
+        appId: "1:184781501380:web:cc14875f679e077f28ea91",
+      };
+
+      const ALLOWED_DOMAIN = "@potros.itson.edu.mx";
+      const ROOT_ADMIN_EMAIL = "isaac.paniagua@potros.itson.edu.mx";
+      const CAREER_LABELS = {
+        software: "Ingeniería en Software",
+        manufactura: "Ingeniería en Manufactura",
+        mecatronica: "Ingeniería en Mecatrónica",
+        global: "Administración general",
+      };
+
+      const ROLE_LABELS = {
+        administrador: "Administrador",
+        docente: "Docente",
+        auxiliar: "Profesor auxiliar",
+      };
+
+      const ROLE_BADGE_CLASS = {
+        administrador: "badge admin",
+        docente: "badge docente",
+        auxiliar: "badge auxiliar",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const loginCard = document.getElementById("loginCard");
+      const registerCard = document.getElementById("registerCard");
+      const showRegister = document.getElementById("showRegister");
+      const showLogin = document.getElementById("showLogin");
+      const loginError = document.getElementById("loginError");
+      const registerError = document.getElementById("registerError");
+      const registerSuccess = document.getElementById("registerSuccess");
+
+      const authSection = document.getElementById("authSection");
+      const dashboard = document.getElementById("dashboard");
+      const sidebarName = document.getElementById("sidebarName");
+      const sidebarEmail = document.getElementById("sidebarEmail");
+      const sidebarCareer = document.getElementById("sidebarCareer");
+      const navigation = document.getElementById("navigation");
+
+      const headerUserMeta = document.getElementById("headerUserMeta");
+      const headerUserName = document.getElementById("headerUserName");
+      const headerUserRole = document.getElementById("headerUserRole");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      const adminView = document.getElementById("adminView");
+      const docenteView = document.getElementById("docenteView");
+      const auxiliarView = document.getElementById("auxiliarView");
+
+      const adminStats = document.getElementById("adminStats");
+      const teacherStats = document.getElementById("teacherStats");
+      const teacherActivities = document.getElementById("teacherActivities");
+      const assistantActivities = document.getElementById("assistantActivities");
+      const teacherActivityCount = document.getElementById("teacherActivityCount");
+      const assistantActivityCount = document.getElementById("assistantActivityCount");
+
+      const inviteForm = document.getElementById("inviteForm");
+      const inviteSuccess = document.getElementById("inviteSuccess");
+      const inviteError = document.getElementById("inviteError");
+      const userTableContainer = document.getElementById("userTableContainer");
+
+      const activityForm = document.getElementById("activityForm");
+      const activitySuccess = document.getElementById("activitySuccess");
+      const activityError = document.getElementById("activityError");
+      const activityAssignee = document.getElementById("activityAssignee");
+      const adminActivityList = document.getElementById("adminActivityList");
+      const adminActivityCount = document.getElementById("adminActivityCount");
+
+      const subjectForm = document.getElementById("subjectForm");
+      const subjectSuccess = document.getElementById("subjectSuccess");
+      const subjectError = document.getElementById("subjectError");
+      const subjectList = document.getElementById("subjectList");
+
+      const printReport = document.getElementById("printReport");
+
+      const adminPanels = document
+        .getElementById("adminPanels")
+        .querySelectorAll("[data-panel]");
+      const adminTabs = document
+        .querySelector(".tab-group")
+        .querySelectorAll("button[data-tab]");
+
+      let currentUser = null;
+      let currentUserData = null;
+      let unsubscribeActivities = null;
+      let unsubscribeSubjects = null;
+
+      const formatDate = (date) =>
+        new Intl.DateTimeFormat("es-MX", {
+          dateStyle: "medium",
+        }).format(date);
+
+      const resetAlerts = (...elements) => {
+        elements.forEach((el) => {
+          el.classList.add("hidden");
+          el.textContent = "";
+        });
+      };
+
+      const ensureDomain = (email) =>
+        email.trim().toLowerCase().endsWith(ALLOWED_DOMAIN);
+
+      const isRootAdmin = (email) => email.trim().toLowerCase() === ROOT_ADMIN_EMAIL;
+
+      const toggleAuthCards = (showRegisterCard) => {
+        resetAlerts(loginError, registerError, registerSuccess);
+        if (showRegisterCard) {
+          loginCard.classList.add("hidden");
+          registerCard.classList.remove("hidden");
+        } else {
+          registerCard.classList.add("hidden");
+          loginCard.classList.remove("hidden");
+        }
+      };
+
+      showRegister.addEventListener("click", () => toggleAuthCards(true));
+      showLogin.addEventListener("click", () => toggleAuthCards(false));
+
+      const renderNavigation = (role) => {
+        navigation.innerHTML = "";
+        const navItems = [];
+        if (role === "administrador") {
+          navItems.push({ id: "admin", label: "Panel administrativo", target: adminView });
+        }
+        if (role === "docente") {
+          navItems.push({ id: "docente", label: "Panel docente", target: docenteView });
+        }
+        if (role === "auxiliar") {
+          navItems.push({ id: "auxiliar", label: "Panel de apoyo", target: auxiliarView });
+        }
+        if (navItems.length === 0) {
+          navItems.push({ id: "docente", label: "Panel docente", target: docenteView });
+        }
+
+        navItems.forEach((item, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = item.label;
+          button.dataset.target = item.id;
+          if (index === 0) {
+            button.classList.add("active");
+            item.target.classList.remove("hidden");
+          }
+          button.addEventListener("click", () => {
+            document
+              .querySelectorAll("nav button")
+              .forEach((btn) => btn.classList.remove("active"));
+            navItems.forEach((navItem) => navItem.target.classList.add("hidden"));
+            button.classList.add("active");
+            item.target.classList.remove("hidden");
+          });
+          navigation.appendChild(button);
+        });
+      };
+
+      const renderAdminStats = async () => {
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const statsByCareer = {
+          software: 0,
+          manufactura: 0,
+          mecatronica: 0,
+          global: 0,
+        };
+        const admins = [];
+        usersSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (statsByCareer[data.career] !== undefined) {
+            statsByCareer[data.career] += 1;
+          } else {
+            statsByCareer[data.career] = 1;
+          }
+          if (data.role === "administrador") {
+            admins.push(data);
+          }
+        });
+
+        adminStats.innerHTML = "";
+        Object.entries(statsByCareer).forEach(([career, total]) => {
+          const card = document.createElement("div");
+          card.className = "stat-card";
+          card.innerHTML = `
+            <h4>${CAREER_LABELS[career] || career}</h4>
+            <strong>${total}</strong>
+            <span style="color: var(--muted); font-size: 0.85rem">Usuarios activos</span>
+          `;
+          adminStats.appendChild(card);
+        });
+
+        const adminCard = document.createElement("div");
+        adminCard.className = "stat-card";
+        adminCard.innerHTML = `
+          <h4>Administradores</h4>
+          <strong>${admins.length}</strong>
+          <span style="color: var(--muted); font-size: 0.85rem">Responsables asignados</span>
+        `;
+        adminStats.appendChild(adminCard);
+      };
+
+      const renderUserTable = async () => {
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        if (usersSnapshot.empty) {
+          userTableContainer.innerHTML = `<div class="empty-state">No hay usuarios registrados todavía.</div>`;
+          return;
+        }
+
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Carrera</th>
+              <th>Rol</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        `;
+
+        const tbody = table.querySelector("tbody");
+        usersSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${data.displayName || "Sin nombre"}</td>
+            <td>${data.email}</td>
+            <td>${CAREER_LABELS[data.career] || data.career}</td>
+            <td><span class="${ROLE_BADGE_CLASS[data.role] || "badge"}">${
+            ROLE_LABELS[data.role] || data.role
+          }</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        userTableContainer.innerHTML = "";
+        userTableContainer.appendChild(table);
+      };
+
+      const renderSubjects = async () => {
+        if (unsubscribeSubjects) {
+          unsubscribeSubjects();
+        }
+        unsubscribeSubjects = onSnapshot(collection(db, "subjects"), (snapshot) => {
+          if (snapshot.empty) {
+            subjectList.innerHTML = `<div class="empty-state">Aún no se han registrado materias.</div>`;
+            return;
+          }
+          const list = document.createElement("div");
+          list.className = "grid";
+          snapshot.docs.forEach((docSnap) => {
+            const data = docSnap.data();
+            const card = document.createElement("div");
+            card.className = "activity-card";
+            card.innerHTML = `
+              <h4>${data.name}</h4>
+              <p><strong>Carrera:</strong> ${CAREER_LABELS[data.career] || data.career}</p>
+              <p><strong>Responsable:</strong> ${data.owner}</p>
+            `;
+            list.appendChild(card);
+          });
+          subjectList.innerHTML = "";
+          subjectList.appendChild(list);
+        });
+      };
+
+      const populateAssignees = async () => {
+        const usersSnapshot = await getDocs(
+          query(collection(db, "users"), where("role", "!=", "administrador"))
+        );
+        activityAssignee.innerHTML = '<option value="">Selecciona un docente</option>';
+        usersSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const option = document.createElement("option");
+          option.value = docSnap.id;
+          option.textContent = `${data.displayName || data.email} · ${CAREER_LABELS[data.career]}`;
+          activityAssignee.appendChild(option);
+        });
+      };
+
+      const renderActivitiesForAdmin = () => {
+        if (!currentUserData) return;
+        const qActivities = query(
+          collection(db, "activities"),
+          orderBy("createdAt", "desc")
+        );
+        if (unsubscribeActivities) {
+          unsubscribeActivities();
+        }
+        unsubscribeActivities = onSnapshot(qActivities, (snapshot) => {
+          if (snapshot.empty) {
+            adminActivityList.innerHTML = `<div class="empty-state">Aún no hay actividades asignadas.</div>`;
+            adminActivityCount.textContent = "0 actividades";
+            return;
+          }
+          const list = document.createElement("div");
+          list.className = "activities-grid";
+          snapshot.docs.forEach((docSnap) => {
+            const data = docSnap.data();
+            const card = document.createElement("div");
+            card.className = "activity-card";
+            const dueLabel = data.dueDateRaw
+              ? formatDate(new Date(data.dueDateRaw))
+              : data.dueDate && data.dueDate.toDate
+              ? formatDate(data.dueDate.toDate())
+              : "Sin fecha";
+            card.innerHTML = `
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem">
+                <h4>${data.title}</h4>
+                <span class="badge ${ROLE_BADGE_CLASS[data.roleTarget] || ""}">${
+              ROLE_LABELS[data.roleTarget] || "Docente"
+            }</span>
+              </div>
+              <p>${data.description}</p>
+              <p><strong>Asignado a:</strong> ${data.assignedToName || data.assignedTo}</p>
+              <p><strong>Fecha límite:</strong> ${dueLabel}</p>
+              <div class="progress-bar">
+                <span style="width:${data.status === "completada" ? "100" : "45"}%"></span>
+              </div>
+              <p><strong>Estatus:</strong> ${data.status || "Pendiente"}</p>
+            `;
+            list.appendChild(card);
+          });
+          adminActivityList.innerHTML = "";
+          adminActivityCount.textContent = `${snapshot.size} actividades`;
+          adminActivityList.appendChild(list);
+        });
+      };
+
+      const renderActivitiesForTeacher = (uid) => {
+        if (unsubscribeActivities) {
+          unsubscribeActivities();
+        }
+        const qActivities = query(
+          collection(db, "activities"),
+          where("assignedTo", "==", uid),
+          orderBy("createdAt", "desc")
+        );
+        unsubscribeActivities = onSnapshot(qActivities, (snapshot) => {
+          if (snapshot.empty) {
+            teacherActivities.innerHTML = `<div class="empty-state">No tienes actividades asignadas por el momento.</div>`;
+            teacherActivityCount.textContent = "0 actividades";
+            teacherStats.innerHTML = "";
+            return;
+          }
+          const list = document.createElement("div");
+          list.className = "activities-grid";
+          let completed = 0;
+          snapshot.docs.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.status === "completada") completed += 1;
+            const card = document.createElement("div");
+            card.className = "activity-card";
+            const dueLabel = data.dueDateRaw
+              ? formatDate(new Date(data.dueDateRaw))
+              : data.dueDate && data.dueDate.toDate
+              ? formatDate(data.dueDate.toDate())
+              : "Sin fecha";
+            card.innerHTML = `
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem">
+                <h4>${data.title}</h4>
+                <span class="badge">${CAREER_LABELS[data.career]}</span>
+              </div>
+              <p>${data.description}</p>
+              <p><strong>Fecha límite:</strong> ${dueLabel}</p>
+              <p><strong>Estatus:</strong> ${data.status}</p>
+              <button class="primary" data-action="complete" data-id="${docSnap.id}">
+                Marcar como completada
+              </button>
+            `;
+            const completeBtn = card.querySelector("[data-action='complete']");
+            completeBtn.addEventListener("click", async () => {
+              await updateDoc(doc(db, "activities", docSnap.id), {
+                status: "completada",
+                completedAt: serverTimestamp(),
+              });
+            });
+            if (data.status === "completada") {
+              completeBtn.disabled = true;
+              completeBtn.textContent = "Actividad completada";
+            }
+            list.appendChild(card);
+          });
+          teacherActivities.innerHTML = "";
+          teacherActivities.appendChild(list);
+          teacherActivityCount.textContent = `${snapshot.size} actividades`;
+
+          const progress = Math.round((completed / snapshot.size) * 100);
+          teacherStats.innerHTML = `
+            <div class="stat-card">
+              <h4>Avance general</h4>
+              <strong>${progress}%</strong>
+              <span style="color: var(--muted); font-size: 0.85rem">${completed} completadas de ${snapshot.size}</span>
+            </div>
+          `;
+        });
+      };
+
+      const renderActivitiesForAssistant = (career) => {
+        if (unsubscribeActivities) {
+          unsubscribeActivities();
+        }
+        const qActivities = query(
+          collection(db, "activities"),
+          where("career", "==", career),
+          orderBy("createdAt", "desc")
+        );
+        unsubscribeActivities = onSnapshot(qActivities, (snapshot) => {
+          if (snapshot.empty) {
+            assistantActivities.innerHTML = `<div class="empty-state">No se registran actividades para tu carrera.</div>`;
+            assistantActivityCount.textContent = "0 actividades";
+            return;
+          }
+          const list = document.createElement("div");
+          list.className = "activities-grid";
+          snapshot.docs.forEach((docSnap) => {
+            const data = docSnap.data();
+            const card = document.createElement("div");
+            card.className = "activity-card";
+            const dueLabel = data.dueDateRaw
+              ? formatDate(new Date(data.dueDateRaw))
+              : data.dueDate && data.dueDate.toDate
+              ? formatDate(data.dueDate.toDate())
+              : "Sin fecha";
+            card.innerHTML = `
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem">
+                <h4>${data.title}</h4>
+                <span class="badge">${data.status}</span>
+              </div>
+              <p>${data.description}</p>
+              <p><strong>Docente:</strong> ${data.assignedToName}</p>
+              <p><strong>Fecha límite:</strong> ${dueLabel}</p>
+            `;
+            list.appendChild(card);
+          });
+          assistantActivities.innerHTML = "";
+          assistantActivities.appendChild(list);
+          assistantActivityCount.textContent = `${snapshot.size} actividades`;
+        });
+      };
+
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        resetAlerts(loginError);
+        const email = loginForm.loginEmail.value.trim().toLowerCase();
+        const password = loginForm.loginPassword.value;
+        if (!ensureDomain(email)) {
+          loginError.textContent = "Debes utilizar tu correo institucional @potros.itson.edu.mx";
+          loginError.classList.remove("hidden");
+          return;
+        }
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+          loginForm.reset();
+        } catch (error) {
+          loginError.textContent =
+            "No fue posible iniciar sesión. Verifica tus credenciales o espera a que tu invitación sea aprobada.";
+          loginError.classList.remove("hidden");
+        }
+      });
+
+      registerForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        resetAlerts(registerError, registerSuccess);
+        const name = registerForm.registerName.value.trim();
+        const email = registerForm.registerEmail.value.trim().toLowerCase();
+        const career = registerForm.registerCareer.value;
+        const role = registerForm.registerRole.value;
+        const password = registerForm.registerPassword.value;
+        const passwordConfirm = registerForm.registerPasswordConfirm.value;
+
+        if (!ensureDomain(email)) {
+          registerError.textContent = "Solo se permiten cuentas institucionales @potros.itson.edu.mx";
+          registerError.classList.remove("hidden");
+          return;
+        }
+
+        if (password !== passwordConfirm) {
+          registerError.textContent = "Las contraseñas no coinciden.";
+          registerError.classList.remove("hidden");
+          return;
+        }
+
+        if (role === "administrador" && !isRootAdmin(email)) {
+          registerError.textContent =
+            "Solo el administrador raíz puede registrarse con rol de administrador desde este formulario.";
+          registerError.classList.remove("hidden");
+          return;
+        }
+
+        try {
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          await updateProfile(userCredential.user, { displayName: name });
+          await setDoc(doc(db, "users", userCredential.user.uid), {
+            uid: userCredential.user.uid,
+            displayName: name,
+            email,
+            career: isRootAdmin(email) ? "global" : career,
+            role: isRootAdmin(email) ? "administrador" : role,
+            createdAt: serverTimestamp(),
+          });
+          registerSuccess.textContent =
+            "Cuenta creada correctamente. Ya puedes acceder al tablero.";
+          registerSuccess.classList.remove("hidden");
+          registerForm.reset();
+        } catch (error) {
+          registerError.textContent =
+            "Ocurrió un error al crear tu cuenta. Verifica la información o intenta más tarde.";
+          registerError.classList.remove("hidden");
+        }
+      });
+
+      inviteForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        resetAlerts(inviteError, inviteSuccess);
+        const name = inviteForm.inviteName.value.trim();
+        const email = inviteForm.inviteEmail.value.trim().toLowerCase();
+        const career = inviteForm.inviteCareer.value;
+        const role = inviteForm.inviteRole.value;
+
+        if (!ensureDomain(email)) {
+          inviteError.textContent = "Solo puedes invitar cuentas @potros.itson.edu.mx";
+          inviteError.classList.remove("hidden");
+          return;
+        }
+
+        try {
+          await addDoc(collection(db, "invitations"), {
+            name,
+            email,
+            career,
+            role,
+            status: "pendiente",
+            createdAt: serverTimestamp(),
+            createdBy: currentUser?.uid,
+          });
+          inviteSuccess.textContent = "Invitación registrada. El usuario debe completar su registro.";
+          inviteSuccess.classList.remove("hidden");
+          inviteForm.reset();
+          await renderUserTable();
+          await renderAdminStats();
+        } catch (error) {
+          inviteError.textContent = "No se pudo registrar la invitación. Intenta nuevamente.";
+          inviteError.classList.remove("hidden");
+        }
+      });
+
+      activityForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        resetAlerts(activitySuccess, activityError);
+        const title = activityForm.activityTitle.value.trim();
+        const description = activityForm.activityDescription.value.trim();
+        const dueDate = activityForm.activityDueDate.value
+          ? new Date(activityForm.activityDueDate.value)
+          : null;
+        const career = activityForm.activityCareer.value;
+        const assignedTo = activityForm.activityAssignee.value;
+        if (!assignedTo) {
+          activityError.textContent = "Selecciona a quién asignar la actividad.";
+          activityError.classList.remove("hidden");
+          return;
+        }
+
+        try {
+          const userDoc = await getDoc(doc(db, "users", assignedTo));
+          await addDoc(collection(db, "activities"), {
+            title,
+            description,
+            career,
+            roleTarget: userDoc.exists() ? userDoc.data().role : "docente",
+            assignedTo,
+            assignedToName: userDoc.exists() ? userDoc.data().displayName : "Usuario",
+            dueDateRaw: dueDate ? dueDate.toISOString() : null,
+            status: "pendiente",
+            createdAt: serverTimestamp(),
+            createdBy: currentUser?.uid,
+          });
+          activitySuccess.textContent = "Actividad asignada correctamente.";
+          activitySuccess.classList.remove("hidden");
+          activityForm.reset();
+        } catch (error) {
+          activityError.textContent = "No fue posible asignar la actividad.";
+          activityError.classList.remove("hidden");
+        }
+      });
+
+      subjectForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        resetAlerts(subjectSuccess, subjectError);
+        const name = subjectForm.subjectName.value.trim();
+        const career = subjectForm.subjectCareer.value;
+        const owner = subjectForm.subjectOwner.value.trim();
+        try {
+          await addDoc(collection(db, "subjects"), {
+            name,
+            career,
+            owner,
+            createdAt: serverTimestamp(),
+            createdBy: currentUser?.uid,
+          });
+          subjectSuccess.textContent = "Materia registrada exitosamente.";
+          subjectSuccess.classList.remove("hidden");
+          subjectForm.reset();
+        } catch (error) {
+          subjectError.textContent = "No se pudo registrar la materia.";
+          subjectError.classList.remove("hidden");
+        }
+      });
+
+      adminTabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          adminTabs.forEach((btn) => btn.classList.remove("active"));
+          tab.classList.add("active");
+          const target = tab.dataset.tab;
+          adminPanels.forEach((panel) => {
+            if (panel.dataset.panel === target) {
+              panel.classList.remove("hidden");
+            } else {
+              panel.classList.add("hidden");
+            }
+          });
+        });
+      });
+
+      printReport.addEventListener("click", () => {
+        window.print();
+      });
+
+      logoutBtn.addEventListener("click", () => signOut(auth));
+
+      const loadUserData = async (uid) => {
+        const userDoc = await getDoc(doc(db, "users", uid));
+        if (!userDoc.exists()) {
+          throw new Error("El usuario no tiene un perfil asociado.");
+        }
+        return userDoc.data();
+      };
+
+      const renderDashboard = async (user, userData) => {
+        currentUser = user;
+        currentUserData = userData;
+        sidebarName.textContent = userData.displayName || user.email;
+        sidebarEmail.textContent = user.email;
+        sidebarCareer.textContent = CAREER_LABELS[userData.career] || userData.career;
+        headerUserName.textContent = userData.displayName || user.email;
+        headerUserRole.textContent = ROLE_LABELS[userData.role] || userData.role;
+        headerUserRole.className = ROLE_BADGE_CLASS[userData.role] || "badge";
+        headerUserMeta.classList.remove("hidden");
+        authSection.classList.add("hidden");
+        dashboard.classList.remove("hidden");
+
+        renderNavigation(userData.role);
+
+        if (userData.role === "administrador") {
+          adminView.classList.remove("hidden");
+          await renderAdminStats();
+          await renderUserTable();
+          await populateAssignees();
+          renderActivitiesForAdmin();
+          await renderSubjects();
+        } else if (userData.role === "docente") {
+          docenteView.classList.remove("hidden");
+          renderActivitiesForTeacher(user.uid);
+        } else if (userData.role === "auxiliar") {
+          auxiliarView.classList.remove("hidden");
+          renderActivitiesForAssistant(userData.career);
+        }
+      };
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          currentUser = null;
+          currentUserData = null;
+          authSection.classList.remove("hidden");
+          dashboard.classList.add("hidden");
+          headerUserMeta.classList.add("hidden");
+          if (unsubscribeActivities) unsubscribeActivities();
+          if (unsubscribeSubjects) unsubscribeSubjects();
+          return;
+        }
+
+        try {
+          const userData = await loadUserData(user.uid);
+          await renderDashboard(user, userData);
+        } catch (error) {
+          await setDoc(
+            doc(db, "users", user.uid),
+            {
+              uid: user.uid,
+              displayName: user.displayName || user.email,
+              email: user.email,
+              career: "software",
+              role: "docente",
+              createdAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+          const userData = await loadUserData(user.uid);
+          await renderDashboard(user, userData);
+        }
+      });
+    </script>
+  </body>
+</html>
