@@ -31,6 +31,32 @@ const STATUS_COLORS = {
   completada: "#10b981",
 };
 
+let resizeFrame = null;
+
+function syncHeaderHeight() {
+  const header = document.querySelector(".app-header");
+  const headerHeight = header ? header.offsetHeight : 0;
+  document.documentElement.style.setProperty(
+    "--header-height",
+    `${headerHeight}px`,
+  );
+}
+
+function scheduleHeaderSync() {
+  if (resizeFrame) cancelAnimationFrame(resizeFrame);
+  resizeFrame = requestAnimationFrame(syncHeaderHeight);
+}
+
+function updateLayoutMode() {
+  const body = document.body;
+  const dashboardVisible =
+    currentUser !== null &&
+    elements.dashboard &&
+    !elements.dashboard.classList.contains("hidden");
+  body.classList.toggle("dashboard-active", dashboardVisible);
+  body.classList.toggle("auth-active", !dashboardVisible);
+}
+
 const initialUsers = [
   {
     id: "u-admin-1",
@@ -224,6 +250,10 @@ const elements = {};
 
 document.addEventListener("DOMContentLoaded", () => {
   cacheDomElements();
+  updateLayoutMode();
+  scheduleHeaderSync();
+  window.addEventListener("resize", scheduleHeaderSync);
+  window.addEventListener("orientationchange", scheduleHeaderSync);
   hideLoader();
   populateUserSelector(elements.userSelector);
   attachEventListeners();
@@ -356,6 +386,8 @@ function loginUser(user) {
   if (elements.authSection) elements.authSection.classList.add("hidden");
   if (elements.dashboard) elements.dashboard.classList.remove("hidden");
   if (elements.headerUserMeta) elements.headerUserMeta.classList.remove("hidden");
+  updateLayoutMode();
+  scheduleHeaderSync();
 
   if (elements.headerUserName) elements.headerUserName.textContent = user.name;
   if (elements.headerUserRole) {
@@ -377,6 +409,8 @@ function handleLogout() {
   if (elements.dashboard) elements.dashboard.classList.add("hidden");
   if (elements.authSection) elements.authSection.classList.remove("hidden");
   if (elements.headerUserMeta) elements.headerUserMeta.classList.add("hidden");
+  updateLayoutMode();
+  scheduleHeaderSync();
   if (elements.headerUserName) elements.headerUserName.textContent = "";
   if (elements.headerUserRole) {
     elements.headerUserRole.textContent = "";
