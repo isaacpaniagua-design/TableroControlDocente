@@ -286,6 +286,19 @@ button.primary:hover {
   border: 1px solid rgba(43, 147, 72, 0.18);
 }
 
+.import-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.import-toolbar #importTeachersAlert {
+  margin: 0.5rem 0 0;
+  width: 100%;
+}
+
 /* --- Estilos del Dashboard --- */
 .dashboard {
   display: grid;
