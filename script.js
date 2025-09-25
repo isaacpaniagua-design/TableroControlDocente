@@ -40,7 +40,7 @@ const CAREER_LABELS = {
   software: "Ing. en Software",
   manufactura: "Ing. en Manufactura",
   mecatronica: "Ing. en Mecatrónica",
-  global: "Global",
+  global: "General (todas las carreras)",
 };
 const ROLE_LABELS = {
   administrador: "Admin",
@@ -576,13 +576,14 @@ const setupAdminActivityManagement = () => {
     const title = formData.get("title")?.trim();
     const dueDate = formData.get("dueDate");
     const description = formData.get("description")?.trim();
+    const career = formData.get("career");
     const responsibleRole = formData.get("responsibleRole");
     const responsibleEmail = formData
       .get("responsibleEmail")
       ?.trim()
       .toLowerCase();
 
-    if (!title || !dueDate || !responsibleRole) {
+    if (!title || !dueDate || !responsibleRole || !career) {
       showAlert(
         adminActivityAlert,
         "Completa los campos obligatorios para registrar la actividad.",
@@ -597,6 +598,7 @@ const setupAdminActivityManagement = () => {
         title,
         dueDate,
         description: description || "",
+        career,
         responsibleRole,
         status: "pendiente",
         createdAt: serverTimestamp(),
@@ -675,75 +677,126 @@ const renderAdminActivities = () => {
 
   const q = query(collection(db, "activities"), orderBy("createdAt", "desc"));
   const unsubscribe = onSnapshot(q, (snapshot) => {
-    if (snapshot.empty) {
-      adminActivityList.innerHTML = `<div class="empty-state">No hay actividades registradas.</div>`;
-      return;
-    }
-
-    let tableHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>Actividad</th>
-            <th>Responsable</th>
-            <th>Fecha límite</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
+    const groupedActivities = new Map();
 
     snapshot.docs.forEach((docSnap) => {
       const activity = docSnap.data();
-      const status = activity.status || "pendiente";
-      const statusOptions = ACTIVITY_STATUS.map(
-        (s) =>
-          `<option value="${s}" ${status === s ? "selected" : ""}>${
-            ACTIVITY_STATUS_LABELS[s]
-          }</option>`
-      ).join("");
-      const responsibleLabel =
-        ROLE_LABELS[activity.responsibleRole] || activity.responsibleRole || "-";
-      const description = activity.description
-        ? `<small>${escapeHTML(activity.description)}</small>`
-        : "<small>Sin descripción</small>";
-
-      tableHTML += `
-        <tr>
-          <td>${escapeHTML(activity.title || "Sin título")}<br>${description}</td>
-          <td>${responsibleLabel}${
-        activity.responsibleEmail
-          ? `<br><small>${escapeHTML(activity.responsibleEmail)}</small>`
-          : ""
-      }</td>
-          <td>${formatDueDate(activity.dueDate)}</td>
-          <td>
-            <div class="activity-status-cell">
-              ${getStatusBadge(status)}
-              <select class="activity-status-select" data-id="${docSnap.id}">
-                ${statusOptions}
-              </select>
-            </div>
-          </td>
-          <td>
-            <div class="action-buttons">
-              <button
-                class="delete-btn delete-activity-btn"
-                data-id="${docSnap.id}"
-                title="Eliminar actividad"
-                type="button"
-              >
-                <i data-lucide="trash-2"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
+      const careerKey = activity.career || "global";
+      if (!groupedActivities.has(careerKey)) {
+        groupedActivities.set(careerKey, []);
+      }
+      groupedActivities.get(careerKey).push({ id: docSnap.id, ...activity });
     });
 
-    tableHTML += `</tbody></table>`;
-    adminActivityList.innerHTML = tableHTML;
+    const defaultOrder = ["software", "manufactura", "mecatronica", "global"];
+    const extraCareers = Array.from(groupedActivities.keys()).filter(
+      (career) => !defaultOrder.includes(career)
+    );
+    const orderedCareers = [...defaultOrder, ...extraCareers];
+
+    const sectionsHTML = orderedCareers
+      .map((careerKey) => {
+        const activities = groupedActivities.get(careerKey) || [];
+        const careerLabel = CAREER_LABELS[careerKey] || careerKey;
+        const hasActivities = activities.length > 0;
+        const countLabel = hasActivities
+          ? `${activities.length} ${
+              activities.length === 1 ? "actividad" : "actividades"
+            } registradas`
+          : "Sin actividades registradas";
+
+        let sectionContent = `
+          <section class="activity-career-group">
+            <div class="activity-group-header">
+              <h3>${careerLabel}</h3>
+              <span class="activity-group-count${
+                hasActivities ? "" : " empty"
+              }">${countLabel}</span>
+            </div>
+        `;
+
+        if (!hasActivities) {
+          sectionContent += `
+            <div class="empty-state">
+              No hay actividades registradas para ${careerLabel}.
+            </div>
+          `;
+        } else {
+          const rows = activities
+            .map((activity) => {
+              const status = activity.status || "pendiente";
+              const statusOptions = ACTIVITY_STATUS.map(
+                (s) =>
+                  `<option value="${s}" ${status === s ? "selected" : ""}>${
+                    ACTIVITY_STATUS_LABELS[s]
+                  }</option>`
+              ).join("");
+              const responsibleLabel =
+                ROLE_LABELS[activity.responsibleRole] ||
+                activity.responsibleRole ||
+                "-";
+              const description = activity.description
+                ? `<small>${escapeHTML(activity.description)}</small>`
+                : "<small>Sin descripción</small>";
+
+              return `
+                <tr>
+                  <td>${escapeHTML(activity.title || "Sin título")}<br>${description}</td>
+                  <td>${responsibleLabel}${
+                activity.responsibleEmail
+                  ? `<br><small>${escapeHTML(activity.responsibleEmail)}</small>`
+                  : ""
+              }</td>
+                  <td>${formatDueDate(activity.dueDate)}</td>
+                  <td>
+                    <div class="activity-status-cell">
+                      ${getStatusBadge(status)}
+                      <select class="activity-status-select" data-id="${activity.id}">
+                        ${statusOptions}
+                      </select>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button
+                        class="delete-btn delete-activity-btn"
+                        data-id="${activity.id}"
+                        title="Eliminar actividad"
+                        type="button"
+                      >
+                        <i data-lucide="trash-2"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            })
+            .join("");
+
+          sectionContent += `
+            <table>
+              <thead>
+                <tr>
+                  <th>Actividad</th>
+                  <th>Responsable</th>
+                  <th>Fecha límite</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          `;
+        }
+
+        sectionContent += `</section>`;
+        return sectionContent;
+      })
+      .join("");
+
+    adminActivityList.innerHTML = sectionsHTML;
     lucide.createIcons();
   });
 
