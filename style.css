@@ -373,6 +373,14 @@ table {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(42, 157, 143, 0.12);
 }
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-responsive table {
+  min-width: 720px;
+}
 th,
 td {
   padding: 0.9rem 1.1rem;
