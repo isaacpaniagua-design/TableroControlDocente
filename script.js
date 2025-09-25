@@ -53,6 +53,185 @@ const ROLE_BADGE_CLASS = {
   auxiliar: "badge auxiliar",
 };
 
+const SOFTWARE_TEACHERS = [
+  {
+    name: "Aarón Gilberto León Flores",
+    employeeId: "00000092313",
+    controlNumber: "87007190",
+    potroEmail: "aaron.leon92313@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 165 7826",
+  },
+  {
+    name: "Arturo García Saiza",
+    employeeId: "00000090476",
+    controlNumber: "87006214",
+    potroEmail: "arturo.garcia90476@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 149 1249",
+  },
+  {
+    name: "Bertha Julia Valle Cruz",
+    employeeId: "00000013648",
+    controlNumber: "85000551",
+    potroEmail: "bertha.valle13648@potros.itson.edu.mx",
+    institutionalEmail: "bvalle@itson.edu.mx",
+    phone: "(622) 109 2074",
+  },
+  {
+    name: "Carlos Alberto Ruiz Castrejón",
+    employeeId: "00000231195",
+    controlNumber: null,
+    potroEmail: "carlos.ruizc@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: null,
+  },
+  {
+    name: "Cynthia Beatriz Pérez Castro",
+    employeeId: "00000160602",
+    controlNumber: "85000882",
+    potroEmail: "cynthia.perez@potros.itson.edu.mx",
+    institutionalEmail: "cynthia.perez@itson.edu.mx",
+    phone: "(644) 203 2652",
+  },
+  {
+    name: "Eduardo Lara García",
+    employeeId: "00000017041",
+    controlNumber: "87006213",
+    potroEmail: "eduardo.garcia17041@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 107 2068",
+  },
+  {
+    name: "Isaac Noé Paniagua Ruiz",
+    employeeId: "00000099645",
+    controlNumber: "89003371",
+    potroEmail: "isaac.paniagua@potros.itson.edu.mx",
+    institutionalEmail: "isaac.paniagua@itson.edu.mx",
+    phone: "(622) 107 2441",
+  },
+  {
+    name: "Jesús Abraham Zazueta Castillo",
+    employeeId: "00000099610",
+    controlNumber: "87006157",
+    potroEmail: "jesus.zazueta99610@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 172 9061",
+  },
+  {
+    name: "Jesús Antonio Pérez Ceceña",
+    employeeId: "00000009726",
+    controlNumber: "87005932",
+    potroEmail: "jesus.perez9726@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 227 5714",
+  },
+  {
+    name: "Jesús Carlos Gaytán Salazar",
+    employeeId: "00000262383",
+    controlNumber: null,
+    potroEmail: "jesuscarlosgaytan@gmail.com",
+    institutionalEmail: null,
+    phone: null,
+  },
+  {
+    name: "Jesús Rigoberto Villavicencio Navarro",
+    employeeId: "00000162447",
+    controlNumber: "89003065",
+    potroEmail: "jesus.villavicencio162447@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 227 5527",
+  },
+  {
+    name: "Jorge Alberto Norzagaray Mora",
+    employeeId: "00000016329",
+    controlNumber: "87005932",
+    potroEmail: "jorge.norzagaray16329@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 100 4274",
+  },
+  {
+    name: "Juan Manuel Osuna Aceves",
+    employeeId: "00000019413",
+    controlNumber: "87001734",
+    potroEmail: "juan.osuna19413@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 147 7961",
+  },
+  {
+    name: "Julio Isaac Nava Cordero",
+    employeeId: "00000092307",
+    controlNumber: "87007034",
+    potroEmail: "julio.nava92307@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 100 2760",
+  },
+  {
+    name: "Marco Antonio Tellechea Rodríguez",
+    employeeId: "00000019294",
+    controlNumber: "87902065",
+    potroEmail: "marco.tellechea19294@potros.itson.edu.mx",
+    institutionalEmail: "mtellechea@itson.edu.mx",
+    phone: "(622) 109 0416",
+  },
+  {
+    name: "Miguel Ángel Moroyoqui Parra",
+    employeeId: "00000020641",
+    controlNumber: "87004412",
+    potroEmail: "miguel.moroyoqui20641@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 120 0257",
+  },
+  {
+    name: "Ricardo Daniel Carrasco Correa",
+    employeeId: "00000020122",
+    controlNumber: "87005261",
+    potroEmail: "ricardo.carrasco20122@potros.itson.edu.mx",
+    institutionalEmail: "ricardo.carrasco@itson.edu.mx",
+    phone: "(622) 118 7051",
+  },
+  {
+    name: "Roberto Limon Ulloa",
+    employeeId: "00000019401",
+    controlNumber: "85000836",
+    potroEmail: "roberto.limon@potros.itson.edu.mx",
+    institutionalEmail: "rlimon@itson.edu.mx",
+    phone: "(622) 108 8833",
+  },
+  {
+    name: "Saúl Grijalva Varillas",
+    employeeId: "00000062125",
+    controlNumber: "89002789",
+    potroEmail: "saul.grijalva62125@potros.itson.edu.mx",
+    institutionalEmail: "saul.grijalva@itson.edu.mx",
+    phone: "(622) 103 2365",
+  },
+  {
+    name: "Sergio Castellanos Bustamante",
+    employeeId: "00000090851",
+    controlNumber: null,
+    potroEmail: "sergio.castellanos90851@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: null,
+  },
+  {
+    name: "Vinko Antonio Nevescanín Moreno",
+    employeeId: "00000206923",
+    controlNumber: "87007385",
+    potroEmail: "vinko.nevescanin206923@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 123 6661",
+  },
+  {
+    name: "Zaira Guadalupe Bermúdez Pérez",
+    employeeId: "00000091125",
+    controlNumber: "87006990",
+    potroEmail: "zaira.bermudez91125@potros.itson.edu.mx",
+    institutionalEmail: null,
+    phone: "(622) 127 5763",
+  },
+];
+
 // --- Inicialización de Firebase ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -75,6 +254,8 @@ const navigation = document.getElementById("navigation");
 const userTableContainer = document.getElementById("userTableContainer");
 const inviteUserForm = document.getElementById("inviteUserForm");
 const inviteAlert = document.getElementById("inviteAlert");
+const importTeachersBtn = document.getElementById("importTeachersBtn");
+const importTeachersAlert = document.getElementById("importTeachersAlert");
 const adminView = document.getElementById("adminView");
 const docenteView = document.getElementById("docenteView");
 const auxiliarView = document.getElementById("auxiliarView");
@@ -160,6 +341,98 @@ const formatDueDate = (value) => {
 const getStatusBadge = (status) => {
   const label = ACTIVITY_STATUS_LABELS[status] || status;
   return `<span class="status-badge status-${status}">${label}</span>`;
+};
+
+const normalizeTeacherField = (value) => {
+  if (value === undefined || value === null) return null;
+  const trimmed = value.toString().trim();
+  if (!trimmed || trimmed.toUpperCase() === "NA") return null;
+  return trimmed;
+};
+
+const importSoftwareTeachers = async () => {
+  if (!importTeachersAlert) {
+    console.warn("No se encontró el contenedor para las alertas de importación.");
+    return;
+  }
+
+  if (!currentUserData || currentUserData.role !== "administrador") {
+    showAlert(
+      importTeachersAlert,
+      "Solo los administradores pueden importar docentes.",
+      "error"
+    );
+    return;
+  }
+
+  showLoader(true);
+  let created = 0;
+  let updated = 0;
+  const errors = [];
+
+  try {
+    for (const teacher of SOFTWARE_TEACHERS) {
+      const teacherId =
+        normalizeTeacherField(teacher.employeeId) ||
+        normalizeTeacherField(teacher.controlNumber) ||
+        normalizeTeacherField(teacher.potroEmail);
+
+      if (!teacherId) {
+        errors.push(`${teacher.name} (sin identificador)`);
+        continue;
+      }
+
+      const teacherRef = doc(db, "teachers", teacherId);
+      const teacherSnap = await getDoc(teacherRef);
+
+      const teacherData = {
+        name: teacher.name ? teacher.name.trim() : "",
+        employeeId: normalizeTeacherField(teacher.employeeId),
+        controlNumber: normalizeTeacherField(teacher.controlNumber),
+        potroEmail: normalizeTeacherField(teacher.potroEmail),
+        institutionalEmail: normalizeTeacherField(teacher.institutionalEmail),
+        phone: normalizeTeacherField(teacher.phone),
+        career: "software",
+        role: "docente",
+        updatedAt: serverTimestamp(),
+        importedBy: currentUser?.uid || null,
+        importedByEmail: currentUserData?.email || null,
+      };
+
+      if (!teacherSnap.exists()) {
+        teacherData.createdAt = serverTimestamp();
+        created += 1;
+      } else {
+        updated += 1;
+      }
+
+      await setDoc(teacherRef, teacherData, { merge: true });
+    }
+
+    let message = `Proceso completado. ${created} docentes registrados y ${updated} actualizados.`;
+    let type = "success";
+
+    if (!created && !updated && errors.length === 0) {
+      message = "No hay cambios por importar, los docentes ya están registrados.";
+      type = "info";
+    }
+
+    if (errors.length) {
+      type = "error";
+      message += ` No se pudieron importar: ${errors.join(", ")}.`;
+    }
+
+    showAlert(importTeachersAlert, message, type, 7000);
+  } catch (error) {
+    console.error("Error al importar docentes:", error);
+    showAlert(
+      importTeachersAlert,
+      "Ocurrió un error inesperado durante la importación.",
+      "error"
+    );
+  } finally {
+    showLoader(false);
+  }
 };
 
 // --- Lógica de Renderizado ---
@@ -799,6 +1072,10 @@ const handleEditUser = async (userId) => {
 };
 
 // --- Event Listener para el formulario de invitación ---
+if (importTeachersBtn) {
+  importTeachersBtn.addEventListener("click", importSoftwareTeachers);
+}
+
 inviteUserForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   showLoader(true);
