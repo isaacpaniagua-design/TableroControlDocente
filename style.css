@@ -39,8 +39,7 @@ a {
 
 /* Header */
 .app-header {
-  position: sticky;
-  top: 0;
+  position: static;
   z-index: 20;
   background: linear-gradient(110deg, rgba(37, 99, 235, 0.9), rgba(30, 64, 175, 0.85));
   color: white;
