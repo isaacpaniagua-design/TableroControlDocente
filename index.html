@@ -127,13 +127,26 @@
               <p>
                 Accede con tu correo institucional
                 <strong>@potros.itson.edu.mx</strong> y gestiona tus tareas sin
-                complicaciones.
+                complicaciones. Selecciona uno de los perfiles demo para explorar la plataforma.
               </p>
-              <form>
-                <button class="primary" type="button" id="googleLoginButton">
-                  <i data-lucide="log-in"></i>
-                  <span>Ingresar con Google</span>
-                </button>
+              <form id="loginForm">
+                <div class="form-field">
+                  <label for="userSelector">Selecciona un usuario demo</label>
+                  <select id="userSelector" required>
+                    <option value="" disabled selected>
+                      Elige un perfil para iniciar sesión
+                    </option>
+                  </select>
+                  <p class="form-help">
+                    Los perfiles disponibles simulan los roles de administrador, docente y auxiliar.
+                  </p>
+                </div>
+                <div class="form-actions">
+                  <button class="primary" type="submit">
+                    <i data-lucide="log-in"></i>
+                    <span>Ingresar a la plataforma</span>
+                  </button>
+                </div>
               </form>
               <div class="alert error" id="loginError"></div>
             </div>
@@ -391,7 +404,7 @@
                     </p>
                   </div>
                 </div>
-                <div id="teacherActivities" class="panel-content"></div>
+                <div id="teacherActivities" class="activity-cards"></div>
               </div>
             </div>
 
