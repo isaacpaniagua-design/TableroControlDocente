@@ -391,6 +391,10 @@ td small {
   color: var(--muted);
   font-size: 0.85rem;
 }
+.table-placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
 .badge {
   display: inline-flex;
   align-items: center;

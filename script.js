@@ -327,6 +327,11 @@ const escapeHTML = (value = "") =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+const formatProfileValue = (value) =>
+  value && value.toString().trim()
+    ? escapeHTML(value)
+    : '<span class="table-placeholder">Sin registro</span>';
+
 const formatDueDate = (value) => {
   if (!value) return "Sin fecha";
   const date = new Date(value);
@@ -526,7 +531,19 @@ const renderUserTable = () => {
     }
     let tableHTML = `
       <table>
-        <thead><tr><th>Nombre</th><th>Carrera</th><th>Rol</th><th>Acciones</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>ID</th>
+            <th>Número de Control</th>
+            <th>Correo Potro</th>
+            <th>Correo Institucional</th>
+            <th>Celular</th>
+            <th>Carrera</th>
+            <th>Rol</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
         <tbody>
     `;
     snapshot.docs.forEach((docSnap) => {
@@ -543,12 +560,25 @@ const renderUserTable = () => {
       const roleLabel = escapeHTML(
         ROLE_LABELS[roleKey] || roleKey || "Rol no especificado"
       );
+      const teacherProfile = user.teacherProfile || {};
+      const employeeId = formatProfileValue(teacherProfile.employeeId);
+      const controlNumber = formatProfileValue(teacherProfile.controlNumber);
+      const potroEmail = formatProfileValue(teacherProfile.potroEmail);
+      const institutionalEmail = formatProfileValue(
+        teacherProfile.institutionalEmail
+      );
+      const phone = formatProfileValue(teacherProfile.phone);
 
       tableHTML += `
         <tr>
           <td>${displayName}${
         email ? `<br><small>${email}</small>` : "<br><small>Sin correo registrado</small>"
       }</td>
+          <td>${employeeId}</td>
+          <td>${controlNumber}</td>
+          <td>${potroEmail}</td>
+          <td>${institutionalEmail}</td>
+          <td>${phone}</td>
           <td>${careerLabel}</td>
           <td><span class="${roleBadgeClass}">${roleLabel}</span></td>
           <td>
