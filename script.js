@@ -78,12 +78,19 @@ const inviteAlert = document.getElementById("inviteAlert");
 const adminView = document.getElementById("adminView");
 const docenteView = document.getElementById("docenteView");
 const auxiliarView = document.getElementById("auxiliarView");
+const adminActivityForm = document.getElementById("adminActivityForm");
+const adminActivityList = document.getElementById("adminActivityList");
+const adminActivityAlert = document.getElementById("adminActivityAlert");
+const auxiliarActivityList = document.getElementById("auxiliarActivityList");
+const auxiliarActivityAlert = document.getElementById("auxiliarActivityAlert");
 
 let currentUser = null;
 let currentUserData = null;
 let usersChart = null;
 let activitiesChart = null;
 let unsubscribers = [];
+let adminActivitiesInitialized = false;
+let auxiliarActivitiesInitialized = false;
 
 // --- Funciones de Utilidad ---
 const showLoader = (show) => loader.classList.toggle("hidden", !show);
@@ -121,6 +128,38 @@ const closeModal = () => {
 const cleanupSubscriptions = () => {
   unsubscribers.forEach((unsub) => unsub());
   unsubscribers = [];
+};
+
+const ACTIVITY_STATUS = ["pendiente", "en_progreso", "completada"];
+const ACTIVITY_STATUS_LABELS = {
+  pendiente: "Pendiente",
+  en_progreso: "En progreso",
+  completada: "Completada",
+};
+
+const escapeHTML = (value = "") =>
+  value
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const formatDueDate = (value) => {
+  if (!value) return "Sin fecha";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("es-MX", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const getStatusBadge = (status) => {
+  const label = ACTIVITY_STATUS_LABELS[status] || status;
+  return `<span class="status-badge status-${status}">${label}</span>`;
 };
 
 // --- Lógica de Renderizado ---
@@ -165,6 +204,314 @@ const renderUserTable = () => {
   unsubscribers.push(unsubscribe);
 };
 
+const setupAdminActivityManagement = () => {
+  if (
+    adminActivitiesInitialized ||
+    !adminActivityForm ||
+    !adminActivityList ||
+    !adminActivityAlert
+  ) {
+    return;
+  }
+
+  adminActivityForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!currentUserData) return;
+
+    const formData = new FormData(adminActivityForm);
+    const title = formData.get("title")?.trim();
+    const dueDate = formData.get("dueDate");
+    const description = formData.get("description")?.trim();
+    const responsibleRole = formData.get("responsibleRole");
+    const responsibleEmail = formData
+      .get("responsibleEmail")
+      ?.trim()
+      .toLowerCase();
+
+    if (!title || !dueDate || !responsibleRole) {
+      showAlert(
+        adminActivityAlert,
+        "Completa los campos obligatorios para registrar la actividad.",
+        "error"
+      );
+      return;
+    }
+
+    showLoader(true);
+    try {
+      const payload = {
+        title,
+        dueDate,
+        description: description || "",
+        responsibleRole,
+        status: "pendiente",
+        createdAt: serverTimestamp(),
+        createdBy: currentUserData.email,
+        createdByName: currentUserData.displayName,
+      };
+      if (responsibleEmail) {
+        payload.responsibleEmail = responsibleEmail;
+      }
+
+      await addDoc(collection(db, "activities"), payload);
+      adminActivityForm.reset();
+      showAlert(
+        adminActivityAlert,
+        "Actividad registrada correctamente.",
+        "success"
+      );
+    } catch (error) {
+      showAlert(
+        adminActivityAlert,
+        "No se pudo registrar la actividad. Intenta nuevamente.",
+        "error"
+      );
+      console.error("Error creating activity:", error);
+    } finally {
+      showLoader(false);
+    }
+  });
+
+  adminActivityList.addEventListener("change", async (e) => {
+    const target = e.target;
+    if (!target.classList.contains("activity-status-select")) return;
+
+    const activityId = target.dataset.id;
+    const newStatus = target.value;
+    if (!ACTIVITY_STATUS.includes(newStatus)) return;
+
+    showLoader(true);
+    try {
+      await updateDoc(doc(db, "activities", activityId), {
+        status: newStatus,
+      });
+      showAlert(
+        adminActivityAlert,
+        "Estado de la actividad actualizado.",
+        "success",
+        2500
+      );
+    } catch (error) {
+      showAlert(
+        adminActivityAlert,
+        "Error al actualizar el estado de la actividad.",
+        "error"
+      );
+      console.error("Error updating activity status:", error);
+    } finally {
+      showLoader(false);
+    }
+  });
+
+  adminActivityList.addEventListener("click", (e) => {
+    const button = e.target.closest("button");
+    if (!button || !button.classList.contains("delete-activity-btn")) {
+      return;
+    }
+    const activityId = button.dataset.id;
+    if (!activityId) return;
+    handleDeleteActivity(activityId);
+  });
+
+  adminActivitiesInitialized = true;
+};
+
+const renderAdminActivities = () => {
+  if (!adminActivityList) return;
+
+  const q = query(collection(db, "activities"), orderBy("createdAt", "desc"));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    if (snapshot.empty) {
+      adminActivityList.innerHTML = `<div class="empty-state">No hay actividades registradas.</div>`;
+      return;
+    }
+
+    let tableHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Actividad</th>
+            <th>Responsable</th>
+            <th>Fecha límite</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    snapshot.docs.forEach((docSnap) => {
+      const activity = docSnap.data();
+      const status = activity.status || "pendiente";
+      const statusOptions = ACTIVITY_STATUS.map(
+        (s) =>
+          `<option value="${s}" ${status === s ? "selected" : ""}>${
+            ACTIVITY_STATUS_LABELS[s]
+          }</option>`
+      ).join("");
+      const responsibleLabel =
+        ROLE_LABELS[activity.responsibleRole] || activity.responsibleRole || "-";
+      const description = activity.description
+        ? `<small>${escapeHTML(activity.description)}</small>`
+        : "<small>Sin descripción</small>";
+
+      tableHTML += `
+        <tr>
+          <td>${escapeHTML(activity.title || "Sin título")}<br>${description}</td>
+          <td>${responsibleLabel}${
+        activity.responsibleEmail
+          ? `<br><small>${escapeHTML(activity.responsibleEmail)}</small>`
+          : ""
+      }</td>
+          <td>${formatDueDate(activity.dueDate)}</td>
+          <td>
+            <div class="activity-status-cell">
+              ${getStatusBadge(status)}
+              <select class="activity-status-select" data-id="${docSnap.id}">
+                ${statusOptions}
+              </select>
+            </div>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button
+                class="delete-btn delete-activity-btn"
+                data-id="${docSnap.id}"
+                title="Eliminar actividad"
+                type="button"
+              >
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tableHTML += `</tbody></table>`;
+    adminActivityList.innerHTML = tableHTML;
+    lucide.createIcons();
+  });
+
+  unsubscribers.push(unsubscribe);
+};
+
+const setupAuxiliarActivityManagement = () => {
+  if (
+    auxiliarActivitiesInitialized ||
+    !auxiliarActivityList ||
+    !auxiliarActivityAlert
+  ) {
+    return;
+  }
+
+  auxiliarActivityList.addEventListener("change", async (e) => {
+    const target = e.target;
+    if (!target.classList.contains("activity-status-select")) return;
+
+    const activityId = target.dataset.id;
+    const newStatus = target.value;
+    if (!ACTIVITY_STATUS.includes(newStatus)) return;
+
+    showLoader(true);
+    try {
+      await updateDoc(doc(db, "activities", activityId), {
+        status: newStatus,
+      });
+      showAlert(
+        auxiliarActivityAlert,
+        "Estado actualizado correctamente.",
+        "success",
+        2500
+      );
+    } catch (error) {
+      showAlert(
+        auxiliarActivityAlert,
+        "No se pudo actualizar el estado.",
+        "error"
+      );
+      console.error("Error updating assistant activity:", error);
+    } finally {
+      showLoader(false);
+    }
+  });
+
+  auxiliarActivitiesInitialized = true;
+};
+
+const renderAuxiliarActivities = () => {
+  if (!auxiliarActivityList) return;
+
+  const q = query(collection(db, "activities"), orderBy("createdAt", "desc"));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const activities = snapshot.docs
+      .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      .filter((activity) => {
+        if (activity.responsibleRole !== "auxiliar") return false;
+        if (activity.responsibleEmail && currentUserData?.email) {
+          return activity.responsibleEmail === currentUserData.email;
+        }
+        return true;
+      });
+
+    if (!activities.length) {
+      auxiliarActivityList.innerHTML = `<div class="empty-state">No tienes actividades asignadas por el momento.</div>`;
+      return;
+    }
+
+    const cards = activities
+      .map((activity) => {
+        const status = activity.status || "pendiente";
+        const statusOptions = ACTIVITY_STATUS.map(
+          (s) =>
+            `<option value="${s}" ${status === s ? "selected" : ""}>${
+              ACTIVITY_STATUS_LABELS[s]
+            }</option>`
+        ).join("");
+
+        const responsibleInfo = activity.responsibleEmail
+          ? escapeHTML(activity.responsibleEmail)
+          : "Equipo auxiliar";
+
+        return `
+          <article class="activity-card">
+            <div>
+              <h3>${escapeHTML(activity.title || "Actividad sin título")}</h3>
+              <p>${
+                activity.description
+                  ? escapeHTML(activity.description)
+                  : "No se proporcionó una descripción detallada."
+              }</p>
+            </div>
+            <div class="activity-meta">
+              <span><i data-lucide="calendar"></i>${formatDueDate(
+                activity.dueDate
+              )}</span>
+              <span><i data-lucide="user"></i>${responsibleInfo}</span>
+              <span>${getStatusBadge(status)}</span>
+            </div>
+            <div class="activity-actions">
+              <label for="activity-status-${activity.id}">Estado</label>
+              <select
+                id="activity-status-${activity.id}"
+                class="activity-status-select"
+                data-id="${activity.id}"
+              >
+                ${statusOptions}
+              </select>
+            </div>
+          </article>
+        `;
+      })
+      .join("");
+
+    auxiliarActivityList.innerHTML = cards;
+    lucide.createIcons();
+  });
+
+  unsubscribers.push(unsubscribe);
+};
+
 const renderDashboard = (user, userData) => {
   currentUser = user;
   currentUserData = userData;
@@ -192,13 +539,16 @@ const renderDashboard = (user, userData) => {
   if (userData.role === "administrador") {
     adminView.classList.remove("hidden");
     renderUserTable();
+    setupAdminActivityManagement();
+    renderAdminActivities();
     // Aquí irían las funciones para renderizar gráficos, etc.
   } else if (userData.role === "docente") {
     docenteView.classList.remove("hidden");
     // Aquí iría la función para renderizar actividades del docente
   } else if (userData.role === "auxiliar") {
     auxiliarView.classList.remove("hidden");
-    // Aquí iría la función para renderizar actividades del auxiliar
+    setupAuxiliarActivityManagement();
+    renderAuxiliarActivities();
   }
 
   showLoader(false);
@@ -327,6 +677,43 @@ const handleDeleteUser = (userId) => {
       } catch (error) {
         showAlert(inviteAlert, "Error al eliminar el usuario.", "error");
         console.error("Error deleting user:", error);
+      } finally {
+        closeModal();
+        showLoader(false);
+      }
+    });
+};
+
+const handleDeleteActivity = (activityId) => {
+  const content = `<p>Esta acción eliminará la actividad y su historial de seguimiento. ¿Deseas continuar?</p>`;
+  const footer = `
+        <button type="button" class="primary" id="confirmDeleteActivity" style="background: var(--danger);">Eliminar</button>
+        <button type="button" id="cancelDeleteActivity" style="background: var(--muted);">Cancelar</button>
+    `;
+  openModal("Eliminar actividad", content, footer);
+
+  document
+    .getElementById("cancelDeleteActivity")
+    .addEventListener("click", closeModal);
+  document
+    .getElementById("confirmDeleteActivity")
+    .addEventListener("click", async () => {
+      showLoader(true);
+      try {
+        await deleteDoc(doc(db, "activities", activityId));
+        showAlert(
+          adminActivityAlert,
+          "La actividad fue eliminada correctamente.",
+          "success",
+          2500
+        );
+      } catch (error) {
+        showAlert(
+          adminActivityAlert,
+          "No se pudo eliminar la actividad.",
+          "error"
+        );
+        console.error("Error deleting activity:", error);
       } finally {
         closeModal();
         showLoader(false);

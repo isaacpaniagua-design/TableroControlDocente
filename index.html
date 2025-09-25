@@ -182,6 +182,67 @@
                   <div id="userTableContainer"></div>
                 </div>
               </div>
+              <div class="card">
+                <h2>Gestión de Actividades</h2>
+                <p class="card-subtitle">
+                  Registra tareas clave y da seguimiento al avance del equipo.
+                </p>
+                <form id="adminActivityForm">
+                  <div class="grid activity-form-grid">
+                    <div class="form-field">
+                      <label for="activityTitle">Título de la actividad</label>
+                      <input
+                        id="activityTitle"
+                        name="title"
+                        type="text"
+                        required
+                        placeholder="Ej. Seguimiento de planeaciones"
+                      />
+                    </div>
+                    <div class="form-field">
+                      <label for="activityDueDate">Fecha límite</label>
+                      <input
+                        id="activityDueDate"
+                        name="dueDate"
+                        type="date"
+                        required
+                      />
+                    </div>
+                    <div class="form-field" style="grid-column: 1 / -1">
+                      <label for="activityDescription">Descripción</label>
+                      <textarea
+                        id="activityDescription"
+                        name="description"
+                        rows="3"
+                        placeholder="Describe el objetivo y entregables de la actividad"
+                      ></textarea>
+                    </div>
+                    <div class="form-field">
+                      <label for="activityRole">Responsable</label>
+                      <select id="activityRole" name="responsibleRole" required>
+                        <option value="docente">Docente</option>
+                        <option value="auxiliar">Profesor auxiliar</option>
+                        <option value="administrador">Administrador</option>
+                      </select>
+                    </div>
+                    <div class="form-field">
+                      <label for="activityEmail">Correo del responsable (opcional)</label>
+                      <input
+                        id="activityEmail"
+                        name="responsibleEmail"
+                        type="email"
+                        placeholder="persona@potros.itson.edu.mx"
+                      />
+                    </div>
+                  </div>
+                  <button class="primary" type="submit">
+                    <i data-lucide="plus"></i>
+                    <span>Registrar actividad</span>
+                  </button>
+                </form>
+                <div id="adminActivityAlert"></div>
+                <div id="adminActivityList" class="activity-table"></div>
+              </div>
             </div>
 
             <!-- Vistas de Docente -->
@@ -196,7 +257,21 @@
             <div id="auxiliarView" class="hidden">
               <div class="card">
                 <h2>Actividades de Apoyo</h2>
-                <div id="assistantActivities" style="margin-top: 1.25rem"></div>
+                <p class="card-subtitle">
+                  Consulta tus tareas asignadas y actualiza su estado para
+                  mantener informado al equipo.
+                </p>
+                <div class="activity-legend">
+                  <span class="status-badge status-pendiente">Pendiente</span>
+                  <span class="status-badge status-en_progreso">En progreso</span>
+                  <span class="status-badge status-completada">Completada</span>
+                </div>
+                <div id="auxiliarActivityAlert"></div>
+                <div
+                  id="auxiliarActivityList"
+                  class="activity-cards"
+                  style="margin-top: 1.25rem"
+                ></div>
               </div>
             </div>
           </section>
