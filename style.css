@@ -26,10 +26,7 @@ body {
   background: linear-gradient(160deg, #264653 0%, #2a9d8f 45%, #f4f1ea 100%);
 }
 header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem clamp(1rem, 2vw + 0.5rem, 3rem);
+  padding: clamp(1.2rem, 2vw + 0.75rem, 1.8rem) clamp(1rem, 3vw, 2.5rem);
   color: white;
   position: sticky;
   top: 0;
@@ -37,17 +34,40 @@ header {
   background: color-mix(in srgb, var(--primary) 70%, transparent);
   z-index: 10;
 }
-header h1 {
+.header-inner {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(1rem, 3vw, 2.5rem);
+}
+.header-title {
+  display: grid;
+  gap: 0.45rem;
+}
+.header-title h1 {
   margin: 0;
-  font-size: clamp(1.5rem, 2.5vw, 2.4rem);
+  font-size: clamp(1.45rem, 2.35vw, 2.3rem);
   font-weight: 700;
   letter-spacing: -0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.header-title .header-subtitle {
+  margin: 0;
+  font-size: clamp(0.85rem, 1vw + 0.6rem, 1rem);
+  color: color-mix(in srgb, #ffffff 80%, transparent);
+  max-width: 540px;
 }
 header .user-meta {
   display: flex;
   gap: 1.25rem;
   align-items: center;
   font-size: 0.95rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 header button {
   border: none;
@@ -69,11 +89,29 @@ header button:hover {
 }
 main {
   padding: clamp(1rem, 3vw, 2.5rem);
-  max-width: 1280px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 .hidden {
   display: none !important;
+}
+
+@media (max-width: 768px) {
+  .header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+  }
+
+  header .user-meta {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .header-title .header-subtitle {
+    max-width: none;
+  }
 }
 
 /* --- Estilos de Autenticación --- */
