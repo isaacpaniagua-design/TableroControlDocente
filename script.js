@@ -530,14 +530,27 @@ const renderUserTable = () => {
         <tbody>
     `;
     snapshot.docs.forEach((docSnap) => {
-      const user = docSnap.data();
+      const user = docSnap.data() || {};
+      const displayName = escapeHTML(
+        user.displayName?.trim() || "Usuario sin nombre"
+      );
+      const email = user.email ? escapeHTML(user.email) : null;
+      const careerLabel = escapeHTML(
+        CAREER_LABELS[user.career] || user.career || "Carrera no especificada"
+      );
+      const roleKey = user.role || "docente";
+      const roleBadgeClass = ROLE_BADGE_CLASS[roleKey] || "badge";
+      const roleLabel = escapeHTML(
+        ROLE_LABELS[roleKey] || roleKey || "Rol no especificado"
+      );
+
       tableHTML += `
         <tr>
-          <td>${user.displayName}<br><small>${user.email}</small></td>
-          <td>${CAREER_LABELS[user.career] || user.career}</td>
-          <td><span class="${ROLE_BADGE_CLASS[user.role]}">${
-        ROLE_LABELS[user.role]
-      }</span></td>
+          <td>${displayName}${
+        email ? `<br><small>${email}</small>` : "<br><small>Sin correo registrado</small>"
+      }</td>
+          <td>${careerLabel}</td>
+          <td><span class="${roleBadgeClass}">${roleLabel}</span></td>
           <td>
             <div class="action-buttons">
               <button class="edit-btn" data-id="${
