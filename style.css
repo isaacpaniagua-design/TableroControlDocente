@@ -379,7 +379,7 @@ table {
   -webkit-overflow-scrolling: touch;
 }
 .table-responsive table {
-  min-width: 720px;
+  min-width: 880px;
 }
 th,
 td {
@@ -398,6 +398,14 @@ tr:nth-child(even) {
 td small {
   color: var(--muted);
   font-size: 0.85rem;
+}
+#admin-user-management td:first-child {
+  font-weight: 600;
+  line-height: 1.3;
+}
+#admin-user-management td:first-child small {
+  display: inline-block;
+  margin-top: 0.2rem;
 }
 .table-placeholder {
   color: var(--muted);
