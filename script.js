@@ -327,10 +327,32 @@ const escapeHTML = (value = "") =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+const TABLE_PLACEHOLDER = '<span class="table-placeholder">Sin registro</span>';
+
 const formatProfileValue = (value) =>
   value && value.toString().trim()
     ? escapeHTML(value)
-    : '<span class="table-placeholder">Sin registro</span>';
+    : TABLE_PLACEHOLDER;
+
+const formatTableEmail = (value) =>
+  value && value.toString().trim()
+    ? `<small>${escapeHTML(value)}</small>`
+    : '<small class="table-placeholder">Sin correo registrado</small>';
+
+const formatCareerLabel = (careerKey) => {
+  if (!careerKey) {
+    return TABLE_PLACEHOLDER;
+  }
+  const label = CAREER_LABELS[careerKey] || careerKey;
+  return escapeHTML(label);
+};
+
+const renderRoleBadge = (roleKey) => {
+  const key = roleKey || "docente";
+  const badgeClass = ROLE_BADGE_CLASS[key] || "badge";
+  const label = escapeHTML(ROLE_LABELS[key] || roleKey || "Rol no especificado");
+  return `<span class="${badgeClass}">${label}</span>`;
+};
 
 const formatDueDate = (value) => {
   if (!value) return "Sin fecha";
@@ -551,36 +573,34 @@ const renderUserTable = () => {
       const displayName = escapeHTML(
         user.displayName?.trim() || "Usuario sin nombre"
       );
-      const email = user.email ? escapeHTML(user.email) : null;
-      const careerLabel = escapeHTML(
-        CAREER_LABELS[user.career] || user.career || "Carrera no especificada"
-      );
-      const roleKey = user.role || "docente";
-      const roleBadgeClass = ROLE_BADGE_CLASS[roleKey] || "badge";
-      const roleLabel = escapeHTML(
-        ROLE_LABELS[roleKey] || roleKey || "Rol no especificado"
-      );
+      const emailInfo = formatTableEmail(user.email);
+      const careerLabel = formatCareerLabel(user.career);
       const teacherProfile = user.teacherProfile || {};
-      const employeeId = formatProfileValue(teacherProfile.employeeId);
-      const controlNumber = formatProfileValue(teacherProfile.controlNumber);
-      const potroEmail = formatProfileValue(teacherProfile.potroEmail);
-      const institutionalEmail = formatProfileValue(
-        teacherProfile.institutionalEmail
+      const employeeId = formatProfileValue(
+        teacherProfile.employeeId || user.employeeId || docSnap.id
       );
-      const phone = formatProfileValue(teacherProfile.phone);
+      const controlNumber = formatProfileValue(
+        teacherProfile.controlNumber || user.controlNumber
+      );
+      const potroEmail = formatProfileValue(
+        teacherProfile.potroEmail || user.potroEmail || user.email
+      );
+      const institutionalEmail = formatProfileValue(
+        teacherProfile.institutionalEmail || user.institutionalEmail
+      );
+      const phone = formatProfileValue(teacherProfile.phone || user.phone);
+      const roleBadge = renderRoleBadge(user.role);
 
       tableHTML += `
         <tr>
-          <td>${displayName}${
-        email ? `<br><small>${email}</small>` : "<br><small>Sin correo registrado</small>"
-      }</td>
+          <td>${displayName}<br />${emailInfo}</td>
           <td>${employeeId}</td>
           <td>${controlNumber}</td>
           <td>${potroEmail}</td>
           <td>${institutionalEmail}</td>
           <td>${phone}</td>
           <td>${careerLabel}</td>
-          <td><span class="${roleBadgeClass}">${roleLabel}</span></td>
+          <td>${roleBadge}</td>
           <td>
             <div class="action-buttons">
               <button class="edit-btn" data-id="${
