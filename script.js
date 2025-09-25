@@ -1,1729 +1,978 @@
-// Usamos una versión más reciente de Firebase para mejoras de rendimiento y seguridad
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  addDoc,
-  collection,
-  getDocs,
-  onSnapshot,
-  query,
-  where,
-  serverTimestamp,
-  orderBy,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBWa6nNgWGdsqS12OhqAfIlJcSbT59cLGs",
-  authDomain: "tablerocontroldocente.firebaseapp.com",
-  projectId: "tablerocontroldocente",
-  storageBucket: "tablerocontroldocente.appspot.com",
-  messagingSenderId: "184781501380",
-  appId: "1:184781501380:web:cc14875f679e077f28ea91",
-};
-
-// --- Constantes y Configuración ---
-const ALLOWED_DOMAIN = "@potros.itson.edu.mx";
-const ADMIN_EMAILS = new Set(["isaac.paniagua@potros.itson.edu.mx"]);
 const CAREER_LABELS = {
   software: "Ing. en Software",
   manufactura: "Ing. en Manufactura",
   mecatronica: "Ing. en Mecatrónica",
   global: "General (todas las carreras)",
 };
+
 const ROLE_LABELS = {
-  administrador: "Admin",
+  administrador: "Administrador",
   docente: "Docente",
   auxiliar: "Auxiliar",
 };
+
 const ROLE_BADGE_CLASS = {
   administrador: "badge admin",
   docente: "badge docente",
   auxiliar: "badge auxiliar",
 };
 
-const SOFTWARE_TEACHERS = [
-  {
-    name: "Aarón Gilberto León Flores",
-    employeeId: "00000092313",
-    controlNumber: "87007190",
-    potroEmail: "aaron.leon92313@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 165 7826",
-  },
-  {
-    name: "Arturo García Saiza",
-    employeeId: "00000090476",
-    controlNumber: "87006214",
-    potroEmail: "arturo.garcia90476@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 149 1249",
-  },
-  {
-    name: "Bertha Julia Valle Cruz",
-    employeeId: "00000013648",
-    controlNumber: "85000551",
-    potroEmail: "bertha.valle13648@potros.itson.edu.mx",
-    institutionalEmail: "bvalle@itson.edu.mx",
-    phone: "(622) 109 2074",
-  },
-  {
-    name: "Carlos Alberto Ruiz Castrejón",
-    employeeId: "00000231195",
-    controlNumber: null,
-    potroEmail: "carlos.ruizc@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: null,
-  },
-  {
-    name: "Cynthia Beatriz Pérez Castro",
-    employeeId: "00000160602",
-    controlNumber: "85000882",
-    potroEmail: "cynthia.perez@potros.itson.edu.mx",
-    institutionalEmail: "cynthia.perez@itson.edu.mx",
-    phone: "(644) 203 2652",
-  },
-  {
-    name: "Eduardo Lara García",
-    employeeId: "00000017041",
-    controlNumber: "87006213",
-    potroEmail: "eduardo.garcia17041@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 107 2068",
-  },
-  {
-    name: "Isaac Noé Paniagua Ruiz",
-    employeeId: "00000099645",
-    controlNumber: "89003371",
-    potroEmail: "isaac.paniagua@potros.itson.edu.mx",
-    institutionalEmail: "isaac.paniagua@itson.edu.mx",
-    phone: "(622) 107 2441",
-  },
-  {
-    name: "Jesús Abraham Zazueta Castillo",
-    employeeId: "00000099610",
-    controlNumber: "87006157",
-    potroEmail: "jesus.zazueta99610@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 172 9061",
-  },
-  {
-    name: "Jesús Antonio Pérez Ceceña",
-    employeeId: "00000009726",
-    controlNumber: "87005932",
-    potroEmail: "jesus.perez9726@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 227 5714",
-  },
-  {
-    name: "Jesús Carlos Gaytán Salazar",
-    employeeId: "00000262383",
-    controlNumber: null,
-    potroEmail: "jesuscarlosgaytan@gmail.com",
-    institutionalEmail: null,
-    phone: null,
-  },
-  {
-    name: "Jesús Rigoberto Villavicencio Navarro",
-    employeeId: "00000162447",
-    controlNumber: "89003065",
-    potroEmail: "jesus.villavicencio162447@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 227 5527",
-  },
-  {
-    name: "Jorge Alberto Norzagaray Mora",
-    employeeId: "00000016329",
-    controlNumber: "87005932",
-    potroEmail: "jorge.norzagaray16329@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 100 4274",
-  },
-  {
-    name: "Juan Manuel Osuna Aceves",
-    employeeId: "00000019413",
-    controlNumber: "87001734",
-    potroEmail: "juan.osuna19413@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 147 7961",
-  },
-  {
-    name: "Julio Isaac Nava Cordero",
-    employeeId: "00000092307",
-    controlNumber: "87007034",
-    potroEmail: "julio.nava92307@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 100 2760",
-  },
-  {
-    name: "Marco Antonio Tellechea Rodríguez",
-    employeeId: "00000019294",
-    controlNumber: "87902065",
-    potroEmail: "marco.tellechea19294@potros.itson.edu.mx",
-    institutionalEmail: "mtellechea@itson.edu.mx",
-    phone: "(622) 109 0416",
-  },
-  {
-    name: "Miguel Ángel Moroyoqui Parra",
-    employeeId: "00000020641",
-    controlNumber: "87004412",
-    potroEmail: "miguel.moroyoqui20641@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 120 0257",
-  },
-  {
-    name: "Ricardo Daniel Carrasco Correa",
-    employeeId: "00000020122",
-    controlNumber: "87005261",
-    potroEmail: "ricardo.carrasco20122@potros.itson.edu.mx",
-    institutionalEmail: "ricardo.carrasco@itson.edu.mx",
-    phone: "(622) 118 7051",
-  },
-  {
-    name: "Roberto Limon Ulloa",
-    employeeId: "00000019401",
-    controlNumber: "85000836",
-    potroEmail: "roberto.limon@potros.itson.edu.mx",
-    institutionalEmail: "rlimon@itson.edu.mx",
-    phone: "(622) 108 8833",
-  },
-  {
-    name: "Saúl Grijalva Varillas",
-    employeeId: "00000062125",
-    controlNumber: "89002789",
-    potroEmail: "saul.grijalva62125@potros.itson.edu.mx",
-    institutionalEmail: "saul.grijalva@itson.edu.mx",
-    phone: "(622) 103 2365",
-  },
-  {
-    name: "Sergio Castellanos Bustamante",
-    employeeId: "00000090851",
-    controlNumber: null,
-    potroEmail: "sergio.castellanos90851@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: null,
-  },
-  {
-    name: "Vinko Antonio Nevescanín Moreno",
-    employeeId: "00000206923",
-    controlNumber: "87007385",
-    potroEmail: "vinko.nevescanin206923@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 123 6661",
-  },
-  {
-    name: "Zaira Guadalupe Bermúdez Pérez",
-    employeeId: "00000091125",
-    controlNumber: "87006990",
-    potroEmail: "zaira.bermudez91125@potros.itson.edu.mx",
-    institutionalEmail: null,
-    phone: "(622) 127 5763",
-  },
-];
-
-// --- Inicialización de Firebase ---
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// --- Referencias a Elementos del DOM ---
-const loader = document.getElementById("loader");
-const authSection = document.getElementById("authSection");
-const dashboard = document.getElementById("dashboard");
-const googleLoginButton = document.getElementById("googleLoginButton");
-const loginError = document.getElementById("loginError");
-const headerUserMeta = document.getElementById("headerUserMeta");
-const headerUserName = document.getElementById("headerUserName");
-const headerUserRole = document.getElementById("headerUserRole");
-const headerActiveTasks = document.getElementById("headerActiveTasks");
-const headerActiveUsers = document.getElementById("headerActiveUsers");
-const logoutBtn = document.getElementById("logoutBtn");
-const sidebarName = document.getElementById("sidebarName");
-const sidebarEmail = document.getElementById("sidebarEmail");
-const sidebarCareer = document.getElementById("sidebarCareer");
-const navigation = document.getElementById("navigation");
-const userTableContainer = document.getElementById("userTableContainer");
-const inviteUserForm = document.getElementById("inviteUserForm");
-const inviteAlert = document.getElementById("inviteAlert");
-const importTeachersBtn = document.getElementById("importTeachersBtn");
-const importTeachersAlert = document.getElementById("importTeachersAlert");
-const adminView = document.getElementById("adminView");
-const docenteView = document.getElementById("docenteView");
-const auxiliarView = document.getElementById("auxiliarView");
-const adminActivityForm = document.getElementById("adminActivityForm");
-const adminActivityList = document.getElementById("adminActivityList");
-const adminActivityAlert = document.getElementById("adminActivityAlert");
-const auxiliarActivityList = document.getElementById("auxiliarActivityList");
-const auxiliarActivityAlert = document.getElementById("auxiliarActivityAlert");
-
-let currentUser = null;
-let currentUserData = null;
-let usersChart = null;
-let activitiesChart = null;
-let unsubscribers = [];
-let adminActivitiesInitialized = false;
-let auxiliarActivitiesInitialized = false;
-let navObserver = null;
-
-// --- Funciones de Utilidad ---
-const showLoader = (show) => loader.classList.toggle("hidden", !show);
-
-const showAlert = (element, message, type = "error", duration = 4000) => {
-  element.textContent = message;
-  element.className = `alert ${type} show`;
-  setTimeout(() => {
-    element.classList.remove("show");
-  }, duration);
-};
-const openModal = (title, content, footer = "") => {
-  const backdrop = document.getElementById("modal-backdrop");
-  backdrop.innerHTML = `
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>${title}</h3>
-        <button id="closeModalBtn"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body">${content}</div>
-      <div class="modal-footer" style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">${footer}</div>
-    </div>
-  `;
-  backdrop.classList.remove("hidden");
-  lucide.createIcons();
-  document
-    .getElementById("closeModalBtn")
-    .addEventListener("click", closeModal);
-};
-
-const closeModal = () => {
-  document.getElementById("modal-backdrop").classList.add("hidden");
-};
-
-const cleanupSubscriptions = () => {
-  unsubscribers.forEach((unsub) => unsub());
-  unsubscribers = [];
-  if (usersChart) {
-    usersChart.destroy();
-    usersChart = null;
-  }
-  if (activitiesChart) {
-    activitiesChart.destroy();
-    activitiesChart = null;
-  }
-};
-
-const ACTIVITY_STATUS = ["pendiente", "en_progreso", "completada"];
-const ACTIVITY_STATUS_LABELS = {
+const STATUS_LABELS = {
   pendiente: "Pendiente",
   en_progreso: "En progreso",
   completada: "Completada",
 };
 
-const escapeHTML = (value = "") =>
-  value
-    .toString()
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+const STATUS_ORDER = ["pendiente", "en_progreso", "completada"];
 
-const TABLE_PLACEHOLDER = '<span class="table-placeholder">Sin registro</span>';
+const STATUS_COLORS = {
+  pendiente: "#facc15",
+  en_progreso: "#2563eb",
+  completada: "#10b981",
+};
 
-const formatProfileValue = (value) =>
-  value && value.toString().trim()
-    ? escapeHTML(value)
-    : TABLE_PLACEHOLDER;
+const initialUsers = [
+  {
+    id: "u-admin-1",
+    name: "María Fernanda López",
+    email: "maria.lopez@potros.itson.edu.mx",
+    role: "administrador",
+    career: "software",
+    phone: "(644) 410 9034",
+  },
+  {
+    id: "u-admin-2",
+    name: "Gerardo Sánchez",
+    email: "gerardo.sanchez@potros.itson.edu.mx",
+    role: "administrador",
+    career: "global",
+    phone: "(644) 410 9065",
+  },
+  {
+    id: "u-doc-1",
+    name: "Ana Martínez Rivera",
+    email: "ana.martinez@potros.itson.edu.mx",
+    role: "docente",
+    career: "software",
+    phone: "(644) 109 2234",
+  },
+  {
+    id: "u-doc-2",
+    name: "José Luis Romero",
+    email: "jose.romero@potros.itson.edu.mx",
+    role: "docente",
+    career: "manufactura",
+    phone: "(644) 130 1190",
+  },
+  {
+    id: "u-doc-3",
+    name: "Patricia Estrada",
+    email: "patricia.estrada@potros.itson.edu.mx",
+    role: "docente",
+    career: "mecatronica",
+    phone: "(644) 173 8765",
+  },
+  {
+    id: "u-doc-4",
+    name: "Elena Aguilar",
+    email: "elena.aguilar@potros.itson.edu.mx",
+    role: "docente",
+    career: "software",
+    phone: "(644) 200 8810",
+  },
+  {
+    id: "u-aux-1",
+    name: "Laura Quintero",
+    email: "laura.quintero@potros.itson.edu.mx",
+    role: "auxiliar",
+    career: "software",
+    phone: "(644) 198 2234",
+  },
+  {
+    id: "u-aux-2",
+    name: "César Miranda",
+    email: "cesar.miranda@potros.itson.edu.mx",
+    role: "auxiliar",
+    career: "manufactura",
+    phone: "(644) 204 6611",
+  },
+  {
+    id: "u-aux-3",
+    name: "Sofía Herrera",
+    email: "sofia.herrera@potros.itson.edu.mx",
+    role: "auxiliar",
+    career: "mecatronica",
+    phone: "(644) 120 5543",
+  },
+];
 
-const formatTableEmail = (value) =>
-  value && value.toString().trim()
-    ? `<small>${escapeHTML(value)}</small>`
-    : '<small class="table-placeholder">Sin correo registrado</small>';
+const softwareTeacherImport = [
+  {
+    id: "u-imp-1",
+    name: "Isaac Paniagua",
+    email: "isaac.paniagua@potros.itson.edu.mx",
+    role: "docente",
+    career: "software",
+    phone: "(622) 107 2441",
+  },
+  {
+    id: "u-imp-2",
+    name: "Julio Nava",
+    email: "julio.nava@potros.itson.edu.mx",
+    role: "docente",
+    career: "software",
+    phone: "(622) 100 2760",
+  },
+  {
+    id: "u-imp-3",
+    name: "Bertha Valle",
+    email: "bertha.valle@potros.itson.edu.mx",
+    role: "docente",
+    career: "software",
+    phone: "(622) 109 2074",
+  },
+];
 
-const formatCareerLabel = (careerKey) => {
-  if (!careerKey) {
-    return TABLE_PLACEHOLDER;
+const initialActivities = [
+  {
+    id: "act-1",
+    title: "Planeación de asignaturas agosto-diciembre",
+    description:
+      "Actualizar planeaciones con rúbricas revisadas por academia.",
+    dueDate: "2024-08-05",
+    career: "software",
+    responsibleRole: "docente",
+    responsibleEmail: "ana.martinez@potros.itson.edu.mx",
+    status: "en_progreso",
+  },
+  {
+    id: "act-2",
+    title: "Seguimiento de tutorías estudiantiles",
+    description: "Compilar reportes de tutorías de mitad de semestre.",
+    dueDate: "2024-07-12",
+    career: "global",
+    responsibleRole: "docente",
+    responsibleEmail: null,
+    status: "pendiente",
+  },
+  {
+    id: "act-3",
+    title: "Capacitación de laboratorio de manufactura",
+    description:
+      "Coordinar la disponibilidad de laboratorios para la inducción de verano.",
+    dueDate: "2024-06-28",
+    career: "manufactura",
+    responsibleRole: "auxiliar",
+    responsibleEmail: "cesar.miranda@potros.itson.edu.mx",
+    status: "en_progreso",
+  },
+  {
+    id: "act-4",
+    title: "Actualización de convenios duales",
+    description: "Documentar renovaciones con la industria automotriz.",
+    dueDate: "2024-07-30",
+    career: "mecatronica",
+    responsibleRole: "administrador",
+    responsibleEmail: "gerardo.sanchez@potros.itson.edu.mx",
+    status: "pendiente",
+  },
+  {
+    id: "act-5",
+    title: "Reporte mensual de desempeño docente",
+    description:
+      "Compilar indicadores de desempeño y ausentismo para dirección académica.",
+    dueDate: "2024-06-20",
+    career: "global",
+    responsibleRole: "administrador",
+    responsibleEmail: "maria.lopez@potros.itson.edu.mx",
+    status: "completada",
+  },
+  {
+    id: "act-6",
+    title: "Soporte a aulas híbridas",
+    description:
+      "Verificar equipos y conectividad antes de la semana de exámenes finales.",
+    dueDate: "2024-06-18",
+    career: "software",
+    responsibleRole: "auxiliar",
+    responsibleEmail: "laura.quintero@potros.itson.edu.mx",
+    status: "pendiente",
+  },
+  {
+    id: "act-7",
+    title: "Evaluación intermedia de proyectos integradores",
+    description: "Recolectar rúbricas y comentarios de los proyectos de software.",
+    dueDate: "2024-07-05",
+    career: "software",
+    responsibleRole: "docente",
+    responsibleEmail: "elena.aguilar@potros.itson.edu.mx",
+    status: "en_progreso",
+  },
+];
+
+let users = initialUsers.map((user) => ({ ...user }));
+let activities = initialActivities.map((activity) => ({ ...activity }));
+let currentUser = null;
+let importedTeachersCount = 0;
+
+const charts = {
+  users: null,
+  activities: null,
+};
+
+const elements = {};
+
+document.addEventListener("DOMContentLoaded", () => {
+  cacheDomElements();
+  hideLoader();
+  populateUserSelector(elements.userSelector);
+  attachEventListeners();
+  initCharts();
+  updateHeaderStats();
+  updateHighlights();
+  updateCharts();
+  refreshIcons();
+});
+
+function cacheDomElements() {
+  elements.authSection = document.getElementById("authSection");
+  elements.dashboard = document.getElementById("dashboard");
+  elements.loginForm = document.getElementById("loginForm");
+  elements.userSelector = document.getElementById("userSelector");
+  elements.loginError = document.getElementById("loginError");
+  elements.logoutBtn = document.getElementById("logoutBtn");
+  elements.headerUserMeta = document.getElementById("headerUserMeta");
+  elements.headerUserName = document.getElementById("headerUserName");
+  elements.headerUserRole = document.getElementById("headerUserRole");
+  elements.headerActiveTasks = document.getElementById("headerActiveTasks");
+  elements.headerActiveUsers = document.getElementById("headerActiveUsers");
+  elements.sidebarName = document.getElementById("sidebarName");
+  elements.sidebarEmail = document.getElementById("sidebarEmail");
+  elements.sidebarCareer = document.getElementById("sidebarCareer");
+  elements.navigation = document.getElementById("navigation");
+  elements.adminView = document.getElementById("adminView");
+  elements.docenteView = document.getElementById("docenteView");
+  elements.auxiliarView = document.getElementById("auxiliarView");
+  elements.userTableContainer = document.getElementById("userTableContainer");
+  elements.adminActivityList = document.getElementById("adminActivityList");
+  elements.adminActivityForm = document.getElementById("adminActivityForm");
+  elements.adminActivityAlert = document.getElementById("adminActivityAlert");
+  elements.importTeachersBtn = document.getElementById("importTeachersBtn");
+  elements.importTeachersAlert = document.getElementById("importTeachersAlert");
+  elements.inviteAlert = document.getElementById("inviteAlert");
+  elements.teacherActivities = document.getElementById("teacherActivities");
+  elements.auxiliarActivityList = document.getElementById("auxiliarActivityList");
+  elements.auxiliarActivityAlert = document.getElementById("auxiliarActivityAlert");
+  elements.printReport = document.getElementById("printReport");
+  elements.refreshDashboard = document.getElementById("refreshDashboard");
+}
+
+function hideLoader() {
+  const loader = document.getElementById("loader");
+  const backdrop = document.getElementById("modal-backdrop");
+  if (loader) loader.style.display = "none";
+  if (backdrop) backdrop.style.display = "none";
+}
+
+function attachEventListeners() {
+  if (elements.loginForm) {
+    elements.loginForm.addEventListener("submit", handleLoginSubmit);
   }
-  const label = CAREER_LABELS[careerKey] || careerKey;
-  return escapeHTML(label);
-};
-
-const renderRoleBadge = (roleKey) => {
-  const key = roleKey || "docente";
-  const badgeClass = ROLE_BADGE_CLASS[key] || "badge";
-  const label = escapeHTML(ROLE_LABELS[key] || roleKey || "Rol no especificado");
-  return `<span class="${badgeClass}">${label}</span>`;
-};
-
-const formatDueDate = (value) => {
-  if (!value) return "Sin fecha";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("es-MX", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const getStatusBadge = (status) => {
-  const label = ACTIVITY_STATUS_LABELS[status] || status;
-  return `<span class="status-badge status-${status}">${label}</span>`;
-};
-
-const normalizeTeacherField = (value) => {
-  if (value === undefined || value === null) return null;
-  const trimmed = value.toString().trim();
-  if (!trimmed || trimmed.toUpperCase() === "NA") return null;
-  return trimmed;
-};
-
-const removeImportedUserDuplicates = async (userId, email) => {
-  try {
-    const duplicatesQuery = query(
-      collection(db, "users"),
-      where("email", "==", email)
+  if (elements.logoutBtn) {
+    elements.logoutBtn.addEventListener("click", handleLogout);
+  }
+  if (elements.printReport) {
+    elements.printReport.addEventListener("click", () => window.print());
+  }
+  if (elements.refreshDashboard) {
+    elements.refreshDashboard.addEventListener("click", () => {
+      showMessage(
+        elements.adminActivityAlert,
+        "Indicadores actualizados.",
+        "info",
+      );
+      renderAllSections();
+    });
+  }
+  if (elements.adminActivityForm) {
+    elements.adminActivityForm.addEventListener(
+      "submit",
+      handleActivityFormSubmit,
     );
-    const snapshot = await getDocs(duplicatesQuery);
-    const deletions = snapshot.docs
-      .filter(
-        (docSnap) =>
-          docSnap.id !== userId && Boolean(docSnap.data()?.importedFromCatalog)
-      )
-      .map((docSnap) => deleteDoc(doc(db, "users", docSnap.id)));
-
-    if (deletions.length) {
-      await Promise.allSettled(deletions);
-    }
-  } catch (error) {
-    console.error("No se pudieron limpiar los registros importados duplicados:", error);
   }
-};
-
-const formatStatValue = (value) => {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return "—";
+  if (elements.importTeachersBtn) {
+    elements.importTeachersBtn.addEventListener(
+      "click",
+      importSoftwareTeachers,
+    );
   }
-  return new Intl.NumberFormat("es-MX").format(value);
-};
+}
 
-const resetHeaderStats = () => {
-  if (headerActiveTasks) {
-    headerActiveTasks.textContent = "—";
+function populateUserSelector(select) {
+  if (!select) return;
+  select.innerHTML = "";
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Elige un perfil para iniciar sesión";
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  select.append(placeholder);
+
+  ["administrador", "docente", "auxiliar"].forEach((role) => {
+    const usersByRole = users.filter((user) => user.role === role);
+    if (!usersByRole.length) return;
+    const group = document.createElement("optgroup");
+    group.label = ROLE_LABELS[role];
+    usersByRole.forEach((user) => {
+      const option = document.createElement("option");
+      option.value = user.id;
+      option.textContent = `${user.name} — ${user.email}`;
+      group.append(option);
+    });
+    select.append(group);
+  });
+}
+
+function handleLoginSubmit(event) {
+  event.preventDefault();
+  const selector = elements.userSelector;
+  if (!selector) return;
+  const userId = selector.value;
+  if (!userId) {
+    showMessage(elements.loginError, "Selecciona un usuario para continuar.");
+    return;
   }
-  if (headerActiveUsers) {
-    headerActiveUsers.textContent = "—";
+  const user = users.find((candidate) => candidate.id === userId);
+  if (!user) {
+    showMessage(elements.loginError, "El usuario seleccionado no está disponible.");
+    return;
   }
-};
+  hideMessage(elements.loginError);
+  loginUser(user);
+}
 
-const clearNavigation = () => {
-  if (navObserver) {
-    navObserver.disconnect();
-    navObserver = null;
+function loginUser(user) {
+  currentUser = user;
+  if (elements.authSection) elements.authSection.classList.add("hidden");
+  if (elements.dashboard) elements.dashboard.classList.remove("hidden");
+  if (elements.headerUserMeta) elements.headerUserMeta.classList.remove("hidden");
+
+  if (elements.headerUserName) elements.headerUserName.textContent = user.name;
+  if (elements.headerUserRole) {
+    elements.headerUserRole.textContent = ROLE_LABELS[user.role];
+    elements.headerUserRole.className = ROLE_BADGE_CLASS[user.role] || "badge";
   }
-  if (navigation) {
-    navigation.innerHTML = "";
+
+  configureRoleViews(user.role);
+  buildNavigation(user.role);
+  renderSidebarUserCard(user);
+  renderAllSections();
+  if (elements.loginForm) {
+    elements.loginForm.reset();
   }
-};
+}
 
-const updateNavigation = (role) => {
-  if (!navigation) return;
-  clearNavigation();
+function handleLogout() {
+  currentUser = null;
+  if (elements.dashboard) elements.dashboard.classList.add("hidden");
+  if (elements.authSection) elements.authSection.classList.remove("hidden");
+  if (elements.headerUserMeta) elements.headerUserMeta.classList.add("hidden");
+  if (elements.headerUserName) elements.headerUserName.textContent = "";
+  if (elements.headerUserRole) {
+    elements.headerUserRole.textContent = "";
+    elements.headerUserRole.className = "badge";
+  }
+  if (elements.navigation) elements.navigation.innerHTML = "";
+  ["sidebarName", "sidebarEmail", "sidebarCareer"].forEach((key) => {
+    if (elements[key]) elements[key].textContent = "";
+  });
+  document
+    .querySelectorAll("[data-nav-label]")
+    .forEach((section) => section.classList.remove("is-targeted"));
+  updateHeaderStats();
+  refreshIcons();
+}
 
-  if (!role) return;
+function configureRoleViews(role) {
+  if (elements.adminView)
+    elements.adminView.classList.toggle("hidden", role !== "administrador");
+  if (elements.docenteView)
+    elements.docenteView.classList.toggle("hidden", role !== "docente");
+  if (elements.auxiliarView)
+    elements.auxiliarView.classList.toggle("hidden", role !== "auxiliar");
+}
 
-  const sections = Array.from(
-    document.querySelectorAll('#dashboard [data-nav-label]')
-  ).filter((section) => {
-    const rolesAttr = section.dataset.navRoles;
-    if (!rolesAttr) return true;
-    const roles = rolesAttr
+function buildNavigation(role) {
+  if (!elements.navigation) return;
+  elements.navigation.innerHTML = "";
+  const sections = Array.from(document.querySelectorAll("[data-nav-label]"));
+  sections.forEach((section) => section.classList.remove("is-targeted"));
+
+  const allowedSections = sections.filter((section) => {
+    const roles = (section.dataset.navRoles || "")
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean);
-    if (!roles.length) return true;
-    return roles.includes(role);
+    return !roles.length || roles.includes(role);
   });
 
-  if (!sections.length) {
+  allowedSections.forEach((section, index) => {
+    const listItem = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = section.dataset.navLabel || "Sección";
+    button.classList.add("nav-button");
+    button.addEventListener("click", () => {
+      setActiveNavButton(button);
+      setActiveSection(section);
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    if (index === 0) {
+      setActiveNavButton(button);
+      setActiveSection(section);
+    }
+    listItem.append(button);
+    elements.navigation.append(listItem);
+  });
+}
+
+function setActiveNavButton(activeButton) {
+  if (!elements.navigation) return;
+  elements.navigation
+    .querySelectorAll("button")
+    .forEach((button) => button.classList.remove("active"));
+  if (activeButton) activeButton.classList.add("active");
+}
+
+function setActiveSection(section) {
+  document
+    .querySelectorAll("[data-nav-label]")
+    .forEach((candidate) => candidate.classList.remove("is-targeted"));
+  if (section) section.classList.add("is-targeted");
+}
+
+function renderAllSections() {
+  if (!currentUser) return;
+  updateHeaderStats();
+  updateHighlights();
+  renderSidebarUserCard(currentUser);
+  if (currentUser.role === "administrador") {
+    renderUserTable();
+    renderAdminActivityList();
+  } else {
+    clearAdminSections();
+  }
+  if (currentUser.role === "docente") {
+    renderTeacherActivities();
+  } else if (elements.teacherActivities) {
+    elements.teacherActivities.innerHTML = "";
+  }
+  if (currentUser.role === "auxiliar") {
+    renderAuxiliarActivities();
+  } else if (elements.auxiliarActivityList) {
+    elements.auxiliarActivityList.innerHTML = "";
+  }
+  updateCharts();
+  refreshIcons();
+}
+
+function renderSidebarUserCard(user) {
+  if (elements.sidebarName) elements.sidebarName.textContent = user.name;
+  if (elements.sidebarEmail) elements.sidebarEmail.textContent = user.email;
+  if (elements.sidebarCareer)
+    elements.sidebarCareer.textContent =
+      CAREER_LABELS[user.career] || "Coordinación general";
+}
+
+function renderUserTable() {
+  if (!elements.userTableContainer) return;
+  if (!currentUser || currentUser.role !== "administrador") {
+    elements.userTableContainer.innerHTML = "";
+    return;
+  }
+  if (!users.length) {
+    elements.userTableContainer.innerHTML =
+      '<p class="empty-state">Aún no hay usuarios registrados.</p>';
+    return;
+  }
+  const rows = users
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((user) => {
+      const badgeClass = ROLE_BADGE_CLASS[user.role] || "badge";
+      return `
+        <tr>
+          <td>
+            ${user.name}
+            <br /><small>${user.email}</small>
+          </td>
+          <td>${CAREER_LABELS[user.career] || "—"}</td>
+          <td><span class="${badgeClass}">${ROLE_LABELS[user.role]}</span></td>
+          <td>${user.phone || "—"}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  elements.userTableContainer.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Carrera</th>
+          <th>Rol</th>
+          <th>Teléfono</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderAdminActivityList() {
+  if (!elements.adminActivityList) return;
+  if (!currentUser || currentUser.role !== "administrador") {
+    elements.adminActivityList.innerHTML = "";
+    return;
+  }
+  if (!activities.length) {
+    elements.adminActivityList.innerHTML =
+      '<p class="empty-state">Registra tu primera actividad para comenzar el seguimiento.</p>';
     return;
   }
 
-  sections.forEach((section, index) => {
-    if (!section.id) {
-      const slug = (section.dataset.navLabel || `seccion-${index}`)
-        .toString()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)+/g, "");
-      section.id = slug || `seccion-${index}`;
-    }
+  const sortedActivities = activities.slice().sort((a, b) => {
+    const dateA = new Date(a.dueDate).getTime();
+    const dateB = new Date(b.dueDate).getTime();
+    return dateA - dateB;
   });
 
-  navigation.innerHTML = sections
-    .map(
-      (section) =>
-        `<li><button type="button" data-target="${section.id}">${section.dataset.navLabel}</button></li>`
-    )
+  const rows = sortedActivities
+    .map((activity) => {
+      const statusBadge = `status-badge status-${activity.status}`;
+      const responsibleLabel = ROLE_LABELS[activity.responsibleRole] || "—";
+      const email = activity.responsibleEmail
+        ? `<br /><small>${activity.responsibleEmail}</small>`
+        : "";
+      const options = STATUS_ORDER.map((status) => {
+        const selected = status === activity.status ? "selected" : "";
+        return `<option value="${status}" ${selected}>${STATUS_LABELS[status]}</option>`;
+      }).join("");
+
+      return `
+        <tr>
+          <td>
+            <strong>${activity.title}</strong>
+            <br /><small>${activity.description || "Sin descripción"}</small>
+          </td>
+          <td>${CAREER_LABELS[activity.career] || "—"}</td>
+          <td><span class="${statusBadge}">${STATUS_LABELS[activity.status]}</span></td>
+          <td>${formatDate(activity.dueDate)}</td>
+          <td>${responsibleLabel}${email}</td>
+          <td>
+            <select class="status-select" data-activity="${activity.id}">
+              ${options}
+            </select>
+          </td>
+          <td>
+            <button class="ghost small" type="button" data-delete="${activity.id}">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    })
     .join("");
 
-  const buttons = Array.from(navigation.querySelectorAll("button"));
-  const setActive = (targetId) => {
-    buttons.forEach((button) => {
-      button.classList.toggle("active", button.dataset.target === targetId);
-    });
-  };
+  elements.adminActivityList.innerHTML = `
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Actividad</th>
+            <th>Carrera</th>
+            <th>Estado</th>
+            <th>Fecha límite</th>
+            <th>Responsable</th>
+            <th>Actualizar estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
 
-  buttons.forEach((button, index) => {
-    if (index === 0) {
-      button.classList.add("active");
-    }
-    button.addEventListener("click", () => {
-      const targetId = button.dataset.target;
-      const targetSection = document.getElementById(targetId);
-      if (targetSection) {
-        targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
-        setActive(targetId);
-      }
+  elements.adminActivityList
+    .querySelectorAll(".status-select")
+    .forEach((select) => {
+      select.addEventListener("change", (event) => {
+        const activityId = event.target.dataset.activity;
+        const newStatus = event.target.value;
+        updateActivityStatus(activityId, newStatus, "admin");
+      });
+    });
+
+  elements.adminActivityList.querySelectorAll("[data-delete]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      const activityId = event.currentTarget.dataset.delete;
+      removeActivity(activityId);
     });
   });
+}
 
-  navObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActive(entry.target.id);
-        }
-      });
-    },
-    { rootMargin: "-45% 0px -45% 0px", threshold: 0.15 }
-  );
-
-  sections.forEach((section) => navObserver.observe(section));
-};
-
-const updateUsersChart = (careerCounts = {}) => {
-  const canvas = document.getElementById("usersChart");
-  if (!canvas) return;
-
-  const entries = Object.entries(careerCounts);
-  if (!entries.length) {
-    entries.push(["sin_carrera", 0]);
+function renderTeacherActivities() {
+  if (!elements.teacherActivities) return;
+  if (!currentUser || currentUser.role !== "docente") {
+    elements.teacherActivities.innerHTML = "";
+    return;
   }
+  const tasks = getActivitiesForRole("docente", currentUser);
+  if (!tasks.length) {
+    elements.teacherActivities.innerHTML =
+      '<p class="empty-state">No tienes actividades asignadas por ahora.</p>';
+    return;
+  }
+  elements.teacherActivities.innerHTML = tasks
+    .map((activity) => {
+      return `
+        <article class="activity-card status-${activity.status}">
+          <header>
+            <div>
+              <h3>${activity.title}</h3>
+              <p>${activity.description || "Sin descripción disponible."}</p>
+            </div>
+            <span class="status-badge status-${activity.status}">${STATUS_LABELS[activity.status]}</span>
+          </header>
+          <div class="activity-meta">
+            <span><i data-lucide="calendar"></i>${formatDate(activity.dueDate)}</span>
+            <span><i data-lucide="map-pin"></i>${CAREER_LABELS[activity.career] || "General"}</span>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
 
-  const getLabel = (key) => {
-    if (!key || key === "sin_carrera") {
-      return "Sin carrera asignada";
-    }
-    return CAREER_LABELS[key] || key;
-  };
+function renderAuxiliarActivities() {
+  if (!elements.auxiliarActivityList) return;
+  if (!currentUser || currentUser.role !== "auxiliar") {
+    elements.auxiliarActivityList.innerHTML = "";
+    return;
+  }
+  const tasks = getActivitiesForRole("auxiliar", currentUser);
+  if (!tasks.length) {
+    elements.auxiliarActivityList.innerHTML =
+      '<p class="empty-state">No tienes actividades asignadas en este momento.</p>';
+    return;
+  }
+  elements.auxiliarActivityList.innerHTML = tasks
+    .map((activity) => {
+      const options = STATUS_ORDER.map((status) => {
+        const selected = status === activity.status ? "selected" : "";
+        return `<option value="${status}" ${selected}>${STATUS_LABELS[status]}</option>`;
+      }).join("");
+      return `
+        <article class="activity-card status-${activity.status}">
+          <header>
+            <div>
+              <h3>${activity.title}</h3>
+              <p>${activity.description || "Sin descripción disponible."}</p>
+            </div>
+            <span class="status-badge status-${activity.status}">${STATUS_LABELS[activity.status]}</span>
+          </header>
+          <div class="activity-meta">
+            <span><i data-lucide="calendar"></i>${formatDate(activity.dueDate)}</span>
+            <span><i data-lucide="map-pin"></i>${CAREER_LABELS[activity.career] || "General"}</span>
+          </div>
+          <div class="activity-actions">
+            <label for="status-${activity.id}">Actualizar estado</label>
+            <select id="status-${activity.id}" data-activity="${activity.id}">
+              ${options}
+            </select>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
 
-  entries.sort((a, b) => getLabel(a[0]).localeCompare(getLabel(b[0])));
-
-  const labels = entries.map(([key]) => getLabel(key));
-  const data = entries.map(([, value]) => value);
-  const palette = [
-    "rgba(37, 99, 235, 0.85)",
-    "rgba(14, 116, 144, 0.85)",
-    "rgba(249, 115, 22, 0.85)",
-    "rgba(16, 185, 129, 0.85)",
-    "rgba(99, 102, 241, 0.85)",
-    "rgba(236, 72, 153, 0.85)",
-  ];
-
-  const backgroundColor = data.map((_, index) => palette[index % palette.length]);
-  const borderColor = backgroundColor.map((color) => color.replace("0.85", "1"));
-
-  if (!usersChart) {
-    usersChart = new Chart(canvas, {
-      type: "doughnut",
-      data: {
-        labels,
-        datasets: [
-          {
-            data,
-            backgroundColor,
-            borderColor,
-            borderWidth: 1,
-          },
-        ],
-      },
-      options: {
-        cutout: "60%",
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: {
-              boxWidth: 18,
-              boxHeight: 18,
-            },
-          },
-        },
-      },
+  elements.auxiliarActivityList.querySelectorAll("select").forEach((select) => {
+    select.addEventListener("change", (event) => {
+      const activityId = event.target.dataset.activity;
+      const newStatus = event.target.value;
+      updateActivityStatus(activityId, newStatus, "aux");
     });
-  } else {
-    usersChart.data.labels = labels;
-    usersChart.data.datasets[0].data = data;
-    usersChart.data.datasets[0].backgroundColor = backgroundColor;
-    usersChart.data.datasets[0].borderColor = borderColor;
-    usersChart.update();
+  });
+}
+
+function clearAdminSections() {
+  if (elements.userTableContainer) elements.userTableContainer.innerHTML = "";
+  if (elements.adminActivityList) elements.adminActivityList.innerHTML = "";
+}
+
+function handleActivityFormSubmit(event) {
+  event.preventDefault();
+  if (!currentUser || currentUser.role !== "administrador") return;
+  const formData = new FormData(event.target);
+  const title = String(formData.get("title") || "").trim();
+  const dueDate = String(formData.get("dueDate") || "").trim();
+  if (!title || !dueDate) {
+    showMessage(elements.adminActivityAlert, "Completa la información obligatoria.");
+    return;
   }
-};
+  const newActivity = {
+    id: generateId("act"),
+    title,
+    description: String(formData.get("description") || "").trim(),
+    dueDate,
+    career: formData.get("career") || "global",
+    responsibleRole: formData.get("responsibleRole") || "docente",
+    responsibleEmail: normalizeEmail(formData.get("responsibleEmail")),
+    status: "pendiente",
+    createdAt: new Date().toISOString(),
+    createdBy: currentUser.email,
+  };
+  activities = [newActivity, ...activities];
+  event.target.reset();
+  renderAllSections();
+  showMessage(
+    elements.adminActivityAlert,
+    "Actividad registrada correctamente.",
+    "success",
+  );
+}
 
-const updateActivitiesChart = (statusCounts = {}) => {
-  const canvas = document.getElementById("activitiesChart");
-  if (!canvas) return;
+function updateActivityStatus(activityId, newStatus, source) {
+  if (!STATUS_ORDER.includes(newStatus)) return;
+  const activity = activities.find((item) => item.id === activityId);
+  if (!activity || activity.status === newStatus) return;
+  activity.status = newStatus;
+  renderAllSections();
+  if (source === "admin") {
+    showMessage(elements.adminActivityAlert, "Estado actualizado.", "success");
+  }
+  if (source === "aux") {
+    showMessage(
+      elements.auxiliarActivityAlert,
+      "Actividad actualizada correctamente.",
+      "success",
+    );
+  }
+}
 
-  const labels = ACTIVITY_STATUS.map((status) => ACTIVITY_STATUS_LABELS[status]);
-  const data = ACTIVITY_STATUS.map((status) => statusCounts[status] || 0);
-  const backgroundColor = [
-    "rgba(250, 204, 21, 0.85)",
-    "rgba(37, 99, 235, 0.85)",
-    "rgba(16, 185, 129, 0.85)",
-  ];
-  const borderColor = [
-    "rgba(217, 119, 6, 0.9)",
-    "rgba(29, 78, 216, 0.9)",
-    "rgba(4, 120, 87, 0.9)",
-  ];
+function removeActivity(activityId) {
+  activities = activities.filter((activity) => activity.id !== activityId);
+  renderAllSections();
+  showMessage(elements.adminActivityAlert, "Actividad eliminada.", "info");
+}
 
-  if (!activitiesChart) {
-    activitiesChart = new Chart(canvas, {
+function importSoftwareTeachers() {
+  const newTeachers = softwareTeacherImport.filter(
+    (teacher) => !users.some((user) => user.email === teacher.email),
+  );
+  if (!newTeachers.length) {
+    showMessage(
+      elements.importTeachersAlert,
+      "Los docentes de Ing. en Software ya fueron importados.",
+      "info",
+    );
+    return;
+  }
+  users = [...users, ...newTeachers];
+  importedTeachersCount += newTeachers.length;
+  populateUserSelector(elements.userSelector);
+  renderAllSections();
+  showMessage(
+    elements.importTeachersAlert,
+    `${newTeachers.length} docentes agregados correctamente.`,
+    "success",
+  );
+  showMessage(
+    elements.inviteAlert,
+    "Comparte el acceso con los docentes recién importados.",
+    "info",
+  );
+}
+
+function updateHeaderStats() {
+  const activeActivities = activities.filter(
+    (activity) => activity.status !== "completada",
+  ).length;
+  if (elements.headerActiveTasks)
+    elements.headerActiveTasks.textContent = String(activeActivities);
+  if (elements.headerActiveUsers)
+    elements.headerActiveUsers.textContent = String(users.length);
+}
+
+function updateHighlights() {
+  const highlights = document.querySelectorAll(
+    "#dashboardHighlights article",
+  );
+  if (!highlights.length) return;
+  const totalCareers = new Set(users.map((user) => user.career)).size;
+  const activeActivities = activities.filter(
+    (activity) => activity.status !== "completada",
+  ).length;
+  const completedActivities = activities.filter(
+    (activity) => activity.status === "completada",
+  ).length;
+
+  if (highlights[0]) {
+    highlights[0].querySelector("p").textContent =
+      `La plataforma cuenta con ${users.length} usuarios en ${totalCareers} programas.`;
+  }
+  if (highlights[1]) {
+    highlights[1].querySelector("p").textContent =
+      `${activeActivities} actividades requieren atención y ${completedActivities} ya se completaron.`;
+  }
+  if (highlights[2]) {
+    highlights[2].querySelector("p").textContent =
+      importedTeachersCount
+        ? `Se incorporaron ${importedTeachersCount} docentes de Ing. en Software recientemente.`
+        : "Integra nuevos docentes con plantillas precargadas.";
+  }
+}
+
+function getActivitiesForRole(role, user) {
+  return activities.filter((activity) => {
+    if (activity.responsibleRole !== role) return false;
+    if (!user) return false;
+    if (activity.responsibleEmail) {
+      return (
+        activity.responsibleEmail.toLowerCase() === user.email.toLowerCase()
+      );
+    }
+    if (activity.career === "global") return true;
+    return activity.career === user.career;
+  });
+}
+
+function normalizeEmail(value) {
+  const email = String(value || "").trim();
+  return email ? email.toLowerCase() : null;
+}
+
+function initCharts() {
+  const usersCanvas = document.getElementById("usersChart");
+  if (usersCanvas) {
+    charts.users = new Chart(usersCanvas.getContext("2d"), {
       type: "bar",
       data: {
-        labels,
+        labels: [],
         datasets: [
           {
-            label: "Actividades",
-            data,
-            backgroundColor,
-            borderColor,
-            borderWidth: 1,
+            label: "Usuarios",
+            data: [],
+            backgroundColor: [
+              "rgba(37, 99, 235, 0.85)",
+              "rgba(56, 189, 248, 0.85)",
+              "rgba(125, 211, 252, 0.85)",
+              "rgba(99, 102, 241, 0.85)",
+            ],
             borderRadius: 12,
-            maxBarThickness: 48,
           },
         ],
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false,
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { precision: 0 },
-            grid: { color: "rgba(148, 163, 184, 0.2)" },
+            ticks: {
+              precision: 0,
+            },
           },
-          x: {
-            grid: { display: false },
-          },
-        },
-        plugins: {
-          legend: { display: false },
         },
       },
     });
-  } else {
-    activitiesChart.data.datasets[0].data = data;
-    activitiesChart.update();
-  }
-};
-
-const initializeUsersMetrics = (role) => {
-  const usersRef = collection(db, "users");
-  const unsubscribe = onSnapshot(usersRef, (snapshot) => {
-    const users = snapshot.docs.map((docSnap) => docSnap.data() || {});
-    if (headerActiveUsers) {
-      headerActiveUsers.textContent = formatStatValue(users.length);
-    }
-
-    if (role === "administrador") {
-      const careerCounts = users.reduce((acc, user) => {
-        const key = user.career || "sin_carrera";
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      }, {});
-      updateUsersChart(careerCounts);
-    }
-  });
-
-  unsubscribers.push(unsubscribe);
-};
-
-const isActivityVisibleToCurrentUser = (activity) => {
-  if (!activity || !currentUserData) {
-    return false;
   }
 
-  if (currentUserData.role === "administrador") {
-    return true;
-  }
-
-  const activityCareer = activity.career || "global";
-  if (
-    activityCareer !== "global" &&
-    currentUserData.career &&
-    activityCareer !== currentUserData.career
-  ) {
-    return false;
-  }
-
-  const responsibleRole = activity.responsibleRole || "docente";
-  if (responsibleRole !== currentUserData.role) {
-    return false;
-  }
-
-  if (activity.responsibleEmail) {
-    return activity.responsibleEmail === currentUserData.email;
-  }
-
-  return true;
-};
-
-const initializeActivitiesMetrics = (role) => {
-  const activitiesRef = collection(db, "activities");
-  const unsubscribe = onSnapshot(activitiesRef, (snapshot) => {
-    const activities = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
-
-    const relevantActivities = activities.filter((activity) =>
-      isActivityVisibleToCurrentUser(activity)
-    );
-
-    const statusCounts = ACTIVITY_STATUS.reduce((acc, status) => {
-      acc[status] = 0;
-      return acc;
-    }, {});
-
-    relevantActivities.forEach((activity) => {
-      const status = ACTIVITY_STATUS.includes(activity.status)
-        ? activity.status
-        : "pendiente";
-      statusCounts[status] += 1;
-    });
-
-    const activeCount = relevantActivities.filter(
-      (activity) => activity.status !== "completada"
-    ).length;
-
-    if (headerActiveTasks) {
-      headerActiveTasks.textContent = formatStatValue(activeCount);
-    }
-
-    if (role === "administrador") {
-      updateActivitiesChart(statusCounts);
-    }
-  });
-
-  unsubscribers.push(unsubscribe);
-};
-
-const initializeDashboardMetrics = (role) => {
-  initializeUsersMetrics(role);
-  initializeActivitiesMetrics(role);
-};
-
-const importSoftwareTeachers = async () => {
-  if (!importTeachersAlert) {
-    console.warn("No se encontró el contenedor para las alertas de importación.");
-    return;
-  }
-
-  if (!currentUserData || currentUserData.role !== "administrador") {
-    showAlert(
-      importTeachersAlert,
-      "Solo los administradores pueden importar docentes.",
-      "error"
-    );
-    return;
-  }
-
-  showLoader(true);
-  let created = 0;
-  let updated = 0;
-  const errors = [];
-
-  try {
-    for (const teacher of SOFTWARE_TEACHERS) {
-      const teacherId =
-        normalizeTeacherField(teacher.employeeId) ||
-        normalizeTeacherField(teacher.controlNumber) ||
-        normalizeTeacherField(teacher.potroEmail);
-
-      if (!teacherId) {
-        errors.push(`${teacher.name} (sin identificador)`);
-        continue;
-      }
-
-      const primaryEmail =
-        normalizeTeacherField(teacher.potroEmail) ||
-        normalizeTeacherField(teacher.institutionalEmail);
-
-      if (!primaryEmail) {
-        errors.push(`${teacher.name} (sin correo electrónico)`);
-        continue;
-      }
-
-      let teacherRef = doc(db, "users", teacherId);
-      const teacherDocSnapshot = await getDoc(teacherRef);
-      let existingData = null;
-      let isNewRecord = !teacherDocSnapshot.exists();
-
-      if (isNewRecord) {
-        const existingUsersQuery = query(
-          collection(db, "users"),
-          where("email", "==", primaryEmail)
-        );
-        const existingSnapshot = await getDocs(existingUsersQuery);
-        const matchingDoc = existingSnapshot.docs.find(
-          (docSnap) => docSnap.id !== teacherId
-        );
-
-        if (matchingDoc) {
-          teacherRef = doc(db, "users", matchingDoc.id);
-          existingData = matchingDoc.data();
-          isNewRecord = false;
-        }
-      } else {
-        existingData = teacherDocSnapshot.data();
-      }
-
-      const teacherProfile = {
-        employeeId: normalizeTeacherField(teacher.employeeId),
-        controlNumber: normalizeTeacherField(teacher.controlNumber),
-        potroEmail: normalizeTeacherField(teacher.potroEmail),
-        institutionalEmail: normalizeTeacherField(teacher.institutionalEmail),
-        phone: normalizeTeacherField(teacher.phone),
-      };
-
-      const wasImportedBefore = Boolean(
-        existingData?.importedFromCatalog && !existingData?.uid
-      );
-
-      const teacherData = {
-        teacherProfile: {
-          ...(existingData?.teacherProfile || {}),
-          ...teacherProfile,
+  const activitiesCanvas = document.getElementById("activitiesChart");
+  if (activitiesCanvas) {
+    charts.activities = new Chart(activitiesCanvas.getContext("2d"), {
+      type: "doughnut",
+      data: {
+        labels: STATUS_ORDER.map((status) => STATUS_LABELS[status]),
+        datasets: [
+          {
+            data: [],
+            backgroundColor: STATUS_ORDER.map((status) => STATUS_COLORS[status]),
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: "bottom",
+          },
         },
-        importedFromCatalog: true,
-        updatedAt: serverTimestamp(),
-        importedBy: currentUser?.uid || null,
-        importedByEmail: currentUserData?.email || null,
-      };
-
-      if (isNewRecord || wasImportedBefore) {
-        teacherData.displayName = teacher.name ? teacher.name.trim() : "";
-        teacherData.email = primaryEmail;
-        teacherData.career = existingData?.career || "software";
-        teacherData.role = existingData?.role || "docente";
-      } else {
-        if (!existingData?.displayName && teacher.name) {
-          teacherData.displayName = teacher.name.trim();
-        }
-        if (!existingData?.career) {
-          teacherData.career = "software";
-        }
-        if (!existingData?.role) {
-          teacherData.role = "docente";
-        }
-      }
-
-      if (isNewRecord) {
-        teacherData.createdAt = serverTimestamp();
-        created += 1;
-      } else {
-        if (wasImportedBefore && existingData?.email !== primaryEmail) {
-          teacherData.previousEmail = existingData.email || null;
-        }
-        updated += 1;
-      }
-
-      await setDoc(teacherRef, teacherData, { merge: true });
-    }
-
-    let message = `Proceso completado. ${created} docentes registrados y ${updated} actualizados.`;
-    let type = "success";
-
-    if (!created && !updated && errors.length === 0) {
-      message = "No hay cambios por importar, los docentes ya están registrados.";
-      type = "info";
-    }
-
-    if (errors.length) {
-      type = errors.length === SOFTWARE_TEACHERS.length ? "error" : "warning";
-      message += ` No se pudieron importar: ${errors.join(", ")}.`;
-    }
-
-    showAlert(importTeachersAlert, message, type, 7000);
-  } catch (error) {
-    console.error("Error al importar docentes:", error);
-    showAlert(
-      importTeachersAlert,
-      "Ocurrió un error inesperado durante la importación.",
-      "error"
-    );
-  } finally {
-    showLoader(false);
-  }
-};
-
-// --- Lógica de Renderizado ---
-const renderUserTable = () => {
-  const q = query(collection(db, "users"), orderBy("displayName"));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    if (snapshot.empty) {
-      userTableContainer.innerHTML = `<div class="empty-state">No hay usuarios registrados.</div>`;
-      return;
-    }
-    let tableHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>ID</th>
-            <th>Número de Control</th>
-            <th>Correo Potro</th>
-            <th>Correo Institucional</th>
-            <th>Celular</th>
-            <th>Carrera</th>
-            <th>Rol</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-    snapshot.docs.forEach((docSnap) => {
-      const user = docSnap.data() || {};
-      const displayName = escapeHTML(
-        user.displayName?.trim() || "Usuario sin nombre"
-      );
-      const emailInfo = formatTableEmail(user.email);
-      const careerLabel = formatCareerLabel(user.career);
-      const teacherProfile = user.teacherProfile || {};
-      const employeeId = formatProfileValue(
-        teacherProfile.employeeId || user.employeeId || docSnap.id
-      );
-      const controlNumber = formatProfileValue(
-        teacherProfile.controlNumber || user.controlNumber
-      );
-      const potroEmail = formatProfileValue(
-        teacherProfile.potroEmail || user.potroEmail || user.email
-      );
-      const institutionalEmail = formatProfileValue(
-        teacherProfile.institutionalEmail || user.institutionalEmail
-      );
-      const phone = formatProfileValue(teacherProfile.phone || user.phone);
-      const roleBadge = renderRoleBadge(user.role);
-
-      tableHTML += `
-        <tr>
-          <td>${displayName}<br />${emailInfo}</td>
-          <td>${employeeId}</td>
-          <td>${controlNumber}</td>
-          <td>${potroEmail}</td>
-          <td>${institutionalEmail}</td>
-          <td>${phone}</td>
-          <td>${careerLabel}</td>
-          <td>${roleBadge}</td>
-          <td>
-            <div class="action-buttons">
-              <button class="edit-btn" data-id="${
-                docSnap.id
-              }" title="Editar usuario"><i data-lucide="edit"></i></button>
-              <button class="delete-btn" data-id="${
-                docSnap.id
-              }" title="Eliminar usuario"><i data-lucide="trash-2"></i></button>
-            </div>
-          </td>
-        </tr>
-      `;
+      },
     });
-    tableHTML += `</tbody></table>`;
-    userTableContainer.innerHTML = tableHTML;
-    lucide.createIcons();
-  });
-  unsubscribers.push(unsubscribe);
-};
-
-const setupAdminActivityManagement = () => {
-  if (
-    adminActivitiesInitialized ||
-    !adminActivityForm ||
-    !adminActivityList ||
-    !adminActivityAlert
-  ) {
-    return;
   }
-
-  adminActivityForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (!currentUserData) return;
-
-    const formData = new FormData(adminActivityForm);
-    const title = formData.get("title")?.trim();
-    const dueDate = formData.get("dueDate");
-    const description = formData.get("description")?.trim();
-    const career = formData.get("career");
-    const responsibleRole = formData.get("responsibleRole");
-    const responsibleEmail = formData
-      .get("responsibleEmail")
-      ?.trim()
-      .toLowerCase();
-
-    if (!title || !dueDate || !responsibleRole || !career) {
-      showAlert(
-        adminActivityAlert,
-        "Completa los campos obligatorios para registrar la actividad.",
-        "error"
-      );
-      return;
-    }
-
-    showLoader(true);
-    try {
-      const payload = {
-        title,
-        dueDate,
-        description: description || "",
-        career,
-        responsibleRole,
-        status: "pendiente",
-        createdAt: serverTimestamp(),
-        createdBy: currentUserData.email,
-        createdByName: currentUserData.displayName,
-      };
-      if (responsibleEmail) {
-        payload.responsibleEmail = responsibleEmail;
-      }
-
-      await addDoc(collection(db, "activities"), payload);
-      adminActivityForm.reset();
-      showAlert(
-        adminActivityAlert,
-        "Actividad registrada correctamente.",
-        "success"
-      );
-    } catch (error) {
-      showAlert(
-        adminActivityAlert,
-        "No se pudo registrar la actividad. Intenta nuevamente.",
-        "error"
-      );
-      console.error("Error creating activity:", error);
-    } finally {
-      showLoader(false);
-    }
-  });
-
-  adminActivityList.addEventListener("change", async (e) => {
-    const target = e.target;
-    if (!target.classList.contains("activity-status-select")) return;
-
-    const activityId = target.dataset.id;
-    const newStatus = target.value;
-    if (!ACTIVITY_STATUS.includes(newStatus)) return;
-
-    showLoader(true);
-    try {
-      await updateDoc(doc(db, "activities", activityId), {
-        status: newStatus,
-      });
-      showAlert(
-        adminActivityAlert,
-        "Estado de la actividad actualizado.",
-        "success",
-        2500
-      );
-    } catch (error) {
-      showAlert(
-        adminActivityAlert,
-        "Error al actualizar el estado de la actividad.",
-        "error"
-      );
-      console.error("Error updating activity status:", error);
-    } finally {
-      showLoader(false);
-    }
-  });
-
-  adminActivityList.addEventListener("click", (e) => {
-    const button = e.target.closest("button");
-    if (!button || !button.classList.contains("delete-activity-btn")) {
-      return;
-    }
-    const activityId = button.dataset.id;
-    if (!activityId) return;
-    handleDeleteActivity(activityId);
-  });
-
-  adminActivitiesInitialized = true;
-};
-
-const renderAdminActivities = () => {
-  if (!adminActivityList) return;
-
-  const q = query(collection(db, "activities"), orderBy("createdAt", "desc"));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const groupedActivities = new Map();
-
-    snapshot.docs.forEach((docSnap) => {
-      const activity = docSnap.data();
-      const careerKey = activity.career || "global";
-      if (!groupedActivities.has(careerKey)) {
-        groupedActivities.set(careerKey, []);
-      }
-      groupedActivities.get(careerKey).push({ id: docSnap.id, ...activity });
-    });
-
-    const defaultOrder = ["software", "manufactura", "mecatronica", "global"];
-    const extraCareers = Array.from(groupedActivities.keys()).filter(
-      (career) => !defaultOrder.includes(career)
-    );
-    const orderedCareers = [...defaultOrder, ...extraCareers];
-
-    const sectionsHTML = orderedCareers
-      .map((careerKey) => {
-        const activities = groupedActivities.get(careerKey) || [];
-        const careerLabel = CAREER_LABELS[careerKey] || careerKey;
-        const hasActivities = activities.length > 0;
-        const countLabel = hasActivities
-          ? `${activities.length} ${
-              activities.length === 1 ? "actividad" : "actividades"
-            } registradas`
-          : "Sin actividades registradas";
-
-        let sectionContent = `
-          <section class="activity-career-group">
-            <div class="activity-group-header">
-              <h3>${careerLabel}</h3>
-              <span class="activity-group-count${
-                hasActivities ? "" : " empty"
-              }">${countLabel}</span>
-            </div>
-        `;
-
-        if (!hasActivities) {
-          sectionContent += `
-            <div class="empty-state">
-              No hay actividades registradas para ${careerLabel}.
-            </div>
-          `;
-        } else {
-          const rows = activities
-            .map((activity) => {
-              const status = activity.status || "pendiente";
-              const statusOptions = ACTIVITY_STATUS.map(
-                (s) =>
-                  `<option value="${s}" ${status === s ? "selected" : ""}>${
-                    ACTIVITY_STATUS_LABELS[s]
-                  }</option>`
-              ).join("");
-              const responsibleLabel =
-                ROLE_LABELS[activity.responsibleRole] ||
-                activity.responsibleRole ||
-                "-";
-              const description = activity.description
-                ? `<small>${escapeHTML(activity.description)}</small>`
-                : "<small>Sin descripción</small>";
-
-              return `
-                <tr>
-                  <td>${escapeHTML(activity.title || "Sin título")}<br>${description}</td>
-                  <td>${responsibleLabel}${
-                activity.responsibleEmail
-                  ? `<br><small>${escapeHTML(activity.responsibleEmail)}</small>`
-                  : ""
-              }</td>
-                  <td>${formatDueDate(activity.dueDate)}</td>
-                  <td>
-                    <div class="activity-status-cell">
-                      ${getStatusBadge(status)}
-                      <select class="activity-status-select" data-id="${activity.id}">
-                        ${statusOptions}
-                      </select>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="action-buttons">
-                      <button
-                        class="delete-btn delete-activity-btn"
-                        data-id="${activity.id}"
-                        title="Eliminar actividad"
-                        type="button"
-                      >
-                        <i data-lucide="trash-2"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              `;
-            })
-            .join("");
-
-          sectionContent += `
-            <table>
-              <thead>
-                <tr>
-                  <th>Actividad</th>
-                  <th>Responsable</th>
-                  <th>Fecha límite</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows}
-              </tbody>
-            </table>
-          `;
-        }
-
-        sectionContent += `</section>`;
-        return sectionContent;
-      })
-      .join("");
-
-    adminActivityList.innerHTML = sectionsHTML;
-    lucide.createIcons();
-  });
-
-  unsubscribers.push(unsubscribe);
-};
-
-const setupAuxiliarActivityManagement = () => {
-  if (
-    auxiliarActivitiesInitialized ||
-    !auxiliarActivityList ||
-    !auxiliarActivityAlert
-  ) {
-    return;
-  }
-
-  auxiliarActivityList.addEventListener("change", async (e) => {
-    const target = e.target;
-    if (!target.classList.contains("activity-status-select")) return;
-
-    const activityId = target.dataset.id;
-    const newStatus = target.value;
-    if (!ACTIVITY_STATUS.includes(newStatus)) return;
-
-    showLoader(true);
-    try {
-      await updateDoc(doc(db, "activities", activityId), {
-        status: newStatus,
-      });
-      showAlert(
-        auxiliarActivityAlert,
-        "Estado actualizado correctamente.",
-        "success",
-        2500
-      );
-    } catch (error) {
-      showAlert(
-        auxiliarActivityAlert,
-        "No se pudo actualizar el estado.",
-        "error"
-      );
-      console.error("Error updating assistant activity:", error);
-    } finally {
-      showLoader(false);
-    }
-  });
-
-  auxiliarActivitiesInitialized = true;
-};
-
-const renderAuxiliarActivities = () => {
-  if (!auxiliarActivityList) return;
-
-  const q = query(collection(db, "activities"), orderBy("createdAt", "desc"));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const activities = snapshot.docs
-      .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-      .filter((activity) => {
-        if (activity.responsibleRole !== "auxiliar") return false;
-        if (activity.responsibleEmail && currentUserData?.email) {
-          return activity.responsibleEmail === currentUserData.email;
-        }
-        return true;
-      });
-
-    if (!activities.length) {
-      auxiliarActivityList.innerHTML = `<div class="empty-state">No tienes actividades asignadas por el momento.</div>`;
-      return;
-    }
-
-    const cards = activities
-      .map((activity) => {
-        const status = activity.status || "pendiente";
-        const statusOptions = ACTIVITY_STATUS.map(
-          (s) =>
-            `<option value="${s}" ${status === s ? "selected" : ""}>${
-              ACTIVITY_STATUS_LABELS[s]
-            }</option>`
-        ).join("");
-
-        const responsibleInfo = activity.responsibleEmail
-          ? escapeHTML(activity.responsibleEmail)
-          : "Equipo auxiliar";
-
-        return `
-          <article class="activity-card">
-            <div>
-              <h3>${escapeHTML(activity.title || "Actividad sin título")}</h3>
-              <p>${
-                activity.description
-                  ? escapeHTML(activity.description)
-                  : "No se proporcionó una descripción detallada."
-              }</p>
-            </div>
-            <div class="activity-meta">
-              <span><i data-lucide="calendar"></i>${formatDueDate(
-                activity.dueDate
-              )}</span>
-              <span><i data-lucide="user"></i>${responsibleInfo}</span>
-              <span>${getStatusBadge(status)}</span>
-            </div>
-            <div class="activity-actions">
-              <label for="activity-status-${activity.id}">Estado</label>
-              <select
-                id="activity-status-${activity.id}"
-                class="activity-status-select"
-                data-id="${activity.id}"
-              >
-                ${statusOptions}
-              </select>
-            </div>
-          </article>
-        `;
-      })
-      .join("");
-
-    auxiliarActivityList.innerHTML = cards;
-    lucide.createIcons();
-  });
-
-  unsubscribers.push(unsubscribe);
-};
-
-const renderDashboard = (user, userData) => {
-  currentUser = user;
-  currentUserData = userData;
-
-  // Limpiar suscripciones anteriores
-  cleanupSubscriptions();
-  resetHeaderStats();
-  clearNavigation();
-
-  // Actualizar UI
-  sidebarName.textContent = userData.displayName;
-  sidebarEmail.textContent = userData.email;
-  sidebarCareer.textContent =
-    CAREER_LABELS[userData.career] || userData.career || "Carrera no asignada";
-  headerUserName.textContent = userData.displayName;
-  headerUserRole.className = ROLE_BADGE_CLASS[userData.role];
-  headerUserRole.textContent = ROLE_LABELS[userData.role];
-
-  authSection.classList.add("hidden");
-  dashboard.classList.remove("hidden");
-  headerUserMeta.classList.remove("hidden");
-
-  adminView.classList.add("hidden");
-  docenteView.classList.add("hidden");
-  auxiliarView.classList.add("hidden");
-
-  // Lógica específica de roles
-  if (userData.role === "administrador") {
-    adminView.classList.remove("hidden");
-    renderUserTable();
-    setupAdminActivityManagement();
-    renderAdminActivities();
-    // Aquí irían las funciones para renderizar gráficos, etc.
-  } else if (userData.role === "docente") {
-    docenteView.classList.remove("hidden");
-    // Aquí iría la función para renderizar actividades del docente
-  } else if (userData.role === "auxiliar") {
-    auxiliarView.classList.remove("hidden");
-    setupAuxiliarActivityManagement();
-    renderAuxiliarActivities();
-  }
-
-  updateNavigation(userData.role);
-  initializeDashboardMetrics(userData.role);
-
-  showLoader(false);
-};
-
-// --- Lógica de Autenticación ---
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    if (!user.email.endsWith(ALLOWED_DOMAIN)) {
-      showAlert(loginError, "Debes usar una cuenta @potros.itson.edu.mx.");
-      await signOut(auth);
-      return;
-    }
-    const userRef = doc(db, "users", user.uid);
-    let userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) {
-      const importedUsersQuery = query(
-        collection(db, "users"),
-        where("email", "==", user.email)
-      );
-      const importedSnapshot = await getDocs(importedUsersQuery);
-      const importedDoc = importedSnapshot.docs.find((docSnap) =>
-        Boolean(docSnap.data()?.importedFromCatalog)
-      );
-
-      if (importedDoc) {
-        const importedData = importedDoc.data();
-        const mergedData = {
-          ...importedData,
-          uid: user.uid,
-          email: user.email,
-          displayName:
-            importedData.displayName || user.displayName || user.email.split("@")[0],
-          updatedAt: serverTimestamp(),
-          mergedFromImportId: importedDoc.id,
-        };
-
-        if (!mergedData.career) mergedData.career = "software";
-        if (!mergedData.role) mergedData.role = "docente";
-
-        await setDoc(userRef, mergedData, { merge: true });
-        await deleteDoc(doc(db, "users", importedDoc.id));
-        userDoc = await getDoc(userRef);
-      }
-    }
-
-    if (!userDoc.exists()) {
-      const invitationsRef = collection(db, "invitations");
-      const q = query(invitationsRef, where("email", "==", user.email));
-      const invitationSnapshot = await getDocs(q);
-
-      let role = "docente";
-      let career = "software";
-      let displayName = user.displayName;
-
-      if (!invitationSnapshot.empty) {
-        const invitation = invitationSnapshot.docs[0].data();
-        role = invitation.role;
-        career = invitation.career;
-        displayName = invitation.name;
-        await deleteDoc(doc(db, "invitations", invitationSnapshot.docs[0].id));
-      } else if (!ADMIN_EMAILS.has(user.email)) {
-        showAlert(
-          loginError,
-          "Tu cuenta no tiene una invitación. Contacta a un administrador."
-        );
-        await signOut(auth);
-        return;
-      }
-
-      if (ADMIN_EMAILS.has(user.email)) {
-        role = "administrador";
-      }
-
-      const newUser = {
-        uid: user.uid,
-        displayName: displayName,
-        email: user.email,
-        career: career,
-        role: role,
-        createdAt: serverTimestamp(),
-      };
-      await setDoc(userRef, newUser);
-      userDoc = await getDoc(userRef);
-    }
-
-    await removeImportedUserDuplicates(user.uid, user.email);
-
-    const userData = userDoc.data();
-    if (ADMIN_EMAILS.has(userData.email) && userData.role !== "administrador") {
-      await updateDoc(userRef, { role: "administrador" });
-      userData.role = "administrador";
-    }
-
-    renderDashboard(user, userData);
-  } else {
-    currentUser = null;
-    currentUserData = null;
-    dashboard.classList.add("hidden");
-    authSection.classList.remove("hidden");
-    headerUserMeta.classList.add("hidden");
-    cleanupSubscriptions();
-    clearNavigation();
-    resetHeaderStats();
-    showLoader(false);
-  }
-});
-
-googleLoginButton.addEventListener("click", async () => {
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ hd: "potros.itson.edu.mx" });
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (error) {
-    if (error.code !== "auth/popup-closed-by-user") {
-      showAlert(loginError, "Error al iniciar sesión con Google.");
-      console.error(error);
-    }
-  }
-});
-
-logoutBtn.addEventListener("click", () => signOut(auth));
-document
-  .getElementById("printReport")
-  .addEventListener("click", () => window.print());
-
-// --- Delegación de eventos para acciones de usuario (EDITAR/ELIMINAR) ---
-userTableContainer.addEventListener("click", async (e) => {
-  const target = e.target.closest("button");
-  if (!target) return;
-
-  const userId = target.dataset.id;
-  if (!userId) return;
-
-  if (target.classList.contains("delete-btn")) {
-    handleDeleteUser(userId);
-  } else if (target.classList.contains("edit-btn")) {
-    handleEditUser(userId);
-  }
-});
-
-const handleDeleteUser = (userId) => {
-  const content = `<p>¿Estás seguro de que quieres eliminar a este usuario? Esta acción no se puede deshacer.</p>`;
-  const footer = `
-        <button type="button" class="primary" id="confirmDeleteBtn" style="background: var(--danger);">Eliminar</button>
-        <button type="button" id="cancelDeleteBtn" style="background: var(--muted);">Cancelar</button>
-    `;
-  openModal("Confirmar Eliminación", content, footer);
-
-  document
-    .getElementById("cancelDeleteBtn")
-    .addEventListener("click", closeModal);
-  document
-    .getElementById("confirmDeleteBtn")
-    .addEventListener("click", async () => {
-      showLoader(true);
-      try {
-        await deleteDoc(doc(db, "users", userId));
-        showAlert(inviteAlert, "Usuario eliminado correctamente.", "success");
-      } catch (error) {
-        showAlert(inviteAlert, "Error al eliminar el usuario.", "error");
-        console.error("Error deleting user:", error);
-      } finally {
-        closeModal();
-        showLoader(false);
-      }
-    });
-};
-
-const handleDeleteActivity = (activityId) => {
-  const content = `<p>Esta acción eliminará la actividad y su historial de seguimiento. ¿Deseas continuar?</p>`;
-  const footer = `
-        <button type="button" class="primary" id="confirmDeleteActivity" style="background: var(--danger);">Eliminar</button>
-        <button type="button" id="cancelDeleteActivity" style="background: var(--muted);">Cancelar</button>
-    `;
-  openModal("Eliminar actividad", content, footer);
-
-  document
-    .getElementById("cancelDeleteActivity")
-    .addEventListener("click", closeModal);
-  document
-    .getElementById("confirmDeleteActivity")
-    .addEventListener("click", async () => {
-      showLoader(true);
-      try {
-        await deleteDoc(doc(db, "activities", activityId));
-        showAlert(
-          adminActivityAlert,
-          "La actividad fue eliminada correctamente.",
-          "success",
-          2500
-        );
-      } catch (error) {
-        showAlert(
-          adminActivityAlert,
-          "No se pudo eliminar la actividad.",
-          "error"
-        );
-        console.error("Error deleting activity:", error);
-      } finally {
-        closeModal();
-        showLoader(false);
-      }
-    });
-};
-
-const handleEditUser = async (userId) => {
-  showLoader(true);
-  const userRef = doc(db, "users", userId);
-  const userSnap = await getDoc(userRef);
-  if (!userSnap.exists()) {
-    showAlert(inviteAlert, "No se encontró el usuario.", "error");
-    showLoader(false);
-    return;
-  }
-  const user = userSnap.data();
-
-  const content = `
-        <form id="editUserForm">
-            <div class="form-field">
-                <label for="editName">Nombre Completo</label>
-                <input type="text" id="editName" value="${
-                  user.displayName
-                }" required>
-            </div>
-            <div class="form-field">
-                <label for="editCareer">Carrera</label>
-                <select id="editCareer" required>
-                    <option value="software" ${
-                      user.career === "software" ? "selected" : ""
-                    }>Ing. en Software</option>
-                    <option value="manufactura" ${
-                      user.career === "manufactura" ? "selected" : ""
-                    }>Ing. en Manufactura</option>
-                    <option value="mecatronica" ${
-                      user.career === "mecatronica" ? "selected" : ""
-                    }>Ing. en Mecatrónica</option>
-                </select>
-            </div>
-            <div class="form-field">
-                <label for="editRole">Rol del Sistema</label>
-                <select id="editRole" required>
-                    <option value="docente" ${
-                      user.role === "docente" ? "selected" : ""
-                    }>Docente</option>
-                    <option value="auxiliar" ${
-                      user.role === "auxiliar" ? "selected" : ""
-                    }>Profesor Auxiliar</option>
-                    <option value="administrador" ${
-                      user.role === "administrador" ? "selected" : ""
-                    }>Administrador</option>
-                </select>
-            </div>
-        </form>
-    `;
-  const footer = `<button type="submit" form="editUserForm" class="primary">Guardar Cambios</button>`;
-  openModal("Editar Usuario", content, footer);
-
-  document
-    .getElementById("editUserForm")
-    .addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const updatedData = {
-        displayName: document.getElementById("editName").value,
-        career: document.getElementById("editCareer").value,
-        role: document.getElementById("editRole").value,
-      };
-      showLoader(true);
-      try {
-        await updateDoc(userRef, updatedData);
-        showAlert(inviteAlert, "Usuario actualizado.", "success");
-      } catch (error) {
-        showAlert(inviteAlert, "Error al actualizar.", "error");
-        console.error("Error updating user:", error);
-      } finally {
-        closeModal();
-        showLoader(false);
-      }
-    });
-
-  showLoader(false);
-};
-
-// --- Event Listener para el formulario de invitación ---
-if (importTeachersBtn) {
-  importTeachersBtn.addEventListener("click", importSoftwareTeachers);
 }
 
-if (inviteUserForm) {
-  inviteUserForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    showLoader(true);
+function updateCharts() {
+  if (charts.users) {
+    const careerKeys = Object.keys(CAREER_LABELS);
+    charts.users.data.labels = careerKeys.map((key) => CAREER_LABELS[key]);
+    charts.users.data.datasets[0].data = careerKeys.map((key) =>
+      users.filter((user) => user.career === key).length,
+    );
+    charts.users.update();
+  }
+  if (charts.activities) {
+    charts.activities.data.datasets[0].data = STATUS_ORDER.map((status) =>
+      activities.filter((activity) => activity.status === status).length,
+    );
+    charts.activities.update();
+  }
+}
 
-    const name = document.getElementById("inviteName").value;
-    const email = document
-      .getElementById("inviteEmail")
-      .value.toLowerCase();
-    const career = document.getElementById("inviteCareer").value;
-    const role = document.getElementById("inviteRole").value;
+function showMessage(element, message, type = "error") {
+  if (!element) return;
+  element.textContent = message;
+  element.className = `alert ${type} show`;
+  if (element.dataset.timeoutId) {
+    clearTimeout(Number(element.dataset.timeoutId));
+  }
+  const timeoutId = window.setTimeout(() => {
+    element.classList.remove("show");
+    delete element.dataset.timeoutId;
+  }, 4000);
+  element.dataset.timeoutId = String(timeoutId);
+}
 
-    if (!email.endsWith(ALLOWED_DOMAIN)) {
-      if (inviteAlert) {
-        showAlert(
-          inviteAlert,
-          "El correo debe ser del dominio @potros.itson.edu.mx.",
-          "error"
-        );
-      }
-      showLoader(false);
-      return;
-    }
+function hideMessage(element) {
+  if (!element) return;
+  if (element.dataset.timeoutId) {
+    clearTimeout(Number(element.dataset.timeoutId));
+    delete element.dataset.timeoutId;
+  }
+  element.textContent = "";
+  element.classList.remove("show");
+}
 
-    try {
-      // Verificar si el usuario ya existe
-      const usersQuery = query(
-        collection(db, "users"),
-        where("email", "==", email)
-      );
-      const userSnapshot = await getDocs(usersQuery);
-      if (!userSnapshot.empty) {
-        if (inviteAlert) {
-          showAlert(
-            inviteAlert,
-            "Este usuario ya se encuentra registrado.",
-            "error"
-          );
-        }
-        showLoader(false);
-        return;
-      }
+function refreshIcons() {
+  if (typeof lucide !== "undefined" && lucide.createIcons) {
+    lucide.createIcons();
+  }
+}
 
-      // Crear la invitación
-      await addDoc(collection(db, "invitations"), {
-        name,
-        email,
-        career,
-        role,
-        createdAt: serverTimestamp(),
-      });
-      if (inviteAlert) {
-        showAlert(
-          inviteAlert,
-          `Invitación enviada a ${name}. El usuario podrá acceder al iniciar sesión.`,
-          "success"
-        );
-      }
-      inviteUserForm.reset();
-    } catch (error) {
-      if (inviteAlert) {
-        showAlert(
-          inviteAlert,
-          "Ocurrió un error al enviar la invitación.",
-          "error"
-        );
-      }
-      console.error("Error creating invitation:", error);
-    } finally {
-      showLoader(false);
-    }
+function formatDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin fecha";
+  return date.toLocaleDateString("es-MX", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 }
 
-// --- Inicialización ---
-lucide.createIcons();
-showLoader(true); // Mostrar loader al cargar la página
+function generateId(prefix) {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+}
