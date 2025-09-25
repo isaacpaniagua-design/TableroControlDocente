@@ -179,7 +179,12 @@
             </div>
           </aside>
           <section class="content-area">
-            <div class="content-intro">
+            <div
+              class="content-intro"
+              id="dashboardIntro"
+              data-nav-label="Panel de control"
+              data-nav-roles="administrador,docente,auxiliar"
+            >
               <div>
                 <h2>Panel de control</h2>
                 <p>
@@ -194,7 +199,12 @@
 
             <!-- Vistas de Admin -->
             <div id="adminView" class="hidden">
-              <div class="overview-grid">
+              <div
+                class="overview-grid"
+                id="dashboardHighlights"
+                data-nav-label="Resumen"
+                data-nav-roles="administrador"
+              >
                 <article class="summary-card">
                   <i data-lucide="users"></i>
                   <div>
@@ -218,7 +228,12 @@
                 </article>
               </div>
 
-              <div class="card">
+              <div
+                class="card"
+                id="generalReportCard"
+                data-nav-label="Reporte general"
+                data-nav-roles="administrador"
+              >
                 <div class="card-title">
                   <div>
                     <h2>Reporte General</h2>
@@ -248,7 +263,12 @@
                 </div>
               </div>
 
-              <div class="card">
+              <div
+                class="card"
+                id="userManagementCard"
+                data-nav-label="Gestión de usuarios"
+                data-nav-roles="administrador"
+              >
                 <div class="card-title">
                   <div>
                     <h2>Gestión de usuarios</h2>
@@ -265,11 +285,17 @@
                     </button>
                     <div id="importTeachersAlert"></div>
                   </div>
+                  <div id="inviteAlert"></div>
                   <div id="userTableContainer" class="table-responsive"></div>
                 </div>
               </div>
 
-              <div class="card">
+              <div
+                class="card"
+                id="activityManagementCard"
+                data-nav-label="Gestión de actividades"
+                data-nav-roles="administrador"
+              >
                 <div class="card-title">
                   <div>
                     <h2>Gestión de Actividades</h2>
@@ -350,7 +376,12 @@
 
             <!-- Vistas de Docente -->
             <div id="docenteView" class="hidden">
-              <div class="card">
+              <div
+                class="card"
+                id="teacherActivitiesCard"
+                data-nav-label="Mis actividades"
+                data-nav-roles="docente"
+              >
                 <div class="card-title">
                   <div>
                     <h2>Mis Actividades</h2>
@@ -366,7 +397,12 @@
 
             <!-- Vistas de Auxiliar -->
             <div id="auxiliarView" class="hidden">
-              <div class="card">
+              <div
+                class="card"
+                id="auxiliarActivitiesCard"
+                data-nav-label="Actividades de apoyo"
+                data-nav-roles="auxiliar"
+              >
                 <div class="card-title">
                   <div>
                     <h2>Actividades de Apoyo</h2>

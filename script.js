@@ -246,6 +246,8 @@ const loginError = document.getElementById("loginError");
 const headerUserMeta = document.getElementById("headerUserMeta");
 const headerUserName = document.getElementById("headerUserName");
 const headerUserRole = document.getElementById("headerUserRole");
+const headerActiveTasks = document.getElementById("headerActiveTasks");
+const headerActiveUsers = document.getElementById("headerActiveUsers");
 const logoutBtn = document.getElementById("logoutBtn");
 const sidebarName = document.getElementById("sidebarName");
 const sidebarEmail = document.getElementById("sidebarEmail");
@@ -272,6 +274,7 @@ let activitiesChart = null;
 let unsubscribers = [];
 let adminActivitiesInitialized = false;
 let auxiliarActivitiesInitialized = false;
+let navObserver = null;
 
 // --- Funciones de Utilidad ---
 const showLoader = (show) => loader.classList.toggle("hidden", !show);
@@ -309,6 +312,14 @@ const closeModal = () => {
 const cleanupSubscriptions = () => {
   unsubscribers.forEach((unsub) => unsub());
   unsubscribers = [];
+  if (usersChart) {
+    usersChart.destroy();
+    usersChart = null;
+  }
+  if (activitiesChart) {
+    activitiesChart.destroy();
+    activitiesChart = null;
+  }
 };
 
 const ACTIVITY_STATUS = ["pendiente", "en_progreso", "completada"];
@@ -397,6 +408,331 @@ const removeImportedUserDuplicates = async (userId, email) => {
   } catch (error) {
     console.error("No se pudieron limpiar los registros importados duplicados:", error);
   }
+};
+
+const formatStatValue = (value) => {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "—";
+  }
+  return new Intl.NumberFormat("es-MX").format(value);
+};
+
+const resetHeaderStats = () => {
+  if (headerActiveTasks) {
+    headerActiveTasks.textContent = "—";
+  }
+  if (headerActiveUsers) {
+    headerActiveUsers.textContent = "—";
+  }
+};
+
+const clearNavigation = () => {
+  if (navObserver) {
+    navObserver.disconnect();
+    navObserver = null;
+  }
+  if (navigation) {
+    navigation.innerHTML = "";
+  }
+};
+
+const updateNavigation = (role) => {
+  if (!navigation) return;
+  clearNavigation();
+
+  if (!role) return;
+
+  const sections = Array.from(
+    document.querySelectorAll('#dashboard [data-nav-label]')
+  ).filter((section) => {
+    const rolesAttr = section.dataset.navRoles;
+    if (!rolesAttr) return true;
+    const roles = rolesAttr
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (!roles.length) return true;
+    return roles.includes(role);
+  });
+
+  if (!sections.length) {
+    return;
+  }
+
+  sections.forEach((section, index) => {
+    if (!section.id) {
+      const slug = (section.dataset.navLabel || `seccion-${index}`)
+        .toString()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "");
+      section.id = slug || `seccion-${index}`;
+    }
+  });
+
+  navigation.innerHTML = sections
+    .map(
+      (section) =>
+        `<li><button type="button" data-target="${section.id}">${section.dataset.navLabel}</button></li>`
+    )
+    .join("");
+
+  const buttons = Array.from(navigation.querySelectorAll("button"));
+  const setActive = (targetId) => {
+    buttons.forEach((button) => {
+      button.classList.toggle("active", button.dataset.target === targetId);
+    });
+  };
+
+  buttons.forEach((button, index) => {
+    if (index === 0) {
+      button.classList.add("active");
+    }
+    button.addEventListener("click", () => {
+      const targetId = button.dataset.target;
+      const targetSection = document.getElementById(targetId);
+      if (targetSection) {
+        targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        setActive(targetId);
+      }
+    });
+  });
+
+  navObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActive(entry.target.id);
+        }
+      });
+    },
+    { rootMargin: "-45% 0px -45% 0px", threshold: 0.15 }
+  );
+
+  sections.forEach((section) => navObserver.observe(section));
+};
+
+const updateUsersChart = (careerCounts = {}) => {
+  const canvas = document.getElementById("usersChart");
+  if (!canvas) return;
+
+  const entries = Object.entries(careerCounts);
+  if (!entries.length) {
+    entries.push(["sin_carrera", 0]);
+  }
+
+  const getLabel = (key) => {
+    if (!key || key === "sin_carrera") {
+      return "Sin carrera asignada";
+    }
+    return CAREER_LABELS[key] || key;
+  };
+
+  entries.sort((a, b) => getLabel(a[0]).localeCompare(getLabel(b[0])));
+
+  const labels = entries.map(([key]) => getLabel(key));
+  const data = entries.map(([, value]) => value);
+  const palette = [
+    "rgba(37, 99, 235, 0.85)",
+    "rgba(14, 116, 144, 0.85)",
+    "rgba(249, 115, 22, 0.85)",
+    "rgba(16, 185, 129, 0.85)",
+    "rgba(99, 102, 241, 0.85)",
+    "rgba(236, 72, 153, 0.85)",
+  ];
+
+  const backgroundColor = data.map((_, index) => palette[index % palette.length]);
+  const borderColor = backgroundColor.map((color) => color.replace("0.85", "1"));
+
+  if (!usersChart) {
+    usersChart = new Chart(canvas, {
+      type: "doughnut",
+      data: {
+        labels,
+        datasets: [
+          {
+            data,
+            backgroundColor,
+            borderColor,
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        cutout: "60%",
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              boxWidth: 18,
+              boxHeight: 18,
+            },
+          },
+        },
+      },
+    });
+  } else {
+    usersChart.data.labels = labels;
+    usersChart.data.datasets[0].data = data;
+    usersChart.data.datasets[0].backgroundColor = backgroundColor;
+    usersChart.data.datasets[0].borderColor = borderColor;
+    usersChart.update();
+  }
+};
+
+const updateActivitiesChart = (statusCounts = {}) => {
+  const canvas = document.getElementById("activitiesChart");
+  if (!canvas) return;
+
+  const labels = ACTIVITY_STATUS.map((status) => ACTIVITY_STATUS_LABELS[status]);
+  const data = ACTIVITY_STATUS.map((status) => statusCounts[status] || 0);
+  const backgroundColor = [
+    "rgba(250, 204, 21, 0.85)",
+    "rgba(37, 99, 235, 0.85)",
+    "rgba(16, 185, 129, 0.85)",
+  ];
+  const borderColor = [
+    "rgba(217, 119, 6, 0.9)",
+    "rgba(29, 78, 216, 0.9)",
+    "rgba(4, 120, 87, 0.9)",
+  ];
+
+  if (!activitiesChart) {
+    activitiesChart = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Actividades",
+            data,
+            backgroundColor,
+            borderColor,
+            borderWidth: 1,
+            borderRadius: 12,
+            maxBarThickness: 48,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 },
+            grid: { color: "rgba(148, 163, 184, 0.2)" },
+          },
+          x: {
+            grid: { display: false },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+        },
+      },
+    });
+  } else {
+    activitiesChart.data.datasets[0].data = data;
+    activitiesChart.update();
+  }
+};
+
+const initializeUsersMetrics = (role) => {
+  const usersRef = collection(db, "users");
+  const unsubscribe = onSnapshot(usersRef, (snapshot) => {
+    const users = snapshot.docs.map((docSnap) => docSnap.data() || {});
+    if (headerActiveUsers) {
+      headerActiveUsers.textContent = formatStatValue(users.length);
+    }
+
+    if (role === "administrador") {
+      const careerCounts = users.reduce((acc, user) => {
+        const key = user.career || "sin_carrera";
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+      updateUsersChart(careerCounts);
+    }
+  });
+
+  unsubscribers.push(unsubscribe);
+};
+
+const isActivityVisibleToCurrentUser = (activity) => {
+  if (!activity || !currentUserData) {
+    return false;
+  }
+
+  if (currentUserData.role === "administrador") {
+    return true;
+  }
+
+  const activityCareer = activity.career || "global";
+  if (
+    activityCareer !== "global" &&
+    currentUserData.career &&
+    activityCareer !== currentUserData.career
+  ) {
+    return false;
+  }
+
+  const responsibleRole = activity.responsibleRole || "docente";
+  if (responsibleRole !== currentUserData.role) {
+    return false;
+  }
+
+  if (activity.responsibleEmail) {
+    return activity.responsibleEmail === currentUserData.email;
+  }
+
+  return true;
+};
+
+const initializeActivitiesMetrics = (role) => {
+  const activitiesRef = collection(db, "activities");
+  const unsubscribe = onSnapshot(activitiesRef, (snapshot) => {
+    const activities = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    }));
+
+    const relevantActivities = activities.filter((activity) =>
+      isActivityVisibleToCurrentUser(activity)
+    );
+
+    const statusCounts = ACTIVITY_STATUS.reduce((acc, status) => {
+      acc[status] = 0;
+      return acc;
+    }, {});
+
+    relevantActivities.forEach((activity) => {
+      const status = ACTIVITY_STATUS.includes(activity.status)
+        ? activity.status
+        : "pendiente";
+      statusCounts[status] += 1;
+    });
+
+    const activeCount = relevantActivities.filter(
+      (activity) => activity.status !== "completada"
+    ).length;
+
+    if (headerActiveTasks) {
+      headerActiveTasks.textContent = formatStatValue(activeCount);
+    }
+
+    if (role === "administrador") {
+      updateActivitiesChart(statusCounts);
+    }
+  });
+
+  unsubscribers.push(unsubscribe);
+};
+
+const initializeDashboardMetrics = (role) => {
+  initializeUsersMetrics(role);
+  initializeActivitiesMetrics(role);
 };
 
 const importSoftwareTeachers = async () => {
@@ -988,11 +1324,14 @@ const renderDashboard = (user, userData) => {
 
   // Limpiar suscripciones anteriores
   cleanupSubscriptions();
+  resetHeaderStats();
+  clearNavigation();
 
   // Actualizar UI
   sidebarName.textContent = userData.displayName;
   sidebarEmail.textContent = userData.email;
-  sidebarCareer.textContent = CAREER_LABELS[userData.career];
+  sidebarCareer.textContent =
+    CAREER_LABELS[userData.career] || userData.career || "Carrera no asignada";
   headerUserName.textContent = userData.displayName;
   headerUserRole.className = ROLE_BADGE_CLASS[userData.role];
   headerUserRole.textContent = ROLE_LABELS[userData.role];
@@ -1020,6 +1359,9 @@ const renderDashboard = (user, userData) => {
     setupAuxiliarActivityManagement();
     renderAuxiliarActivities();
   }
+
+  updateNavigation(userData.role);
+  initializeDashboardMetrics(userData.role);
 
   showLoader(false);
 };
@@ -1122,6 +1464,8 @@ onAuthStateChanged(auth, async (user) => {
     authSection.classList.remove("hidden");
     headerUserMeta.classList.add("hidden");
     cleanupSubscriptions();
+    clearNavigation();
+    resetHeaderStats();
     showLoader(false);
   }
 });
@@ -1306,67 +1650,79 @@ if (importTeachersBtn) {
   importTeachersBtn.addEventListener("click", importSoftwareTeachers);
 }
 
-inviteUserForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  showLoader(true);
+if (inviteUserForm) {
+  inviteUserForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    showLoader(true);
 
-  const name = document.getElementById("inviteName").value;
-  const email = document.getElementById("inviteEmail").value.toLowerCase();
-  const career = document.getElementById("inviteCareer").value;
-  const role = document.getElementById("inviteRole").value;
+    const name = document.getElementById("inviteName").value;
+    const email = document
+      .getElementById("inviteEmail")
+      .value.toLowerCase();
+    const career = document.getElementById("inviteCareer").value;
+    const role = document.getElementById("inviteRole").value;
 
-  if (!email.endsWith(ALLOWED_DOMAIN)) {
-    showAlert(
-      inviteAlert,
-      "El correo debe ser del dominio @potros.itson.edu.mx.",
-      "error"
-    );
-    showLoader(false);
-    return;
-  }
-
-  try {
-    // Verificar si el usuario ya existe
-    const usersQuery = query(
-      collection(db, "users"),
-      where("email", "==", email)
-    );
-    const userSnapshot = await getDocs(usersQuery);
-    if (!userSnapshot.empty) {
-      showAlert(
-        inviteAlert,
-        "Este usuario ya se encuentra registrado.",
-        "error"
-      );
+    if (!email.endsWith(ALLOWED_DOMAIN)) {
+      if (inviteAlert) {
+        showAlert(
+          inviteAlert,
+          "El correo debe ser del dominio @potros.itson.edu.mx.",
+          "error"
+        );
+      }
       showLoader(false);
       return;
     }
 
-    // Crear la invitación
-    await addDoc(collection(db, "invitations"), {
-      name,
-      email,
-      career,
-      role,
-      createdAt: serverTimestamp(),
-    });
-    showAlert(
-      inviteAlert,
-      `Invitación enviada a ${name}. El usuario podrá acceder al iniciar sesión.`,
-      "success"
-    );
-    inviteUserForm.reset();
-  } catch (error) {
-    showAlert(
-      inviteAlert,
-      "Ocurrió un error al enviar la invitación.",
-      "error"
-    );
-    console.error("Error creating invitation:", error);
-  } finally {
-    showLoader(false);
-  }
-});
+    try {
+      // Verificar si el usuario ya existe
+      const usersQuery = query(
+        collection(db, "users"),
+        where("email", "==", email)
+      );
+      const userSnapshot = await getDocs(usersQuery);
+      if (!userSnapshot.empty) {
+        if (inviteAlert) {
+          showAlert(
+            inviteAlert,
+            "Este usuario ya se encuentra registrado.",
+            "error"
+          );
+        }
+        showLoader(false);
+        return;
+      }
+
+      // Crear la invitación
+      await addDoc(collection(db, "invitations"), {
+        name,
+        email,
+        career,
+        role,
+        createdAt: serverTimestamp(),
+      });
+      if (inviteAlert) {
+        showAlert(
+          inviteAlert,
+          `Invitación enviada a ${name}. El usuario podrá acceder al iniciar sesión.`,
+          "success"
+        );
+      }
+      inviteUserForm.reset();
+    } catch (error) {
+      if (inviteAlert) {
+        showAlert(
+          inviteAlert,
+          "Ocurrió un error al enviar la invitación.",
+          "error"
+        );
+      }
+      console.error("Error creating invitation:", error);
+    } finally {
+      showLoader(false);
+    }
+  });
+}
 
 // --- Inicialización ---
 lucide.createIcons();
