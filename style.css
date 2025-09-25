@@ -207,10 +207,12 @@ main {
   justify-content: center;
   gap: clamp(1.75rem, 3vw, 3rem);
   padding: clamp(1.25rem, 3vh, 3.5rem) 0 clamp(1.25rem, 3vh, 3.5rem);
+
   height: 700px;
   min-height: 700px;
   max-height: 700px;
   overflow-y: auto;
+
 }
 
 main > section {
