@@ -350,6 +350,28 @@ const normalizeTeacherField = (value) => {
   return trimmed;
 };
 
+const removeImportedUserDuplicates = async (userId, email) => {
+  try {
+    const duplicatesQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
+    const snapshot = await getDocs(duplicatesQuery);
+    const deletions = snapshot.docs
+      .filter(
+        (docSnap) =>
+          docSnap.id !== userId && Boolean(docSnap.data()?.importedFromCatalog)
+      )
+      .map((docSnap) => deleteDoc(doc(db, "users", docSnap.id)));
+
+    if (deletions.length) {
+      await Promise.allSettled(deletions);
+    }
+  } catch (error) {
+    console.error("No se pudieron limpiar los registros importados duplicados:", error);
+  }
+};
+
 const importSoftwareTeachers = async () => {
   if (!importTeachersAlert) {
     console.warn("No se encontró el contenedor para las alertas de importación.");
@@ -382,27 +404,86 @@ const importSoftwareTeachers = async () => {
         continue;
       }
 
-      const teacherRef = doc(db, "teachers", teacherId);
-      const teacherSnap = await getDoc(teacherRef);
+      const primaryEmail =
+        normalizeTeacherField(teacher.potroEmail) ||
+        normalizeTeacherField(teacher.institutionalEmail);
 
-      const teacherData = {
-        name: teacher.name ? teacher.name.trim() : "",
+      if (!primaryEmail) {
+        errors.push(`${teacher.name} (sin correo electrónico)`);
+        continue;
+      }
+
+      let teacherRef = doc(db, "users", teacherId);
+      const teacherDocSnapshot = await getDoc(teacherRef);
+      let existingData = null;
+      let isNewRecord = !teacherDocSnapshot.exists();
+
+      if (isNewRecord) {
+        const existingUsersQuery = query(
+          collection(db, "users"),
+          where("email", "==", primaryEmail)
+        );
+        const existingSnapshot = await getDocs(existingUsersQuery);
+        const matchingDoc = existingSnapshot.docs.find(
+          (docSnap) => docSnap.id !== teacherId
+        );
+
+        if (matchingDoc) {
+          teacherRef = doc(db, "users", matchingDoc.id);
+          existingData = matchingDoc.data();
+          isNewRecord = false;
+        }
+      } else {
+        existingData = teacherDocSnapshot.data();
+      }
+
+      const teacherProfile = {
         employeeId: normalizeTeacherField(teacher.employeeId),
         controlNumber: normalizeTeacherField(teacher.controlNumber),
         potroEmail: normalizeTeacherField(teacher.potroEmail),
         institutionalEmail: normalizeTeacherField(teacher.institutionalEmail),
         phone: normalizeTeacherField(teacher.phone),
-        career: "software",
-        role: "docente",
+      };
+
+      const wasImportedBefore = Boolean(
+        existingData?.importedFromCatalog && !existingData?.uid
+      );
+
+      const teacherData = {
+        teacherProfile: {
+          ...(existingData?.teacherProfile || {}),
+          ...teacherProfile,
+        },
+        importedFromCatalog: true,
         updatedAt: serverTimestamp(),
         importedBy: currentUser?.uid || null,
         importedByEmail: currentUserData?.email || null,
       };
 
-      if (!teacherSnap.exists()) {
+      if (isNewRecord || wasImportedBefore) {
+        teacherData.displayName = teacher.name ? teacher.name.trim() : "";
+        teacherData.email = primaryEmail;
+        teacherData.career = existingData?.career || "software";
+        teacherData.role = existingData?.role || "docente";
+      } else {
+        if (!existingData?.displayName && teacher.name) {
+          teacherData.displayName = teacher.name.trim();
+        }
+        if (!existingData?.career) {
+          teacherData.career = "software";
+        }
+        if (!existingData?.role) {
+          teacherData.role = "docente";
+        }
+      }
+
+      if (isNewRecord) {
         teacherData.createdAt = serverTimestamp();
         created += 1;
       } else {
+        if (wasImportedBefore && existingData?.email !== primaryEmail) {
+          teacherData.previousEmail = existingData.email || null;
+        }
         updated += 1;
       }
 
@@ -418,7 +499,7 @@ const importSoftwareTeachers = async () => {
     }
 
     if (errors.length) {
-      type = "error";
+      type = errors.length === SOFTWARE_TEACHERS.length ? "error" : "warning";
       message += ` No se pudieron importar: ${errors.join(", ")}.`;
     }
 
@@ -839,6 +920,37 @@ onAuthStateChanged(auth, async (user) => {
     let userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {
+      const importedUsersQuery = query(
+        collection(db, "users"),
+        where("email", "==", user.email)
+      );
+      const importedSnapshot = await getDocs(importedUsersQuery);
+      const importedDoc = importedSnapshot.docs.find((docSnap) =>
+        Boolean(docSnap.data()?.importedFromCatalog)
+      );
+
+      if (importedDoc) {
+        const importedData = importedDoc.data();
+        const mergedData = {
+          ...importedData,
+          uid: user.uid,
+          email: user.email,
+          displayName:
+            importedData.displayName || user.displayName || user.email.split("@")[0],
+          updatedAt: serverTimestamp(),
+          mergedFromImportId: importedDoc.id,
+        };
+
+        if (!mergedData.career) mergedData.career = "software";
+        if (!mergedData.role) mergedData.role = "docente";
+
+        await setDoc(userRef, mergedData, { merge: true });
+        await deleteDoc(doc(db, "users", importedDoc.id));
+        userDoc = await getDoc(userRef);
+      }
+    }
+
+    if (!userDoc.exists()) {
       const invitationsRef = collection(db, "invitations");
       const q = query(invitationsRef, where("email", "==", user.email));
       const invitationSnapshot = await getDocs(q);
@@ -877,6 +989,8 @@ onAuthStateChanged(auth, async (user) => {
       await setDoc(userRef, newUser);
       userDoc = await getDoc(userRef);
     }
+
+    await removeImportedUserDuplicates(user.uid, user.email);
 
     const userData = userDoc.data();
     if (ADMIN_EMAILS.has(userData.email) && userData.role !== "administrador") {
