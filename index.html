@@ -23,22 +23,62 @@
     </div>
     <div id="modal-backdrop" class="hidden"></div>
 
-    <header>
-      <div class="header-inner">
-        <div class="header-title">
-          <h1>
-            <i data-lucide="layout-dashboard"></i> Tablero de Control Docente
-          </h1>
-          <p class="header-subtitle">
-            Visualiza y gestiona el desempeño docente en una sola plataforma.
-          </p>
+    <header class="app-header">
+      <div class="app-header__inner">
+        <div class="brand-area">
+          <span class="brand-pill">ITSon</span>
+          <div>
+            <h1>
+              <i data-lucide="layout-dashboard"></i> Tablero de Control Docente
+            </h1>
+            <p class="brand-description">
+              Planifica, monitorea y comunica el trabajo académico en una
+              interfaz unificada.
+            </p>
+          </div>
         </div>
-        <div class="user-meta hidden" id="headerUserMeta">
-          <span id="headerUserName"></span>
-          <span class="badge" id="headerUserRole"></span>
-          <button id="logoutBtn" type="button">
-            <i data-lucide="log-out"></i><span>Cerrar sesión</span>
-          </button>
+        <div class="header-tools">
+          <div class="header-stat">
+            <span class="label">Actividades activas</span>
+            <span class="value" id="headerActiveTasks">—</span>
+          </div>
+          <div class="header-stat">
+            <span class="label">Usuarios conectados</span>
+            <span class="value" id="headerActiveUsers">—</span>
+          </div>
+          <div class="user-meta hidden" id="headerUserMeta">
+            <span id="headerUserName"></span>
+            <span class="badge" id="headerUserRole"></span>
+            <button id="logoutBtn" type="button">
+              <i data-lucide="log-out"></i><span>Cerrar sesión</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="app-header__meta">
+        <div class="meta-highlight">
+          <i data-lucide="target"></i>
+          <div>
+            <span>Visión general</span>
+            <p>Obtén indicadores clave en segundos y coordina a tu equipo con
+              claridad.</p>
+          </div>
+        </div>
+        <div class="meta-highlight">
+          <i data-lucide="calendar-check"></i>
+          <div>
+            <span>Seguimiento de actividades</span>
+            <p>Consulta avances, responsables y fechas límite desde un tablero
+              flexible.</p>
+          </div>
+        </div>
+        <div class="meta-highlight">
+          <i data-lucide="file-spreadsheet"></i>
+          <div>
+            <span>Reportes listos</span>
+            <p>Genera reportes por carrera y rol para respaldar decisiones
+              académicas.</p>
+          </div>
         </div>
       </div>
     </header>
@@ -46,7 +86,7 @@
     <main>
       <!-- Sección de Autenticación -->
       <section id="authSection">
-        <div class="auth-grid">
+        <div class="auth-layout">
           <div class="auth-hero">
             <span class="eyebrow">Gestión académica</span>
             <h2>Organiza el trabajo docente con claridad</h2>
@@ -59,135 +99,165 @@
               <li>Coordina responsabilidades entre docentes y auxiliares.</li>
               <li>Genera reportes claros para la toma de decisiones.</li>
             </ul>
+            <div class="auth-metrics">
+              <div>
+                <span class="metric-value">+120</span>
+                <span class="metric-label">Actividades gestionadas</span>
+              </div>
+              <div>
+                <span class="metric-value">8</span>
+                <span class="metric-label">Programas académicos</span>
+              </div>
+              <div>
+                <span class="metric-value">24/7</span>
+                <span class="metric-label">Acceso disponible</span>
+              </div>
+            </div>
           </div>
 
-          <div class="card" id="loginCard">
-            <h2>Bienvenido de nuevo</h2>
-            <p>
-              Accede con tu correo institucional
-              <strong>@potros.itson.edu.mx</strong>.
-            </p>
-            <form>
-              <button class="primary" type="button" id="googleLoginButton">
-                <i data-lucide="log-in"></i>
-                <span>Ingresar con Google</span>
-              </button>
-            </form>
-            <div
-              class="alert error"
-              id="loginError"
-              style="margin-top: 1rem"
-            ></div>
+          <div class="auth-panel">
+            <div class="card" id="loginCard">
+              <div class="card-header">
+                <div>
+                  <span class="eyebrow">Bienvenido</span>
+                  <h2>Ingresa a tu panel</h2>
+                </div>
+                <i data-lucide="lock"></i>
+              </div>
+              <p>
+                Accede con tu correo institucional
+                <strong>@potros.itson.edu.mx</strong> y gestiona tus tareas sin
+                complicaciones.
+              </p>
+              <form>
+                <button class="primary" type="button" id="googleLoginButton">
+                  <i data-lucide="log-in"></i>
+                  <span>Ingresar con Google</span>
+                </button>
+              </form>
+              <div class="alert error" id="loginError"></div>
+            </div>
+            <div class="auth-support">
+              <div>
+                <i data-lucide="headset"></i>
+                <h3>¿Necesitas ayuda?</h3>
+                <p>
+                  Nuestro equipo académico puede orientarte con la migración de
+                  datos o la incorporación de nuevos usuarios.
+                </p>
+              </div>
+              <ul>
+                <li><i data-lucide="mail"></i> soporte@itson.edu.mx</li>
+                <li><i data-lucide="phone"></i> (644) 410 9000 ext. 125</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- Dashboard Principal -->
       <section id="dashboard" class="hidden">
-        <div class="dashboard">
+        <div class="dashboard-shell">
           <aside class="sidebar">
             <div class="user-card">
+              <span class="user-badge">Sesión activa</span>
               <h3 id="sidebarName"></h3>
               <div class="meta-list">
                 <span id="sidebarEmail"></span>
                 <span id="sidebarCareer"></span>
               </div>
             </div>
-            <nav><ul id="navigation"></ul></nav>
+            <nav>
+              <h4>Secciones</h4>
+              <ul id="navigation"></ul>
+            </nav>
+            <div class="sidebar-footer">
+              <p>
+                Mantente al día con tus actividades y comparte avances con tu
+                coordinación.
+              </p>
+            </div>
           </aside>
           <section class="content-area">
+            <div class="content-intro">
+              <div>
+                <h2>Panel de control</h2>
+                <p>
+                  Revisa tus indicadores, tareas y reportes de manera visual y
+                  organizada.
+                </p>
+              </div>
+              <button class="ghost" type="button" id="printReport">
+                <i data-lucide="printer"></i> Imprimir reporte
+              </button>
+            </div>
+
             <!-- Vistas de Admin -->
             <div id="adminView" class="hidden">
-              <div class="card">
-                <h2>Reporte General</h2>
-                <div
-                  class="grid"
-                  style="grid-template-columns: 1fr 1fr; gap: 2rem"
-                >
+              <div class="overview-grid">
+                <article class="summary-card">
+                  <i data-lucide="users"></i>
                   <div>
-                    <h4>Usuarios por Carrera</h4>
+                    <h3>Usuarios por carrera</h3>
+                    <p>Identifica la distribución y crecimiento de docentes.</p>
+                  </div>
+                </article>
+                <article class="summary-card">
+                  <i data-lucide="check-circle"></i>
+                  <div>
+                    <h3>Estado de actividades</h3>
+                    <p>Evalúa el progreso y detecta tareas pendientes.</p>
+                  </div>
+                </article>
+                <article class="summary-card">
+                  <i data-lucide="upload-cloud"></i>
+                  <div>
+                    <h3>Importación inteligente</h3>
+                    <p>Integra nuevos docentes con plantillas precargadas.</p>
+                  </div>
+                </article>
+              </div>
+
+              <div class="card">
+                <div class="card-title">
+                  <div>
+                    <h2>Reporte General</h2>
+                    <p class="card-subtitle">
+                      Analiza de forma visual la actividad del departamento.
+                    </p>
+                  </div>
+                  <div class="card-actions">
+                    <button class="ghost" type="button" id="refreshDashboard">
+                      <i data-lucide="refresh-cw"></i> Actualizar
+                    </button>
+                  </div>
+                </div>
+                <div class="chart-grid">
+                  <div class="chart-card">
+                    <header>
+                      <h4>Usuarios por Carrera</h4>
+                    </header>
                     <canvas id="usersChart"></canvas>
                   </div>
-                  <div>
-                    <h4>Estado de Actividades</h4>
+                  <div class="chart-card">
+                    <header>
+                      <h4>Estado de Actividades</h4>
+                    </header>
                     <canvas id="activitiesChart"></canvas>
                   </div>
                 </div>
               </div>
+
               <div class="card">
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 1.5rem;
-                  "
-                >
-                  <h2>Gestión del Sistema</h2>
-                  <button class="primary" id="printReport" type="button">
-                    <i data-lucide="printer"></i> Imprimir Reporte
-                  </button>
+                <div class="card-title">
+                  <div>
+                    <h2>Gestión de usuarios</h2>
+                    <p class="card-subtitle">
+                      Consulta, importa y gestiona el acceso a la plataforma.
+                    </p>
+                  </div>
                 </div>
-                <!-- Formulario para Invitar Usuario -->
-                <div id="admin-management-forms" style="margin-bottom: 2rem">
-                  <form
-                    id="inviteUserForm"
-                    class="card"
-                    style="padding: 1.5rem; background: #fafafa"
-                  >
-                    <h3 style="margin-top: 0">Invitar Nuevo Usuario</h3>
-                    <div
-                      class="grid"
-                      style="grid-template-columns: 1fr 1fr; gap: 1rem"
-                    >
-                      <div class="form-field">
-                        <label for="inviteName">Nombre Completo</label>
-                        <input type="text" id="inviteName" required />
-                      </div>
-                      <div class="form-field">
-                        <label for="inviteEmail">Correo Electrónico</label>
-                        <input
-                          type="email"
-                          id="inviteEmail"
-                          placeholder="usuario@potros.itson.edu.mx"
-                          required
-                        />
-                      </div>
-                      <div class="form-field">
-                        <label for="inviteCareer">Carrera</label>
-                        <select id="inviteCareer" required>
-                          <option value="software">Ing. en Software</option>
-                          <option value="manufactura">
-                            Ing. en Manufactura
-                          </option>
-                          <option value="mecatronica">
-                            Ing. en Mecatrónica
-                          </option>
-                        </select>
-                      </div>
-                      <div class="form-field">
-                        <label for="inviteRole">Rol del Sistema</label>
-                        <select id="inviteRole" required>
-                          <option value="docente">Docente</option>
-                          <option value="auxiliar">Profesor Auxiliar</option>
-                          <option value="administrador">Administrador</option>
-                        </select>
-                      </div>
-                    </div>
-                    <button
-                      class="primary"
-                      type="submit"
-                      style="margin-top: 1rem"
-                    >
-                      <i data-lucide="send"></i>
-                      <span>Enviar Invitación</span>
-                    </button>
-                    <div id="inviteAlert"></div>
-                  </form>
-                </div>
-                <!-- Tabla de Usuarios Registrados -->
                 <div id="admin-user-management">
-                  <h3>Usuarios Registrados</h3>
                   <div class="import-toolbar">
                     <button class="primary" type="button" id="importTeachersBtn">
                       <i data-lucide="file-input"></i>
@@ -198,11 +268,17 @@
                   <div id="userTableContainer" class="table-responsive"></div>
                 </div>
               </div>
+
               <div class="card">
-                <h2>Gestión de Actividades</h2>
-                <p class="card-subtitle">
-                  Registra tareas clave y da seguimiento al avance del equipo.
-                </p>
+                <div class="card-title">
+                  <div>
+                    <h2>Gestión de Actividades</h2>
+                    <p class="card-subtitle">
+                      Registra tareas clave y da seguimiento al avance del
+                      equipo.
+                    </p>
+                  </div>
+                </div>
                 <form id="adminActivityForm">
                   <div class="grid activity-form-grid">
                     <div class="form-field">
@@ -236,7 +312,9 @@
                     <div class="form-field">
                       <label for="activityCareer">Carrera</label>
                       <select id="activityCareer" name="career" required>
-                        <option value="global" selected>General (todas las carreras)</option>
+                        <option value="global" selected>
+                          General (todas las carreras)
+                        </option>
                         <option value="software">Ing. en Software</option>
                         <option value="manufactura">Ing. en Manufactura</option>
                         <option value="mecatronica">Ing. en Mecatrónica</option>
@@ -273,30 +351,37 @@
             <!-- Vistas de Docente -->
             <div id="docenteView" class="hidden">
               <div class="card">
-                <h2>Mis Actividades</h2>
-                <div id="teacherActivities" style="margin-top: 1.25rem"></div>
+                <div class="card-title">
+                  <div>
+                    <h2>Mis Actividades</h2>
+                    <p class="card-subtitle">
+                      Consulta el estado de cada actividad asignada a tu
+                      usuario.
+                    </p>
+                  </div>
+                </div>
+                <div id="teacherActivities" class="panel-content"></div>
               </div>
             </div>
 
             <!-- Vistas de Auxiliar -->
             <div id="auxiliarView" class="hidden">
               <div class="card">
-                <h2>Actividades de Apoyo</h2>
-                <p class="card-subtitle">
-                  Consulta tus tareas asignadas y actualiza su estado para
-                  mantener informado al equipo.
-                </p>
+                <div class="card-title">
+                  <div>
+                    <h2>Actividades de Apoyo</h2>
+                    <p class="card-subtitle">
+                      Actualiza el estado para mantener informado al equipo.
+                    </p>
+                  </div>
+                </div>
                 <div class="activity-legend">
                   <span class="status-badge status-pendiente">Pendiente</span>
                   <span class="status-badge status-en_progreso">En progreso</span>
                   <span class="status-badge status-completada">Completada</span>
                 </div>
                 <div id="auxiliarActivityAlert"></div>
-                <div
-                  id="auxiliarActivityList"
-                  class="activity-cards"
-                  style="margin-top: 1.25rem"
-                ></div>
+                <div id="auxiliarActivityList" class="activity-cards"></div>
               </div>
             </div>
           </section>
