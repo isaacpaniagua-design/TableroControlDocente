@@ -62,17 +62,11 @@ a {
 }
 
 main {
-  --main-offset-left: clamp(0.75rem, 3vw, 3rem);
-  --main-offset-right: clamp(2rem, 7vw, 6rem);
-  --main-viewport-width: 100vw;
-  --main-max-width: 1440px;
-  width: min(
-    var(--main-max-width),
-    calc(
-      var(--main-viewport-width) - var(--main-offset-left) - var(--main-offset-right)
-    )
-  );
-  margin: 0 var(--main-offset-right) 0 var(--main-offset-left);
+  --main-inline-padding: clamp(1.5rem, 4vw, 3.5rem);
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding-inline: var(--main-inline-padding);
 }
 
 .app-header__inner {
