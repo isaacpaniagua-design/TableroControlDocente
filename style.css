@@ -461,22 +461,41 @@ button.primary:hover {
 
 .auth-support {
   background: var(--surface);
-  border-radius: 22px;
-  padding: 1.5rem 1.75rem;
-  border: 1px dashed rgba(37, 99, 235, 0.2);
+  border-radius: 20px;
+  padding: 1.2rem 1.4rem;
+  border: 1px dashed rgba(37, 99, 235, 0.18);
   display: grid;
-  gap: 1.1rem;
-  box-shadow: 0 25px 70px -55px rgba(15, 23, 42, 0.35);
+  gap: 0.9rem;
+  box-shadow: 0 22px 60px -55px rgba(15, 23, 42, 0.35);
+  align-self: flex-start;
+}
+
+.auth-support__intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.auth-support__intro > svg {
+  width: 22px;
+  height: 22px;
+  padding: 0.35rem;
+  border-radius: 12px;
+  background: var(--surface-alt);
+  color: var(--primary);
+  flex-shrink: 0;
 }
 
 .auth-support h3 {
-  margin: 0.4rem 0 0.25rem;
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
 }
 
 .auth-support p {
   margin: 0;
   color: var(--muted);
   line-height: 1.5;
+  font-size: 0.92rem;
 }
 
 .auth-support ul {
@@ -484,15 +503,23 @@ button.primary:hover {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.45rem;
   color: var(--text);
   font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .auth-support li {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
+}
+
+.auth-support li svg {
+  width: 18px;
+  height: 18px;
+  color: var(--primary);
+  flex-shrink: 0;
 }
 
 #loginCard {
