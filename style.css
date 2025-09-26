@@ -65,7 +65,7 @@ main {
   --main-offset-left: clamp(0.75rem, 3vw, 3rem);
   --main-offset-right: clamp(2rem, 7vw, 6rem);
   --main-viewport-width: 100vw;
-  --main-max-width: 1180px;
+  --main-max-width: 1260px;
   width: min(
     var(--main-max-width),
     calc(
@@ -571,7 +571,7 @@ button.primary:hover {
 /* Dashboard layout */
 .dashboard-shell {
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  grid-template-columns: minmax(252px, 300px) minmax(0, 1fr);
   gap: clamp(1.8rem, 3vw, 2.4rem);
   align-items: stretch;
   height: 100%;
@@ -752,6 +752,16 @@ nav button.active {
   min-height: 0;
   overflow-y: auto;
   padding-right: 0.25rem;
+}
+
+#adminView {
+  display: grid;
+  gap: 2rem;
+  min-width: 0;
+}
+
+#adminView > * {
+  min-width: 0;
 }
 
 .content-intro {
@@ -1308,12 +1318,12 @@ button.small i {
   }
 
   main {
-    --main-max-width: 1200px;
+    --main-max-width: 1180px;
     --main-offset-right: clamp(1.8rem, 6vw, 4.5rem);
   }
 
   .dashboard-shell {
-    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
   }
 }
 
