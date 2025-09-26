@@ -678,6 +678,8 @@ let currentUser = null;
 let importedTeachersCount = 0;
 let firestoreUsersLoading = false;
 let firestoreUsersLoaded = false;
+let firestoreActivitiesLoading = false;
+let firestoreActivitiesLoaded = false;
 
 const charts = {
   users: null,
@@ -708,6 +710,7 @@ document.addEventListener("DOMContentLoaded", () => {
   refreshIcons();
   initializeAuthentication();
   attemptLoadUsersFromFirestore();
+  attemptLoadActivitiesFromFirestore();
 });
 
 function cacheDomElements() {
@@ -1872,7 +1875,7 @@ function clearAdminSections() {
   hideUserForm({ reset: true });
 }
 
-function handleActivityFormSubmit(event) {
+async function handleActivityFormSubmit(event) {
   event.preventDefault();
   if (!currentUser || currentUser.role !== "administrador") return;
   const formData = new FormData(event.target);
@@ -1902,30 +1905,138 @@ function handleActivityFormSubmit(event) {
     "Actividad registrada correctamente.",
     "success",
   );
-}
 
-function updateActivityStatus(activityId, newStatus, source) {
-  if (!STATUS_ORDER.includes(newStatus)) return;
-  const activity = activities.find((item) => item.id === activityId);
-  if (!activity || activity.status === newStatus) return;
-  activity.status = newStatus;
-  renderAllSections();
-  if (source === "admin") {
-    showMessage(elements.adminActivityAlert, "Estado actualizado.", "success");
-  }
-  if (source === "aux") {
+  const persistenceResult = await persistActivityChange(newActivity);
+  if (persistenceResult.success) {
     showMessage(
-      elements.auxiliarActivityAlert,
-      "Actividad actualizada correctamente.",
+      elements.adminActivityAlert,
+      "Actividad registrada y sincronizada con Firebase.",
       "success",
+    );
+  } else if (persistenceResult.reason === "missing-config") {
+    showMessage(
+      elements.adminActivityAlert,
+      "Actividad registrada. Configura Firebase para sincronizar con Firestore.",
+      "info",
+    );
+  } else if (persistenceResult.reason === "error") {
+    showMessage(
+      elements.adminActivityAlert,
+      "Actividad registrada, pero no fue posible sincronizar con Firebase.",
+      "error",
     );
   }
 }
 
-function removeActivity(activityId) {
-  activities = activities.filter((activity) => activity.id !== activityId);
+async function updateActivityStatus(activityId, newStatus, source) {
+  if (!STATUS_ORDER.includes(newStatus)) return;
+  const index = activities.findIndex((item) => item.id === activityId);
+  if (index < 0) return;
+  const previousActivity = { ...activities[index] };
+  if (previousActivity.status === newStatus) return;
+
+  const updatedActivity = {
+    ...previousActivity,
+    status: newStatus,
+    updatedAt: new Date().toISOString(),
+    updatedBy:
+      currentUser?.potroEmail ||
+      currentUser?.email ||
+      previousActivity.updatedBy ||
+      "",
+  };
+
+  activities[index] = updatedActivity;
+  renderAllSections();
+
+  let feedbackElement = null;
+  let initialMessage = "";
+  if (source === "admin") {
+    feedbackElement = elements.adminActivityAlert;
+    initialMessage = "Estado actualizado.";
+  } else if (source === "aux") {
+    feedbackElement = elements.auxiliarActivityAlert;
+    initialMessage = "Actividad actualizada correctamente.";
+  }
+
+  if (feedbackElement && initialMessage) {
+    showMessage(feedbackElement, initialMessage, "success");
+  }
+
+  const persistenceResult = await persistActivityChange(updatedActivity);
+  if (persistenceResult.success) {
+    if (feedbackElement) {
+      const successMessage =
+        source === "admin"
+          ? "Estado actualizado y sincronizado con Firebase."
+          : "Actividad actualizada y sincronizada correctamente.";
+      showMessage(feedbackElement, successMessage, "success");
+    }
+    return;
+  }
+
+  if (persistenceResult.reason === "missing-config") {
+    if (feedbackElement) {
+      const infoMessage =
+        source === "admin"
+          ? "Estado actualizado. Configura Firebase para sincronizar."
+          : "Actividad actualizada. Configura Firebase para sincronizar.";
+      showMessage(feedbackElement, infoMessage, "info");
+    }
+    return;
+  }
+
+  activities[index] = previousActivity;
+  renderAllSections();
+  if (feedbackElement) {
+    const errorMessage =
+      source === "admin"
+        ? "No fue posible sincronizar con Firebase. El cambio se revirtió."
+        : "No fue posible sincronizar con Firebase. El cambio se revirtió.";
+    showMessage(feedbackElement, errorMessage, "error");
+  }
+}
+
+async function removeActivity(activityId) {
+  const index = activities.findIndex((activity) => activity.id === activityId);
+  if (index < 0) return;
+
+  const originalActivities = activities.slice();
+  const updatedActivities = originalActivities.slice();
+  const [removedActivity] = updatedActivities.splice(index, 1);
+  if (!removedActivity) {
+    return;
+  }
+  activities = updatedActivities;
   renderAllSections();
   showMessage(elements.adminActivityAlert, "Actividad eliminada.", "info");
+
+  const persistenceResult = await removeActivityFromFirestore(removedActivity);
+  if (persistenceResult.success) {
+    showMessage(
+      elements.adminActivityAlert,
+      "Actividad eliminada y sincronizada con Firebase.",
+      "success",
+    );
+    return;
+  }
+
+  if (persistenceResult.reason === "missing-config") {
+    showMessage(
+      elements.adminActivityAlert,
+      "Actividad eliminada localmente. Configura Firebase para sincronizar.",
+      "info",
+    );
+    return;
+  }
+
+  activities = originalActivities;
+  renderAllSections();
+  showMessage(
+    elements.adminActivityAlert,
+    "No fue posible eliminar la actividad en Firebase. El cambio se revirtió.",
+    "error",
+  );
 }
 
 async function persistImportedUsers(records) {
@@ -2012,6 +2123,61 @@ async function removeUserFromFirestore(record) {
   }
 }
 
+async function persistActivityChange(record) {
+  if (!record) {
+    return { success: true };
+  }
+
+  const db = getFirestoreDb();
+  if (!db) {
+    return { success: false, reason: "missing-config" };
+  }
+
+  const documentId = resolveActivityDocumentId(record);
+  if (!documentId) {
+    return { success: false, reason: "missing-id" };
+  }
+
+  try {
+    const batch = writeBatch(db);
+    const docRef = doc(collection(db, "activities"), documentId);
+    const payload = buildFirestoreActivityPayload({
+      ...record,
+      id: record.id || documentId,
+    });
+    batch.set(docRef, payload, { merge: true });
+    await batch.commit();
+    return { success: true };
+  } catch (error) {
+    console.error("No fue posible sincronizar la actividad con Firebase:", error);
+    return { success: false, reason: "error", error };
+  }
+}
+
+async function removeActivityFromFirestore(record) {
+  if (!record) {
+    return { success: true };
+  }
+
+  const db = getFirestoreDb();
+  if (!db) {
+    return { success: false, reason: "missing-config" };
+  }
+
+  const documentId = resolveActivityDocumentId(record);
+  if (!documentId) {
+    return { success: false, reason: "missing-id" };
+  }
+
+  try {
+    await deleteDoc(doc(db, "activities", documentId));
+    return { success: true };
+  } catch (error) {
+    console.error("No fue posible eliminar la actividad de Firebase:", error);
+    return { success: false, reason: "error", error };
+  }
+}
+
 function buildFirestoreUserPayload(record) {
   const payload = {
     name: record.name || "",
@@ -2074,6 +2240,94 @@ function resolveUserDocumentId(record) {
   }
 
   return null;
+}
+
+function buildFirestoreActivityPayload(record) {
+  const payload = {
+    activityId: record.id || "",
+    title: record.title || "",
+    description: record.description || "",
+    dueDate: record.dueDate || "",
+    career: record.career || "global",
+    responsibleRole: record.responsibleRole || "",
+    responsibleEmail: record.responsibleEmail
+      ? normalizeEmail(record.responsibleEmail)
+      : "",
+    status: STATUS_ORDER.includes(record.status) ? record.status : "pendiente",
+    syncedAt: serverTimestamp(),
+  };
+
+  if (record.createdAt) {
+    payload.createdAtIso = record.createdAt;
+  }
+
+  if (record.createdBy) {
+    payload.createdBy = record.createdBy;
+  }
+
+  if (record.updatedAt) {
+    payload.updatedAtIso = record.updatedAt;
+  }
+
+  if (record.updatedBy) {
+    payload.updatedBy = record.updatedBy;
+  }
+
+  return payload;
+}
+
+function resolveActivityDocumentId(record) {
+  if (!record) return null;
+
+  const candidates = [
+    record.id,
+    record.activityId,
+    record.documentId,
+  ];
+
+  for (const candidate of candidates) {
+    const value = String(candidate || "").trim();
+    if (value) {
+      return value;
+    }
+  }
+
+  if (record.title && record.dueDate) {
+    return `${String(record.title).trim()}|${String(record.dueDate).trim()}`;
+  }
+
+  return null;
+}
+
+function createActivityRecord(raw) {
+  const toTrimmedString = (value) => String(value ?? "").trim();
+  const status = STATUS_ORDER.includes(raw.status)
+    ? raw.status
+    : "pendiente";
+
+  return {
+    id:
+      toTrimmedString(
+        raw.id || raw.activityId || raw.activity_id || raw.documentId || "",
+      ) || null,
+    title: toTrimmedString(raw.title || ""),
+    description: toTrimmedString(raw.description || ""),
+    dueDate: toTrimmedString(raw.dueDate || raw.due_date || ""),
+    career: toTrimmedString(raw.career || "global") || "global",
+    responsibleRole: toTrimmedString(raw.responsibleRole || raw.role || ""),
+    responsibleEmail:
+      normalizeEmail(raw.responsibleEmail || raw.assignedTo || raw.assigneeEmail) ||
+      "",
+    status,
+    createdAt: toTrimmedString(
+      raw.createdAt || raw.createdAtIso || raw.created_at || "",
+    ),
+    createdBy: toTrimmedString(raw.createdBy || raw.created_by || ""),
+    updatedAt: toTrimmedString(
+      raw.updatedAt || raw.updatedAtIso || raw.updated_at || "",
+    ),
+    updatedBy: toTrimmedString(raw.updatedBy || raw.updated_by || ""),
+  };
 }
 
 async function importSoftwareTeachers() {
@@ -2184,6 +2438,63 @@ async function attemptLoadUsersFromFirestore() {
     console.error("No fue posible obtener usuarios de Firebase:", error);
   } finally {
     firestoreUsersLoading = false;
+  }
+}
+
+async function attemptLoadActivitiesFromFirestore() {
+  if (firestoreActivitiesLoaded || firestoreActivitiesLoading) {
+    return;
+  }
+
+  const db = getFirestoreDb();
+  if (!db) {
+    return;
+  }
+
+  firestoreActivitiesLoading = true;
+
+  try {
+    const snapshot = await getDocs(collection(db, "activities"));
+    if (snapshot.empty) {
+      firestoreActivitiesLoaded = true;
+      return;
+    }
+
+    const remoteActivities = snapshot.docs
+      .map((docSnapshot) => {
+        const data = docSnapshot.data() || {};
+        const candidate = createActivityRecord({
+          ...data,
+          id: data.id || data.activityId || docSnapshot.id || "",
+        });
+
+        if (!candidate.id) {
+          candidate.id = docSnapshot.id;
+        }
+
+        return candidate;
+      })
+      .filter((activity) => Boolean(activity.title));
+
+    if (!remoteActivities.length) {
+      firestoreActivitiesLoaded = true;
+      return;
+    }
+
+    activities = remoteActivities;
+    firestoreActivitiesLoaded = true;
+    if (currentUser) {
+      renderAllSections();
+    } else {
+      updateHeaderStats();
+      updateHighlights();
+      updateCharts();
+      refreshIcons();
+    }
+  } catch (error) {
+    console.error("No fue posible obtener actividades de Firebase:", error);
+  } finally {
+    firestoreActivitiesLoading = false;
   }
 }
 
