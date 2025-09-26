@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDocs,
   serverTimestamp,
   writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -117,6 +118,9 @@ function createUserRecord(raw) {
       ? potroEmail.replace("@potros.", "@")
       : raw.institutionalEmail ?? "");
   const institutionalEmail = toEmail(institutionalEmailSource ?? "");
+  const genericEmail = toEmail(raw.email ?? potroEmail ?? "");
+
+  const firebaseUid = toTrimmedString(raw.firebaseUid ?? raw.uid ?? "");
 
   return {
     ...raw,
@@ -128,7 +132,9 @@ function createUserRecord(raw) {
     career: toTrimmedString(raw.career ?? ""),
     potroEmail: potroEmail || "",
     institutionalEmail: institutionalEmail || "",
-    email: potroEmail || "",
+    email: genericEmail || potroEmail || "",
+    firebaseUid,
+    allowExternalAuth: Boolean(raw.allowExternalAuth ?? false),
   };
 }
 
@@ -499,6 +505,8 @@ let users = initialUsers.map((user) => ({ ...user }));
 let activities = initialActivities.map((activity) => ({ ...activity }));
 let currentUser = null;
 let importedTeachersCount = 0;
+let firestoreUsersLoading = false;
+let firestoreUsersLoaded = false;
 
 const charts = {
   users: null,
@@ -527,6 +535,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateCharts();
   refreshIcons();
   initializeAuthentication();
+  attemptLoadUsersFromFirestore();
 });
 
 function cacheDomElements() {
@@ -737,7 +746,11 @@ function handleAuthStateChange(firebaseUser) {
   }
 
   const normalizedEmail = normalizeEmail(firebaseUser.email);
-  if (!normalizedEmail || !normalizedEmail.endsWith(`@${ALLOWED_DOMAIN}`)) {
+  const matchedUser = findUserRecord(firebaseUser);
+  const isAllowedDomain =
+    normalizedEmail && normalizedEmail.endsWith(`@${ALLOWED_DOMAIN}`);
+
+  if (!isAllowedDomain && !(matchedUser && matchedUser.allowExternalAuth)) {
     preserveLoginMessage = true;
     applyLoggedOutState({ preserveMessages: true });
     showMessage(
@@ -752,7 +765,6 @@ function handleAuthStateChange(firebaseUser) {
     return;
   }
 
-  const matchedUser = findUserByEmail(normalizedEmail);
   if (!matchedUser) {
     preserveLoginMessage = true;
     applyLoggedOutState({ preserveMessages: true });
@@ -776,7 +788,8 @@ function handleAuthStateChange(firebaseUser) {
       firebaseUser.email ||
       "Usuario",
     potroEmail: matchedUser.potroEmail || normalizedEmail,
-    email: normalizedEmail,
+    email: normalizedEmail || matchedUser.email || "",
+    firebaseUid: matchedUser.firebaseUid || firebaseUser.uid || "",
   };
 
   if (normalizedEmail === PRIMARY_ADMIN_EMAIL_NORMALIZED) {
@@ -849,6 +862,34 @@ function findUserByEmail(email) {
       return potro === target || institutional === target || generic === target;
     }) || null
   );
+}
+
+function findUserByUid(uid) {
+  const targetUid = String(uid || "").trim();
+  if (!targetUid) return null;
+
+  return (
+    users.find((user) => {
+      const candidateUid = String(user.firebaseUid || user.uid || "").trim();
+      return candidateUid && candidateUid === targetUid;
+    }) || null
+  );
+}
+
+function findUserRecord(firebaseUser) {
+  if (!firebaseUser) {
+    return null;
+  }
+
+  const normalizedEmail = normalizeEmail(firebaseUser.email);
+  if (normalizedEmail) {
+    const byEmail = findUserByEmail(normalizedEmail);
+    if (byEmail) {
+      return byEmail;
+    }
+  }
+
+  return findUserByUid(firebaseUser.uid);
 }
 
 function configureRoleViews(role) {
@@ -1275,6 +1316,14 @@ async function persistImportedUsers(records) {
         syncedAt: serverTimestamp(),
       };
 
+      if (record.firebaseUid) {
+        payload.firebaseUid = record.firebaseUid;
+      }
+
+      if (typeof record.allowExternalAuth === "boolean") {
+        payload.allowExternalAuth = record.allowExternalAuth;
+      }
+
       if (record.importedAt) {
         payload.importedAtIso = record.importedAt;
       }
@@ -1340,6 +1389,135 @@ async function importSoftwareTeachers() {
     "Comparte el acceso con los docentes recién importados.",
     "info",
   );
+}
+
+async function attemptLoadUsersFromFirestore() {
+  if (firestoreUsersLoaded || firestoreUsersLoading) {
+    return;
+  }
+
+  const db = getFirestoreDb();
+  if (!db) {
+    return;
+  }
+
+  firestoreUsersLoading = true;
+
+  try {
+    const snapshot = await getDocs(collection(db, "users"));
+    if (snapshot.empty) {
+      firestoreUsersLoaded = true;
+      return;
+    }
+
+    const remoteUsers = snapshot.docs
+      .map((docSnapshot) => {
+        const data = docSnapshot.data() || {};
+        const candidate = {
+          id: data.id || data.userId || docSnapshot.id || "",
+          name: data.name || "",
+          controlNumber: data.controlNumber || "",
+          potroEmail: data.potroEmail || data.email || "",
+          email: data.email || "",
+          institutionalEmail: data.institutionalEmail || "",
+          phone: data.phone || "",
+          role: data.role || "",
+          career: data.career || "",
+          firebaseUid: data.firebaseUid || "",
+          allowExternalAuth: data.allowExternalAuth ?? false,
+        };
+
+        return createUserRecord(candidate);
+      })
+      .filter((user) => Boolean(user.name || user.potroEmail || user.email));
+
+    if (!remoteUsers.length) {
+      firestoreUsersLoaded = true;
+      return;
+    }
+
+    users = mergeUserCollections(users, remoteUsers);
+    firestoreUsersLoaded = true;
+    updateHeaderStats();
+    updateHighlights();
+    updateCharts();
+    refreshIcons();
+    refreshCurrentUser();
+  } catch (error) {
+    console.error("No fue posible obtener usuarios de Firebase:", error);
+  } finally {
+    firestoreUsersLoading = false;
+  }
+}
+
+function refreshCurrentUser() {
+  if (!currentUser) {
+    return;
+  }
+
+  const updatedRecord = findUserByIdentity(currentUser);
+  if (!updatedRecord) {
+    renderAllSections();
+    return;
+  }
+
+  currentUser = { ...updatedRecord, email: currentUser.email || updatedRecord.email };
+  renderAllSections();
+}
+
+function findUserByIdentity(referenceUser) {
+  if (!referenceUser) {
+    return null;
+  }
+
+  const referenceKeys = getUserIdentityKeys(referenceUser);
+  return (
+    users.find((user) => {
+      const userKeys = getUserIdentityKeys(user);
+      return userKeys.some((key) => referenceKeys.includes(key));
+    }) || null
+  );
+}
+
+function getUserIdentityKeys(user) {
+  const keys = [];
+  if (user.id) keys.push(`id:${String(user.id).toLowerCase()}`);
+  if (user.controlNumber)
+    keys.push(`control:${String(user.controlNumber).toLowerCase()}`);
+
+  const potro = normalizeEmail(user.potroEmail);
+  if (potro) keys.push(`email:${potro}`);
+
+  const institutional = normalizeEmail(user.institutionalEmail);
+  if (institutional) keys.push(`email:${institutional}`);
+
+  const email = normalizeEmail(user.email);
+  if (email) keys.push(`email:${email}`);
+
+  if (user.firebaseUid) keys.push(`uid:${String(user.firebaseUid)}`);
+  if (user.uid) keys.push(`uid:${String(user.uid)}`);
+
+  return Array.from(new Set(keys));
+}
+
+function mergeUserCollections(localUsers, remoteUsers) {
+  const merged = [...localUsers];
+
+  remoteUsers.forEach((remoteUser) => {
+    const existingIndex = merged.findIndex((candidate) => {
+      const candidateKeys = getUserIdentityKeys(candidate);
+      const remoteKeys = getUserIdentityKeys(remoteUser);
+      return remoteKeys.some((key) => candidateKeys.includes(key));
+    });
+
+    if (existingIndex >= 0) {
+      merged[existingIndex] = { ...merged[existingIndex], ...remoteUser };
+    } else {
+      merged.push(remoteUser);
+    }
+  });
+
+  return merged;
 }
 
 function updateHeaderStats() {
