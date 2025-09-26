@@ -57,6 +57,30 @@ function updateLayoutMode() {
   body.classList.toggle("auth-active", !dashboardVisible);
 }
 
+function setSidebarCollapsed(value) {
+  if (!elements.dashboardShell) return;
+  const shouldCollapse =
+    typeof value === "boolean"
+      ? value
+      : !elements.dashboardShell.classList.contains("sidebar-collapsed");
+  elements.dashboardShell.classList.toggle("sidebar-collapsed", shouldCollapse);
+  if (elements.sidebarCollapseBtn) {
+    elements.sidebarCollapseBtn.setAttribute(
+      "aria-expanded",
+      String(!shouldCollapse),
+    );
+  }
+  if (elements.sidebarExpandBtn) {
+    if (shouldCollapse) {
+      elements.sidebarExpandBtn.removeAttribute("hidden");
+      elements.sidebarExpandBtn.setAttribute("aria-hidden", "false");
+    } else {
+      elements.sidebarExpandBtn.setAttribute("hidden", "hidden");
+      elements.sidebarExpandBtn.setAttribute("aria-hidden", "true");
+    }
+  }
+}
+
 const initialUsers = [
   {
     id: "u-admin-1",
@@ -267,6 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function cacheDomElements() {
   elements.authSection = document.getElementById("authSection");
   elements.dashboard = document.getElementById("dashboard");
+  elements.dashboardShell = document.getElementById("dashboardShell");
   elements.loginForm = document.getElementById("loginForm");
   elements.userSelector = document.getElementById("userSelector");
   elements.loginError = document.getElementById("loginError");
@@ -295,6 +320,11 @@ function cacheDomElements() {
   elements.auxiliarActivityAlert = document.getElementById("auxiliarActivityAlert");
   elements.printReport = document.getElementById("printReport");
   elements.refreshDashboard = document.getElementById("refreshDashboard");
+  elements.sidebarCollapseBtn = document.getElementById("sidebarCollapseBtn");
+  elements.sidebarExpandBtn = document.getElementById("sidebarExpandBtn");
+  if (elements.dashboardShell) {
+    setSidebarCollapsed(false);
+  }
 }
 
 function hideLoader() {
@@ -335,6 +365,22 @@ function attachEventListeners() {
       "click",
       importSoftwareTeachers,
     );
+  }
+  if (elements.sidebarCollapseBtn) {
+    elements.sidebarCollapseBtn.addEventListener("click", () => {
+      setSidebarCollapsed(true);
+      if (elements.sidebarExpandBtn) {
+        elements.sidebarExpandBtn.focus();
+      }
+    });
+  }
+  if (elements.sidebarExpandBtn) {
+    elements.sidebarExpandBtn.addEventListener("click", () => {
+      setSidebarCollapsed(false);
+      if (elements.sidebarCollapseBtn) {
+        elements.sidebarCollapseBtn.focus();
+      }
+    });
   }
 }
 
@@ -399,6 +445,7 @@ function loginUser(user) {
   buildNavigation(user.role);
   renderSidebarUserCard(user);
   renderAllSections();
+  setSidebarCollapsed(false);
   if (elements.loginForm) {
     elements.loginForm.reset();
   }
@@ -423,6 +470,7 @@ function handleLogout() {
   document
     .querySelectorAll("[data-nav-label]")
     .forEach((section) => section.classList.remove("is-targeted"));
+  setSidebarCollapsed(false);
   updateHeaderStats();
   refreshIcons();
 }
