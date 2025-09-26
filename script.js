@@ -1270,7 +1270,7 @@ function renderUserTable() {
     : "";
 
   elements.userTableContainer.innerHTML = `
-    <table>
+    <table class="user-table">
       <thead>
         <tr>
           <th>Nombre</th>
