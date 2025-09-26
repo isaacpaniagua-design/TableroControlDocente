@@ -65,7 +65,7 @@ main {
   --main-offset-left: clamp(0.75rem, 3vw, 3rem);
   --main-offset-right: clamp(2rem, 7vw, 6rem);
   --main-viewport-width: 100vw;
-  --main-max-width: 1260px;
+  --main-max-width: 1440px;
   width: min(
     var(--main-max-width),
     calc(
@@ -207,12 +207,12 @@ body.dashboard-active main {
 }
 
 body.dashboard-active .app-header__inner {
-  width: min(96vw, 1380px);
+  width: min(96vw, 1500px);
 }
 
 body.dashboard-active main {
   --main-viewport-width: 96vw;
-  --main-max-width: 1380px;
+  --main-max-width: 1500px;
 }
 
 body.auth-active main {
