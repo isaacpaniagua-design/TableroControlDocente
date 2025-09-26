@@ -3,12 +3,12 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const FALLBACK_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyBWa6nNgWGdsqS12OhqAfIlJcSbT59cLGs",
+  authDomain: "tablerocontroldocente.firebaseapp.com",
+  projectId: "tablerocontroldocente",
+  storageBucket: "tablerocontroldocente.firebasestorage.app",
+  messagingSenderId: "184781501380",
+  appId: "1:184781501380:web:cc14875f679e077f28ea91",
 };
 
 let firebaseApp = null;
