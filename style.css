@@ -198,15 +198,29 @@ main > section {
 
 body.dashboard-active main {
   justify-content: flex-start;
+  --main-viewport-width: 96vw;
+  --main-max-width: 1500px;
+  --main-inline-padding: clamp(1rem, 2.5vw, 2.5rem);
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding-inline: var(--main-inline-padding);
 }
 
 body.dashboard-active .app-header__inner {
   width: min(96vw, 1500px);
 }
 
-body.dashboard-active main {
-  --main-viewport-width: 96vw;
-  --main-max-width: 1500px;
+body.dashboard-active .dashboard-shell {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+body.dashboard-active .content-area {
+  width: 100%;
+  max-width: none;
+  padding-inline-end: 0;
 }
 
 body.auth-active main {
