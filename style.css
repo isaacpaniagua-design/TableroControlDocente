@@ -950,6 +950,23 @@ textarea:focus {
   border: 1px solid rgba(37, 99, 235, 0.12);
 }
 
+.table-responsive .user-table {
+  min-width: 0;
+  width: 100%;
+  table-layout: auto;
+}
+
+.table-responsive .user-table th,
+.table-responsive .user-table td {
+  white-space: normal;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.table-responsive .user-table td.actions-cell {
+  white-space: nowrap;
+}
+
 .user-management-actions {
   display: flex;
   justify-content: flex-end;
