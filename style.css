@@ -56,10 +56,23 @@ a {
   backdrop-filter: blur(18px);
 }
 
-.app-header__inner,
-main {
+.app-header__inner {
   width: min(1090px, 96vw);
   margin: 0 auto;
+}
+
+main {
+  --main-offset-left: clamp(0.75rem, 3vw, 3rem);
+  --main-offset-right: clamp(2rem, 7vw, 6rem);
+  --main-viewport-width: 100vw;
+  --main-max-width: 1180px;
+  width: min(
+    var(--main-max-width),
+    calc(
+      var(--main-viewport-width) - var(--main-offset-left) - var(--main-offset-right)
+    )
+  );
+  margin: 0 var(--main-offset-right) 0 var(--main-offset-left);
 }
 
 .app-header__inner {
@@ -193,9 +206,13 @@ body.dashboard-active main {
   justify-content: flex-start;
 }
 
-body.dashboard-active .app-header__inner,
-body.dashboard-active main {
+body.dashboard-active .app-header__inner {
   width: min(96vw, 1380px);
+}
+
+body.dashboard-active main {
+  --main-viewport-width: 96vw;
+  --main-max-width: 1380px;
 }
 
 body.auth-active main {
@@ -559,6 +576,23 @@ button.primary:hover {
   align-items: stretch;
   height: 100%;
   min-height: 0;
+  transition: grid-template-columns 0.25s ease, gap 0.25s ease;
+}
+
+.dashboard-shell.sidebar-collapsed {
+  grid-template-columns: minmax(0, 0px) minmax(0, 1fr);
+  gap: clamp(1.4rem, 2.5vw, 2rem);
+}
+
+.dashboard-shell.sidebar-collapsed .sidebar {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-28px);
+  pointer-events: none;
+}
+
+.dashboard-shell.sidebar-collapsed .content-area {
+  grid-column: 2 / -1;
 }
 
 .sidebar {
@@ -572,6 +606,60 @@ button.primary:hover {
   gap: 2rem;
   color: white;
   box-shadow: 0 30px 60px -45px rgba(15, 23, 42, 0.55);
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+}
+
+.sidebar .sidebar-toggle {
+  align-self: flex-end;
+}
+
+.sidebar-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  border-radius: 14px;
+  padding: 0.6rem 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease,
+    box-shadow 0.2s ease;
+  box-shadow: 0 18px 38px -26px rgba(15, 23, 42, 0.65);
+}
+
+.sidebar-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-2px);
+}
+
+.sidebar-toggle--floating {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  justify-self: flex-start;
+  margin-bottom: 1rem;
+  color: var(--primary);
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  box-shadow: 0 18px 40px -28px rgba(37, 99, 235, 0.55);
+}
+
+.sidebar-toggle--floating:hover {
+  background: rgba(37, 99, 235, 0.18);
+  color: var(--primary-dark);
+  transform: translateX(0);
+}
+
+.sidebar-toggle--floating[hidden] {
+  display: none !important;
 }
 
 .user-card {
@@ -1215,9 +1303,13 @@ button.small i {
 /* Responsive */
 @media (max-width: 1280px) {
   .app-header__inner,
-  .app-header__meta,
-  main {
+  .app-header__meta {
     width: min(96vw, 1200px);
+  }
+
+  main {
+    --main-max-width: 1200px;
+    --main-offset-right: clamp(1.8rem, 6vw, 4.5rem);
   }
 
   .dashboard-shell {
@@ -1227,9 +1319,13 @@ button.small i {
 
 @media (max-width: 1024px) {
   .app-header__inner,
-  .app-header__meta,
-  main {
+  .app-header__meta {
     width: min(96vw, 960px);
+  }
+
+  main {
+    --main-offset-left: clamp(0.75rem, 4vw, 2.25rem);
+    --main-offset-right: clamp(1rem, 5vw, 3.25rem);
   }
 
   .dashboard-shell {
@@ -1239,6 +1335,18 @@ button.small i {
   .sidebar {
     position: sticky;
     top: 6rem;
+  }
+
+  .dashboard-shell.sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-shell.sidebar-collapsed .content-area {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-shell.sidebar-collapsed .sidebar {
+    display: none;
   }
 }
 
@@ -1260,6 +1368,11 @@ button.small i {
   .header-tools {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  main {
+    --main-offset-left: clamp(0.6rem, 4vw, 1.5rem);
+    --main-offset-right: clamp(0.75rem, 6vw, 2rem);
   }
 
   header .user-meta {

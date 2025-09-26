@@ -166,8 +166,18 @@
 
       <!-- Dashboard Principal -->
       <section id="dashboard" class="hidden">
-        <div class="dashboard-shell">
+        <div class="dashboard-shell" id="dashboardShell">
           <aside class="sidebar">
+            <button
+              type="button"
+              class="sidebar-toggle"
+              id="sidebarCollapseBtn"
+              aria-label="Ocultar menú lateral"
+              aria-expanded="true"
+            >
+              <i data-lucide="panel-left-close"></i>
+              <span>Ocultar menú</span>
+            </button>
             <div class="user-card">
               <span class="user-badge">Sesión activa</span>
               <h3 id="sidebarName"></h3>
@@ -188,6 +198,16 @@
             </div>
           </aside>
           <section class="content-area">
+            <button
+              type="button"
+              class="sidebar-toggle sidebar-toggle--floating"
+              id="sidebarExpandBtn"
+              aria-label="Mostrar menú lateral"
+              hidden
+            >
+              <i data-lucide="panel-left"></i>
+              <span>Mostrar menú</span>
+            </button>
             <div
               class="content-intro"
               id="dashboardIntro"
