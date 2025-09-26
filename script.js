@@ -332,6 +332,7 @@ let currentUser = null;
 let importedTeachersCount = 0;
 let firestoreUsersLoading = false;
 let firestoreUsersLoaded = false;
+let pendingFirebaseUser = null;
 let firestoreActivitiesLoading = false;
 let firestoreActivitiesLoaded = false;
 
@@ -731,17 +732,20 @@ async function handleLogout() {
 
 function handleAuthStateChange(firebaseUser) {
   if (!firebaseUser) {
+    pendingFirebaseUser = null;
     applyLoggedOutState({ preserveMessages: preserveLoginMessage });
     preserveLoginMessage = false;
     return;
   }
 
+  pendingFirebaseUser = firebaseUser;
   const normalizedEmail = normalizeEmail(firebaseUser.email);
   const matchedUser = findUserRecord(firebaseUser);
   const isAllowedDomain =
     normalizedEmail && normalizedEmail.endsWith(`@${ALLOWED_DOMAIN}`);
 
   if (!isAllowedDomain && !(matchedUser && matchedUser.allowExternalAuth)) {
+    pendingFirebaseUser = null;
     preserveLoginMessage = true;
     applyLoggedOutState({ preserveMessages: true });
     showMessage(
@@ -757,6 +761,17 @@ function handleAuthStateChange(firebaseUser) {
   }
 
   if (!matchedUser) {
+    if (!firestoreUsersLoaded) {
+      showMessage(
+        elements.loginError,
+        "Verificando tus permisos de acceso...",
+        "info",
+        null,
+      );
+      return;
+    }
+
+    pendingFirebaseUser = null;
     preserveLoginMessage = true;
     applyLoggedOutState({ preserveMessages: true });
     showMessage(
@@ -787,6 +802,7 @@ function handleAuthStateChange(firebaseUser) {
     userRecord.role = "administrador";
   }
 
+  pendingFirebaseUser = null;
   preserveLoginMessage = false;
   hideMessage(elements.loginError);
   loginUser(userRecord);
@@ -2179,6 +2195,8 @@ async function attemptLoadUsersFromFirestore() {
 
   const db = getFirestoreDb();
   if (!db) {
+    firestoreUsersLoaded = true;
+    retryPendingLogin();
     return;
   }
 
@@ -2188,6 +2206,7 @@ async function attemptLoadUsersFromFirestore() {
     const snapshot = await getDocs(collection(db, "users"));
     if (snapshot.empty) {
       firestoreUsersLoaded = true;
+      retryPendingLogin();
       return;
     }
 
@@ -2225,8 +2244,11 @@ async function attemptLoadUsersFromFirestore() {
     updateCharts();
     refreshIcons();
     refreshCurrentUser();
+    retryPendingLogin();
   } catch (error) {
     console.error("No fue posible obtener usuarios de Firebase:", error);
+    firestoreUsersLoaded = true;
+    retryPendingLogin();
   } finally {
     firestoreUsersLoading = false;
   }
@@ -2358,6 +2380,18 @@ function mergeUserCollections(localUsers, remoteUsers) {
   });
 
   return merged;
+}
+
+function retryPendingLogin() {
+  if (!pendingFirebaseUser) {
+    return;
+  }
+
+  if (!firestoreUsersLoaded) {
+    return;
+  }
+
+  handleAuthStateChange(pendingFirebaseUser);
 }
 
 function updateHeaderStats() {
