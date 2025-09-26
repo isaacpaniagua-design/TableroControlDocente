@@ -1,3 +1,11 @@
+import {
+  collection,
+  doc,
+  serverTimestamp,
+  writeBatch,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestoreDb } from "./firebase-config.js";
+
 const CAREER_LABELS = {
   software: "Ing. en Software",
   manufactura: "Ing. en Manufactura",
@@ -81,11 +89,46 @@ function setSidebarCollapsed(value) {
   }
 }
 
+function createUserRecord(raw) {
+  const toTrimmedString = (value) => {
+    const text = String(value ?? "").trim();
+    return text;
+  };
+
+  const toEmail = (value) => {
+    const email = toTrimmedString(value);
+    return email ? email.toLowerCase() : "";
+  };
+
+  const potroEmail = toEmail(raw.potroEmail ?? raw.email ?? "");
+  const institutionalEmailSource =
+    raw.institutionalEmail ??
+    (potroEmail && potroEmail.includes("@potros.")
+      ? potroEmail.replace("@potros.", "@")
+      : raw.institutionalEmail ?? "");
+  const institutionalEmail = toEmail(institutionalEmailSource ?? "");
+
+  return {
+    ...raw,
+    id: toTrimmedString(raw.id ?? ""),
+    name: toTrimmedString(raw.name ?? ""),
+    controlNumber: toTrimmedString(raw.controlNumber ?? ""),
+    phone: toTrimmedString(raw.phone ?? ""),
+    role: toTrimmedString(raw.role ?? ""),
+    career: toTrimmedString(raw.career ?? ""),
+    potroEmail: potroEmail || "",
+    institutionalEmail: institutionalEmail || "",
+    email: potroEmail || "",
+  };
+}
+
 const initialUsers = [
   {
     id: "u-admin-1",
     name: "María Fernanda López",
-    email: "maria.lopez@potros.itson.edu.mx",
+    controlNumber: "A210001",
+    potroEmail: "maria.lopez@potros.itson.edu.mx",
+    institutionalEmail: "maria.lopez@itson.edu.mx",
     role: "administrador",
     career: "software",
     phone: "(644) 410 9034",
@@ -93,7 +136,9 @@ const initialUsers = [
   {
     id: "u-admin-2",
     name: "Gerardo Sánchez",
-    email: "gerardo.sanchez@potros.itson.edu.mx",
+    controlNumber: "A210002",
+    potroEmail: "gerardo.sanchez@potros.itson.edu.mx",
+    institutionalEmail: "gerardo.sanchez@itson.edu.mx",
     role: "administrador",
     career: "global",
     phone: "(644) 410 9065",
@@ -101,7 +146,9 @@ const initialUsers = [
   {
     id: "u-doc-1",
     name: "Ana Martínez Rivera",
-    email: "ana.martinez@potros.itson.edu.mx",
+    controlNumber: "D220101",
+    potroEmail: "ana.martinez@potros.itson.edu.mx",
+    institutionalEmail: "ana.martinez@itson.edu.mx",
     role: "docente",
     career: "software",
     phone: "(644) 109 2234",
@@ -109,7 +156,9 @@ const initialUsers = [
   {
     id: "u-doc-2",
     name: "José Luis Romero",
-    email: "jose.romero@potros.itson.edu.mx",
+    controlNumber: "D220102",
+    potroEmail: "jose.romero@potros.itson.edu.mx",
+    institutionalEmail: "jose.romero@itson.edu.mx",
     role: "docente",
     career: "manufactura",
     phone: "(644) 130 1190",
@@ -117,7 +166,9 @@ const initialUsers = [
   {
     id: "u-doc-3",
     name: "Patricia Estrada",
-    email: "patricia.estrada@potros.itson.edu.mx",
+    controlNumber: "D220103",
+    potroEmail: "patricia.estrada@potros.itson.edu.mx",
+    institutionalEmail: "patricia.estrada@itson.edu.mx",
     role: "docente",
     career: "mecatronica",
     phone: "(644) 173 8765",
@@ -125,7 +176,9 @@ const initialUsers = [
   {
     id: "u-doc-4",
     name: "Elena Aguilar",
-    email: "elena.aguilar@potros.itson.edu.mx",
+    controlNumber: "D220104",
+    potroEmail: "elena.aguilar@potros.itson.edu.mx",
+    institutionalEmail: "elena.aguilar@itson.edu.mx",
     role: "docente",
     career: "software",
     phone: "(644) 200 8810",
@@ -133,7 +186,9 @@ const initialUsers = [
   {
     id: "u-aux-1",
     name: "Laura Quintero",
-    email: "laura.quintero@potros.itson.edu.mx",
+    controlNumber: "X230201",
+    potroEmail: "laura.quintero@potros.itson.edu.mx",
+    institutionalEmail: "laura.quintero@itson.edu.mx",
     role: "auxiliar",
     career: "software",
     phone: "(644) 198 2234",
@@ -141,7 +196,9 @@ const initialUsers = [
   {
     id: "u-aux-2",
     name: "César Miranda",
-    email: "cesar.miranda@potros.itson.edu.mx",
+    controlNumber: "X230202",
+    potroEmail: "cesar.miranda@potros.itson.edu.mx",
+    institutionalEmail: "cesar.miranda@itson.edu.mx",
     role: "auxiliar",
     career: "manufactura",
     phone: "(644) 204 6611",
@@ -149,18 +206,22 @@ const initialUsers = [
   {
     id: "u-aux-3",
     name: "Sofía Herrera",
-    email: "sofia.herrera@potros.itson.edu.mx",
+    controlNumber: "X230203",
+    potroEmail: "sofia.herrera@potros.itson.edu.mx",
+    institutionalEmail: "sofia.herrera@itson.edu.mx",
     role: "auxiliar",
     career: "mecatronica",
     phone: "(644) 120 5543",
   },
-];
+].map(createUserRecord);
 
 const softwareTeacherImport = [
   {
     id: "u-imp-1",
     name: "Isaac Paniagua",
-    email: "isaac.paniagua@potros.itson.edu.mx",
+    controlNumber: "D230201",
+    potroEmail: "isaac.paniagua@potros.itson.edu.mx",
+    institutionalEmail: "isaac.paniagua@itson.edu.mx",
     role: "docente",
     career: "software",
     phone: "(622) 107 2441",
@@ -168,7 +229,9 @@ const softwareTeacherImport = [
   {
     id: "u-imp-2",
     name: "Julio Nava",
-    email: "julio.nava@potros.itson.edu.mx",
+    controlNumber: "D230202",
+    potroEmail: "julio.nava@potros.itson.edu.mx",
+    institutionalEmail: "julio.nava@itson.edu.mx",
     role: "docente",
     career: "software",
     phone: "(622) 100 2760",
@@ -176,12 +239,14 @@ const softwareTeacherImport = [
   {
     id: "u-imp-3",
     name: "Bertha Valle",
-    email: "bertha.valle@potros.itson.edu.mx",
+    controlNumber: "D230203",
+    potroEmail: "bertha.valle@potros.itson.edu.mx",
+    institutionalEmail: "bertha.valle@itson.edu.mx",
     role: "docente",
     career: "software",
     phone: "(622) 109 2074",
   },
-];
+].map(createUserRecord);
 
 const initialActivities = [
   {
@@ -402,7 +467,12 @@ function populateUserSelector(select) {
     usersByRole.forEach((user) => {
       const option = document.createElement("option");
       option.value = user.id;
-      option.textContent = `${user.name} — ${user.email}`;
+      const descriptionParts = [user.potroEmail, user.controlNumber]
+        .filter(Boolean)
+        .join(" • ");
+      option.textContent = descriptionParts
+        ? `${user.name} — ${descriptionParts}`
+        : user.name;
       group.append(option);
     });
     select.append(group);
@@ -560,10 +630,21 @@ function renderAllSections() {
 
 function renderSidebarUserCard(user) {
   if (elements.sidebarName) elements.sidebarName.textContent = user.name;
-  if (elements.sidebarEmail) elements.sidebarEmail.textContent = user.email;
-  if (elements.sidebarCareer)
-    elements.sidebarCareer.textContent =
-      CAREER_LABELS[user.career] || "Coordinación general";
+  if (elements.sidebarEmail) {
+    const emails = [user.potroEmail, user.institutionalEmail]
+      .filter(Boolean)
+      .join(" • ");
+    elements.sidebarEmail.textContent = emails;
+  }
+  if (elements.sidebarCareer) {
+    const details = [
+      CAREER_LABELS[user.career] || "Coordinación general",
+      user.controlNumber ? `No. control: ${user.controlNumber}` : "",
+    ]
+      .filter(Boolean)
+      .join(" • ");
+    elements.sidebarCareer.textContent = details;
+  }
 }
 
 function renderUserTable() {
@@ -584,10 +665,11 @@ function renderUserTable() {
       const badgeClass = ROLE_BADGE_CLASS[user.role] || "badge";
       return `
         <tr>
-          <td>
-            ${user.name}
-            <br /><small>${user.email}</small>
-          </td>
+          <td>${user.name || "—"}</td>
+          <td>${user.id || "—"}</td>
+          <td>${user.controlNumber || "—"}</td>
+          <td>${user.potroEmail || "—"}</td>
+          <td>${user.institutionalEmail || "—"}</td>
           <td>${CAREER_LABELS[user.career] || "—"}</td>
           <td><span class="${badgeClass}">${ROLE_LABELS[user.role]}</span></td>
           <td>${user.phone || "—"}</td>
@@ -601,9 +683,13 @@ function renderUserTable() {
       <thead>
         <tr>
           <th>Nombre</th>
+          <th>ID</th>
+          <th>Número de control</th>
+          <th>Correo Potro</th>
+          <th>Correo institucional</th>
           <th>Carrera</th>
           <th>Rol</th>
-          <th>Teléfono</th>
+          <th>Celular</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -812,7 +898,7 @@ function handleActivityFormSubmit(event) {
     responsibleEmail: normalizeEmail(formData.get("responsibleEmail")),
     status: "pendiente",
     createdAt: new Date().toISOString(),
-    createdBy: currentUser.email,
+    createdBy: currentUser.potroEmail,
   };
   activities = [newActivity, ...activities];
   event.target.reset();
@@ -848,9 +934,56 @@ function removeActivity(activityId) {
   showMessage(elements.adminActivityAlert, "Actividad eliminada.", "info");
 }
 
-function importSoftwareTeachers() {
+async function persistImportedUsers(records) {
+  if (!Array.isArray(records) || !records.length) {
+    return { success: true };
+  }
+
+  const db = getFirestoreDb();
+  if (!db) {
+    return { success: false, reason: "missing-config" };
+  }
+
+  try {
+    const batch = writeBatch(db);
+    records.forEach((record) => {
+      const documentId = record.id || record.controlNumber || generateId("user");
+      const docRef = doc(collection(db, "users"), documentId);
+      const payload = {
+        name: record.name || "",
+        userId: record.id || "",
+        controlNumber: record.controlNumber || "",
+        potroEmail: record.potroEmail || "",
+        institutionalEmail: record.institutionalEmail || "",
+        phone: record.phone || "",
+        role: record.role || "",
+        career: record.career || "",
+        syncedAt: serverTimestamp(),
+      };
+
+      if (record.importedAt) {
+        payload.importedAtIso = record.importedAt;
+      }
+
+      batch.set(docRef, payload, { merge: true });
+    });
+
+    await batch.commit();
+    return { success: true };
+  } catch (error) {
+    console.error("Error al sincronizar usuarios con Firebase:", error);
+    return { success: false, reason: "error", error };
+  }
+}
+
+async function importSoftwareTeachers() {
   const newTeachers = softwareTeacherImport.filter(
-    (teacher) => !users.some((user) => user.email === teacher.email),
+    (teacher) =>
+      !users.some(
+        (user) =>
+          normalizeEmail(user.potroEmail) ===
+          normalizeEmail(teacher.potroEmail),
+      ),
   );
   if (!newTeachers.length) {
     showMessage(
@@ -860,15 +993,32 @@ function importSoftwareTeachers() {
     );
     return;
   }
-  users = [...users, ...newTeachers];
-  importedTeachersCount += newTeachers.length;
+
+  const teachersToAdd = newTeachers.map((teacher) => ({
+    ...teacher,
+    importedAt: new Date().toISOString(),
+  }));
+
+  users = [...users, ...teachersToAdd];
+  importedTeachersCount += teachersToAdd.length;
   populateUserSelector(elements.userSelector);
   renderAllSections();
-  showMessage(
-    elements.importTeachersAlert,
-    `${newTeachers.length} docentes agregados correctamente.`,
-    "success",
-  );
+
+  const persistenceResult = await persistImportedUsers(teachersToAdd);
+  let alertType = "success";
+  let alertMessage = `${teachersToAdd.length} docentes agregados correctamente.`;
+
+  if (persistenceResult.success) {
+    alertMessage = `${teachersToAdd.length} docentes agregados y sincronizados con Firebase.`;
+  } else if (persistenceResult.reason === "missing-config") {
+    alertType = "info";
+    alertMessage = `${teachersToAdd.length} docentes agregados. Configura Firebase para sincronizar la información.`;
+  } else if (persistenceResult.reason === "error") {
+    alertType = "error";
+    alertMessage = `${teachersToAdd.length} docentes agregados, pero no fue posible sincronizar con Firebase.`;
+  }
+
+  showMessage(elements.importTeachersAlert, alertMessage, alertType);
   showMessage(
     elements.inviteAlert,
     "Comparte el acceso con los docentes recién importados.",
@@ -921,7 +1071,8 @@ function getActivitiesForRole(role, user) {
     if (!user) return false;
     if (activity.responsibleEmail) {
       return (
-        activity.responsibleEmail.toLowerCase() === user.email.toLowerCase()
+        activity.responsibleEmail.toLowerCase() ===
+        normalizeEmail(user.potroEmail)
       );
     }
     if (activity.career === "global") return true;
