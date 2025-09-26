@@ -1,4 +1,5 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const FALLBACK_CONFIG = {
@@ -10,6 +11,7 @@ const FALLBACK_CONFIG = {
   appId: "",
 };
 
+let firebaseApp = null;
 let firestoreDb = null;
 
 function resolveConfig() {
@@ -23,9 +25,9 @@ export function getFirebaseConfig() {
   return resolveConfig();
 }
 
-export function getFirestoreDb() {
-  if (firestoreDb) {
-    return firestoreDb;
+export function getFirebaseApp() {
+  if (firebaseApp) {
+    return firebaseApp;
   }
 
   const config = resolveConfig();
@@ -37,14 +39,48 @@ export function getFirestoreDb() {
   }
 
   try {
-    const app = getApps().length ? getApp() : initializeApp(config);
-    firestoreDb = getFirestore(app);
+    firebaseApp = getApps().length ? getApp() : initializeApp(config);
   } catch (error) {
     console.error("No fue posible inicializar Firebase:", error);
+    firebaseApp = null;
+  }
+
+  return firebaseApp;
+}
+
+export function getFirestoreDb() {
+  if (firestoreDb) {
+    return firestoreDb;
+  }
+
+  const app = getFirebaseApp();
+  if (!app) {
+    return null;
+  }
+
+  try {
+    firestoreDb = getFirestore(app);
+  } catch (error) {
+    console.error("No fue posible obtener una instancia de Firestore:", error);
+    firestoreDb = null;
     return null;
   }
 
   return firestoreDb;
+}
+
+export function getFirebaseAuth() {
+  const app = getFirebaseApp();
+  if (!app) {
+    return null;
+  }
+
+  try {
+    return getAuth(app);
+  } catch (error) {
+    console.error("No fue posible obtener una instancia de Firebase Auth:", error);
+    return null;
+  }
 }
 
 export function isFirestoreConfigured() {

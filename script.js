@@ -4,7 +4,17 @@ import {
   serverTimestamp,
   writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getFirestoreDb } from "./firebase-config.js";
+import {
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirebaseAuth, getFirestoreDb } from "./firebase-config.js";
+
+const ALLOWED_DOMAIN = "potros.itson.edu.mx";
+const PRIMARY_ADMIN_EMAIL = "isaac.paniagua@potros.itson.edu.mx";
+const PRIMARY_ADMIN_EMAIL_NORMALIZED = PRIMARY_ADMIN_EMAIL.toLowerCase();
 
 const CAREER_LABELS = {
   software: "Ing. en Software",
@@ -124,6 +134,16 @@ function createUserRecord(raw) {
 
 const initialUsers = [
   {
+    id: "u-admin-isaac",
+    name: "Isaac Paniagua",
+    controlNumber: "A000001",
+    potroEmail: "isaac.paniagua@potros.itson.edu.mx",
+    institutionalEmail: "isaac.paniagua@itson.edu.mx",
+    role: "administrador",
+    career: "software",
+    phone: "(622) 107 2441",
+  },
+  {
     id: "u-admin-1",
     name: "María Fernanda López",
     controlNumber: "A210001",
@@ -216,16 +236,6 @@ const initialUsers = [
 ].map(createUserRecord);
 
 const softwareTeacherImport = [
-  {
-    id: "u-imp-1",
-    name: "Isaac Paniagua",
-    controlNumber: "D230201",
-    potroEmail: "isaac.paniagua@potros.itson.edu.mx",
-    institutionalEmail: "isaac.paniagua@itson.edu.mx",
-    role: "docente",
-    career: "software",
-    phone: "(622) 107 2441",
-  },
   {
     id: "u-imp-2",
     name: "Julio Nava",
@@ -497,6 +507,12 @@ const charts = {
 
 const elements = {};
 
+let auth = null;
+let googleProvider = null;
+let unsubscribeAuth = null;
+let authInitializationAttempted = false;
+let preserveLoginMessage = false;
+
 document.addEventListener("DOMContentLoaded", () => {
   cacheDomElements();
   updateLayoutMode();
@@ -504,21 +520,20 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("resize", scheduleHeaderSync);
   window.addEventListener("orientationchange", scheduleHeaderSync);
   hideLoader();
-  populateUserSelector(elements.userSelector);
   attachEventListeners();
   initCharts();
   updateHeaderStats();
   updateHighlights();
   updateCharts();
   refreshIcons();
+  initializeAuthentication();
 });
 
 function cacheDomElements() {
   elements.authSection = document.getElementById("authSection");
   elements.dashboard = document.getElementById("dashboard");
   elements.dashboardShell = document.getElementById("dashboardShell");
-  elements.loginForm = document.getElementById("loginForm");
-  elements.userSelector = document.getElementById("userSelector");
+  elements.googleSignInBtn = document.getElementById("googleSignInBtn");
   elements.loginError = document.getElementById("loginError");
   elements.logoutBtn = document.getElementById("logoutBtn");
   elements.headerUserMeta = document.getElementById("headerUserMeta");
@@ -560,8 +575,8 @@ function hideLoader() {
 }
 
 function attachEventListeners() {
-  if (elements.loginForm) {
-    elements.loginForm.addEventListener("submit", handleLoginSubmit);
+  if (elements.googleSignInBtn) {
+    elements.googleSignInBtn.addEventListener("click", handleGoogleSignIn);
   }
   if (elements.logoutBtn) {
     elements.logoutBtn.addEventListener("click", handleLogout);
@@ -609,79 +624,193 @@ function attachEventListeners() {
   }
 }
 
-function populateUserSelector(select) {
-  if (!select) return;
-  select.innerHTML = "";
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = "Elige un perfil para iniciar sesión";
-  placeholder.disabled = true;
-  placeholder.selected = true;
-  select.append(placeholder);
+function ensureAuthInstance() {
+  if (auth) {
+    return auth;
+  }
 
-  ["administrador", "docente", "auxiliar"].forEach((role) => {
-    const usersByRole = users.filter((user) => user.role === role);
-    if (!usersByRole.length) return;
-    const group = document.createElement("optgroup");
-    group.label = ROLE_LABELS[role];
-    usersByRole.forEach((user) => {
-      const option = document.createElement("option");
-      option.value = user.id;
-      const descriptionParts = [user.potroEmail, user.controlNumber]
-        .filter(Boolean)
-        .join(" • ");
-      option.textContent = descriptionParts
-        ? `${user.name} — ${descriptionParts}`
-        : user.name;
-      group.append(option);
-    });
-    select.append(group);
-  });
+  if (authInitializationAttempted) {
+    return null;
+  }
+
+  authInitializationAttempted = true;
+  const authInstance = getFirebaseAuth();
+  if (!authInstance) {
+    return null;
+  }
+
+  auth = authInstance;
+  googleProvider = new GoogleAuthProvider();
+  googleProvider.setCustomParameters({ hd: ALLOWED_DOMAIN });
+  unsubscribeAuth = onAuthStateChanged(auth, handleAuthStateChange);
+  return auth;
 }
 
-function handleLoginSubmit(event) {
-  event.preventDefault();
-  const selector = elements.userSelector;
-  if (!selector) return;
-  const userId = selector.value;
-  if (!userId) {
-    showMessage(elements.loginError, "Selecciona un usuario para continuar.");
+function initializeAuthentication() {
+  const authInstance = ensureAuthInstance();
+  if (!authInstance) {
+    if (elements.googleSignInBtn) {
+      elements.googleSignInBtn.disabled = true;
+      elements.googleSignInBtn.setAttribute("aria-disabled", "true");
+    }
+    showMessage(
+      elements.loginError,
+      "Configura Firebase Auth para habilitar el inicio de sesión con Google.",
+      "info",
+      null,
+    );
     return;
   }
-  const user = users.find((candidate) => candidate.id === userId);
-  if (!user) {
-    showMessage(elements.loginError, "El usuario seleccionado no está disponible.");
-    return;
+
+  if (elements.googleSignInBtn) {
+    elements.googleSignInBtn.disabled = false;
+    elements.googleSignInBtn.removeAttribute("aria-disabled");
   }
   hideMessage(elements.loginError);
-  loginUser(user);
+}
+
+async function handleGoogleSignIn() {
+  hideMessage(elements.loginError);
+  const authInstance = ensureAuthInstance();
+  if (!authInstance || !googleProvider) {
+    showMessage(
+      elements.loginError,
+      "La autenticación no está disponible en este momento.",
+      "error",
+      null,
+    );
+    return;
+  }
+
+  try {
+    if (elements.googleSignInBtn) {
+      elements.googleSignInBtn.disabled = true;
+    }
+    await signInWithPopup(authInstance, googleProvider);
+  } catch (error) {
+    if (error?.code === "auth/popup-closed-by-user") {
+      showMessage(
+        elements.loginError,
+        "La ventana de inicio de sesión se cerró antes de completar el proceso.",
+        "info",
+      );
+    } else if (error?.code !== "auth/cancelled-popup-request") {
+      console.error("Error al iniciar sesión con Google:", error);
+      showMessage(
+        elements.loginError,
+        "No fue posible iniciar sesión. Intenta nuevamente.",
+        "error",
+      );
+    }
+  } finally {
+    if (elements.googleSignInBtn) {
+      elements.googleSignInBtn.disabled = false;
+    }
+  }
+}
+
+async function handleLogout() {
+  const authInstance = ensureAuthInstance();
+  if (!authInstance) {
+    applyLoggedOutState();
+    return;
+  }
+
+  try {
+    await signOut(authInstance);
+  } catch (error) {
+    console.error("No fue posible cerrar la sesión de Firebase:", error);
+    applyLoggedOutState();
+    showMessage(
+      elements.loginError,
+      "Ocurrió un problema al cerrar sesión. Vuelve a intentarlo.",
+      "error",
+    );
+  }
+}
+
+function handleAuthStateChange(firebaseUser) {
+  if (!firebaseUser) {
+    applyLoggedOutState({ preserveMessages: preserveLoginMessage });
+    preserveLoginMessage = false;
+    return;
+  }
+
+  const normalizedEmail = normalizeEmail(firebaseUser.email);
+  if (!normalizedEmail || !normalizedEmail.endsWith(`@${ALLOWED_DOMAIN}`)) {
+    preserveLoginMessage = true;
+    applyLoggedOutState({ preserveMessages: true });
+    showMessage(
+      elements.loginError,
+      `Debes iniciar sesión con una cuenta @${ALLOWED_DOMAIN}.`,
+      "error",
+      null,
+    );
+    if (auth) {
+      signOut(auth).catch(() => {});
+    }
+    return;
+  }
+
+  const matchedUser = findUserByEmail(normalizedEmail);
+  if (!matchedUser) {
+    preserveLoginMessage = true;
+    applyLoggedOutState({ preserveMessages: true });
+    showMessage(
+      elements.loginError,
+      "Tu cuenta no tiene permisos para acceder al tablero. Contacta al administrador.",
+      "error",
+      null,
+    );
+    if (auth) {
+      signOut(auth).catch(() => {});
+    }
+    return;
+  }
+
+  const userRecord = {
+    ...matchedUser,
+    name:
+      matchedUser.name ||
+      firebaseUser.displayName ||
+      firebaseUser.email ||
+      "Usuario",
+    potroEmail: matchedUser.potroEmail || normalizedEmail,
+    email: normalizedEmail,
+  };
+
+  if (normalizedEmail === PRIMARY_ADMIN_EMAIL_NORMALIZED) {
+    userRecord.role = "administrador";
+  }
+
+  preserveLoginMessage = false;
+  hideMessage(elements.loginError);
+  loginUser(userRecord);
 }
 
 function loginUser(user) {
-  currentUser = user;
+  currentUser = { ...user };
   if (elements.authSection) elements.authSection.classList.add("hidden");
   if (elements.dashboard) elements.dashboard.classList.remove("hidden");
   if (elements.headerUserMeta) elements.headerUserMeta.classList.remove("hidden");
   updateLayoutMode();
   scheduleHeaderSync();
 
-  if (elements.headerUserName) elements.headerUserName.textContent = user.name;
+  if (elements.headerUserName) elements.headerUserName.textContent = currentUser.name;
   if (elements.headerUserRole) {
-    elements.headerUserRole.textContent = ROLE_LABELS[user.role];
-    elements.headerUserRole.className = ROLE_BADGE_CLASS[user.role] || "badge";
+    elements.headerUserRole.textContent = ROLE_LABELS[currentUser.role];
+    elements.headerUserRole.className =
+      ROLE_BADGE_CLASS[currentUser.role] || "badge";
   }
 
-  configureRoleViews(user.role);
-  buildNavigation(user.role);
-  renderSidebarUserCard(user);
+  configureRoleViews(currentUser.role);
+  buildNavigation(currentUser.role);
+  renderSidebarUserCard(currentUser);
   renderAllSections();
   setSidebarCollapsed(false);
-  if (elements.loginForm) {
-    elements.loginForm.reset();
-  }
 }
 
-function handleLogout() {
+function applyLoggedOutState({ preserveMessages = false } = {}) {
   currentUser = null;
   if (elements.dashboard) elements.dashboard.classList.add("hidden");
   if (elements.authSection) elements.authSection.classList.remove("hidden");
@@ -703,6 +832,23 @@ function handleLogout() {
   setSidebarCollapsed(false);
   updateHeaderStats();
   refreshIcons();
+  if (!preserveMessages) {
+    hideMessage(elements.loginError);
+  }
+}
+
+function findUserByEmail(email) {
+  const target = normalizeEmail(email);
+  if (!target) return null;
+
+  return (
+    users.find((user) => {
+      const potro = normalizeEmail(user.potroEmail);
+      const institutional = normalizeEmail(user.institutionalEmail);
+      const generic = normalizeEmail(user.email);
+      return potro === target || institutional === target || generic === target;
+    }) || null
+  );
 }
 
 function configureRoleViews(role) {
@@ -791,9 +937,17 @@ function renderAllSections() {
 function renderSidebarUserCard(user) {
   if (elements.sidebarName) elements.sidebarName.textContent = user.name;
   if (elements.sidebarEmail) {
-    const emails = [user.potroEmail, user.institutionalEmail]
-      .filter(Boolean)
-      .join(" • ");
+    const emailCandidates = [user.potroEmail, user.institutionalEmail];
+    if (user.email) {
+      const normalizedEmail = normalizeEmail(user.email);
+      const alreadyPresent = emailCandidates.some(
+        (candidate) => normalizeEmail(candidate) === normalizedEmail,
+      );
+      if (!alreadyPresent) {
+        emailCandidates.push(user.email);
+      }
+    }
+    const emails = emailCandidates.filter(Boolean).join(" • ");
     elements.sidebarEmail.textContent = emails;
   }
   if (elements.sidebarCareer) {
@@ -1137,14 +1291,17 @@ async function persistImportedUsers(records) {
 }
 
 async function importSoftwareTeachers() {
-  const newTeachers = softwareTeacherImport.filter(
-    (teacher) =>
-      !users.some(
-        (user) =>
-          normalizeEmail(user.potroEmail) ===
-          normalizeEmail(teacher.potroEmail),
-      ),
-  );
+  const newTeachers = softwareTeacherImport.filter((teacher) => {
+    const teacherEmail = normalizeEmail(teacher.potroEmail);
+    if (teacherEmail === PRIMARY_ADMIN_EMAIL_NORMALIZED) {
+      return false;
+    }
+
+    return !users.some(
+      (user) =>
+        normalizeEmail(user.potroEmail) === teacherEmail,
+    );
+  });
   if (!newTeachers.length) {
     showMessage(
       elements.importTeachersAlert,
@@ -1161,7 +1318,6 @@ async function importSoftwareTeachers() {
 
   users = [...users, ...teachersToAdd];
   importedTeachersCount += teachersToAdd.length;
-  populateUserSelector(elements.userSelector);
   renderAllSections();
 
   const persistenceResult = await persistImportedUsers(teachersToAdd);
@@ -1323,17 +1479,21 @@ function updateCharts() {
   }
 }
 
-function showMessage(element, message, type = "error") {
+function showMessage(element, message, type = "error", duration = 4000) {
   if (!element) return;
   element.textContent = message;
   element.className = `alert ${type} show`;
   if (element.dataset.timeoutId) {
     clearTimeout(Number(element.dataset.timeoutId));
+    delete element.dataset.timeoutId;
+  }
+  if (duration === null) {
+    return;
   }
   const timeoutId = window.setTimeout(() => {
     element.classList.remove("show");
     delete element.dataset.timeoutId;
-  }, 4000);
+  }, duration);
   element.dataset.timeoutId = String(timeoutId);
 }
 
