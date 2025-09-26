@@ -681,6 +681,15 @@ let firestoreUsersLoaded = false;
 let firestoreActivitiesLoading = false;
 let firestoreActivitiesLoaded = false;
 
+const LOCAL_STORAGE_KEYS = {
+  users: "tcd.users",
+  activities: "tcd.activities",
+  importedTeachers: "tcd.importedTeachersCount",
+};
+
+let cachedLocalStorage = null;
+let localStorageCheckAttempted = false;
+
 const charts = {
   users: null,
   activities: null,
@@ -695,8 +704,125 @@ let authInitializationAttempted = false;
 let preserveLoginMessage = false;
 let editingUserKey = null;
 
+function getSafeLocalStorage() {
+  if (cachedLocalStorage) {
+    return cachedLocalStorage;
+  }
+
+  if (localStorageCheckAttempted) {
+    return null;
+  }
+
+  if (typeof window === "undefined" || !window.localStorage) {
+    localStorageCheckAttempted = true;
+    return null;
+  }
+
+  try {
+    const testKey = "__tcd_storage_test__";
+    window.localStorage.setItem(testKey, "1");
+    window.localStorage.removeItem(testKey);
+    cachedLocalStorage = window.localStorage;
+  } catch (error) {
+    console.warn("El almacenamiento local no está disponible:", error);
+    cachedLocalStorage = null;
+  }
+
+  localStorageCheckAttempted = true;
+  return cachedLocalStorage;
+}
+
+function persistUsersLocally() {
+  const storage = getSafeLocalStorage();
+  if (!storage) return;
+
+  try {
+    storage.setItem(LOCAL_STORAGE_KEYS.users, JSON.stringify(users));
+  } catch (error) {
+    console.error("No fue posible guardar los usuarios localmente:", error);
+  }
+}
+
+function persistActivitiesLocally() {
+  const storage = getSafeLocalStorage();
+  if (!storage) return;
+
+  try {
+    storage.setItem(LOCAL_STORAGE_KEYS.activities, JSON.stringify(activities));
+  } catch (error) {
+    console.error("No fue posible guardar las actividades localmente:", error);
+  }
+}
+
+function persistImportedTeachersCountLocally() {
+  const storage = getSafeLocalStorage();
+  if (!storage) return;
+
+  try {
+    storage.setItem(
+      LOCAL_STORAGE_KEYS.importedTeachers,
+      String(importedTeachersCount),
+    );
+  } catch (error) {
+    console.error(
+      "No fue posible guardar el conteo de docentes importados localmente:",
+      error,
+    );
+  }
+}
+
+function restoreLocalState() {
+  const storage = getSafeLocalStorage();
+  if (!storage) return;
+
+  try {
+    const storedUsers = storage.getItem(LOCAL_STORAGE_KEYS.users);
+    if (storedUsers) {
+      const parsedUsers = JSON.parse(storedUsers);
+      if (Array.isArray(parsedUsers)) {
+        users = parsedUsers.map((user) => createUserRecord(user));
+      }
+    }
+  } catch (error) {
+    console.error("No fue posible restaurar los usuarios guardados localmente:", error);
+  }
+
+  try {
+    const storedActivities = storage.getItem(LOCAL_STORAGE_KEYS.activities);
+    if (storedActivities) {
+      const parsedActivities = JSON.parse(storedActivities);
+      if (Array.isArray(parsedActivities)) {
+        activities = parsedActivities
+          .map((activity) => createActivityRecord(activity))
+          .filter((activity) => Boolean(activity && activity.title));
+      }
+    }
+  } catch (error) {
+    console.error(
+      "No fue posible restaurar las actividades guardadas localmente:",
+      error,
+    );
+  }
+
+  try {
+    const storedCount = storage.getItem(LOCAL_STORAGE_KEYS.importedTeachers);
+    if (storedCount !== null && storedCount !== undefined) {
+      const parsedCount = Number(storedCount);
+      if (!Number.isNaN(parsedCount)) {
+        importedTeachersCount = parsedCount;
+      }
+    }
+  } catch (error) {
+    console.error(
+      "No fue posible restaurar el conteo de docentes importados:",
+      error,
+    );
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   cacheDomElements();
+  restoreLocalState();
   updateLayoutMode();
   scheduleHeaderSync();
   window.addEventListener("resize", scheduleHeaderSync);
@@ -1511,6 +1637,8 @@ async function handleUserFormSubmit(event) {
     users = [...users, recordToPersist];
   }
 
+  persistUsersLocally();
+
   hideUserForm({ reset: true });
   renderAllSections();
   refreshCurrentUser();
@@ -1596,6 +1724,7 @@ async function requestUserDeletion(userKey) {
   }
 
   users = users.filter((_, idx) => idx !== index);
+  persistUsersLocally();
   hideUserForm({ reset: true });
   renderAllSections();
 
@@ -1898,6 +2027,7 @@ async function handleActivityFormSubmit(event) {
     createdBy: currentUser.potroEmail,
   };
   activities = [newActivity, ...activities];
+  persistActivitiesLocally();
   event.target.reset();
   renderAllSections();
   showMessage(
@@ -1947,6 +2077,7 @@ async function updateActivityStatus(activityId, newStatus, source) {
   };
 
   activities[index] = updatedActivity;
+  persistActivitiesLocally();
   renderAllSections();
 
   let feedbackElement = null;
@@ -1987,6 +2118,7 @@ async function updateActivityStatus(activityId, newStatus, source) {
   }
 
   activities[index] = previousActivity;
+  persistActivitiesLocally();
   renderAllSections();
   if (feedbackElement) {
     const errorMessage =
@@ -2008,6 +2140,7 @@ async function removeActivity(activityId) {
     return;
   }
   activities = updatedActivities;
+  persistActivitiesLocally();
   renderAllSections();
   showMessage(elements.adminActivityAlert, "Actividad eliminada.", "info");
 
@@ -2031,6 +2164,7 @@ async function removeActivity(activityId) {
   }
 
   activities = originalActivities;
+  persistActivitiesLocally();
   renderAllSections();
   showMessage(
     elements.adminActivityAlert,
@@ -2358,6 +2492,8 @@ async function importSoftwareTeachers() {
 
   users = [...users, ...teachersToAdd];
   importedTeachersCount += teachersToAdd.length;
+  persistUsersLocally();
+  persistImportedTeachersCountLocally();
   renderAllSections();
 
   const persistenceResult = await persistImportedUsers(teachersToAdd);
@@ -2428,6 +2564,7 @@ async function attemptLoadUsersFromFirestore() {
     }
 
     users = mergeUserCollections(users, remoteUsers);
+    persistUsersLocally();
     firestoreUsersLoaded = true;
     updateHeaderStats();
     updateHighlights();
@@ -2482,6 +2619,7 @@ async function attemptLoadActivitiesFromFirestore() {
     }
 
     activities = remoteActivities;
+    persistActivitiesLocally();
     firestoreActivitiesLoaded = true;
     if (currentUser) {
       renderAllSections();
