@@ -193,6 +193,11 @@ body.dashboard-active main {
   justify-content: flex-start;
 }
 
+body.dashboard-active .app-header__inner,
+body.dashboard-active main {
+  width: min(96vw, 1380px);
+}
+
 body.auth-active main {
   justify-content: flex-start;
 }
