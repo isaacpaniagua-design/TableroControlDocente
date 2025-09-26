@@ -51,6 +51,77 @@ const STATUS_COLORS = {
   completada: "#10b981",
 };
 
+const QUICK_ACCESS_ITEMS = [
+  {
+    id: "quick-dashboard",
+    icon: "layout-dashboard",
+    label: "Panel de control",
+    description: "Vuelve al resumen general.",
+    targetId: "dashboardIntro",
+  },
+  {
+    id: "quick-report",
+    icon: "bar-chart-3",
+    label: "Reporte general",
+    description: "Revisa indicadores clave del departamento.",
+    targetId: "generalReportCard",
+    roles: ["administrador"],
+  },
+  {
+    id: "quick-refresh",
+    icon: "refresh-cw",
+    label: "Actualizar indicadores",
+    description: "Sincroniza los datos más recientes.",
+    targetId: "generalReportCard",
+    roles: ["administrador"],
+    action: () => {
+      if (elements.refreshDashboard) {
+        elements.refreshDashboard.click();
+      } else {
+        renderAllSections();
+      }
+    },
+  },
+  {
+    id: "quick-users",
+    icon: "users",
+    label: "Gestión de usuarios",
+    description: "Administra accesos y registros.",
+    targetId: "userManagementCard",
+    roles: ["administrador"],
+  },
+  {
+    id: "quick-print",
+    icon: "printer",
+    label: "Imprimir reporte",
+    description: "Genera una versión para compartir.",
+    roles: ["administrador", "docente", "auxiliar"],
+    action: () => {
+      if (elements.printReport) {
+        elements.printReport.click();
+      } else {
+        window.print();
+      }
+    },
+  },
+  {
+    id: "quick-teacher",
+    icon: "check-square",
+    label: "Mis actividades",
+    description: "Consulta tus pendientes y avances.",
+    targetId: "teacherActivitiesCard",
+    roles: ["docente"],
+  },
+  {
+    id: "quick-auxiliar",
+    icon: "clipboard-list",
+    label: "Actividades de apoyo",
+    description: "Actualiza el seguimiento asignado.",
+    targetId: "auxiliarActivitiesCard",
+    roles: ["auxiliar"],
+  },
+];
+
 let resizeFrame = null;
 
 function syncHeaderHeight() {
@@ -509,6 +580,8 @@ function cacheDomElements() {
   elements.sidebarName = document.getElementById("sidebarName");
   elements.sidebarEmail = document.getElementById("sidebarEmail");
   elements.sidebarCareer = document.getElementById("sidebarCareer");
+  elements.quickAccess = document.getElementById("quickAccess");
+  elements.quickAccessList = document.getElementById("quickAccessList");
   elements.navigation = document.getElementById("navigation");
   elements.adminView = document.getElementById("adminView");
   elements.docenteView = document.getElementById("docenteView");
@@ -843,6 +916,8 @@ function applyLoggedOutState({ preserveMessages = false } = {}) {
     elements.headerUserRole.className = "badge";
   }
   if (elements.navigation) elements.navigation.innerHTML = "";
+  if (elements.quickAccessList) elements.quickAccessList.innerHTML = "";
+  if (elements.quickAccess) elements.quickAccess.setAttribute("hidden", "hidden");
   ["sidebarName", "sidebarEmail", "sidebarCareer"].forEach((key) => {
     if (elements[key]) elements[key].textContent = "";
   });
@@ -943,6 +1018,62 @@ function buildNavigation(role) {
   });
 }
 
+function buildQuickAccess(role) {
+  if (!elements.quickAccessList) return;
+
+  const allowedItems = QUICK_ACCESS_ITEMS.filter((item) => {
+    if (!item.roles || !item.roles.length) return true;
+    return item.roles.includes(role);
+  });
+
+  elements.quickAccessList.innerHTML = "";
+  if (elements.quickAccess) {
+    elements.quickAccess.toggleAttribute("hidden", allowedItems.length === 0);
+  }
+
+  allowedItems.forEach((item) => {
+    const listItem = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "quick-access__button";
+    button.setAttribute("data-quick-action", item.id);
+    button.innerHTML = `
+      <span class="quick-access__icon">
+        <i data-lucide="${item.icon}"></i>
+      </span>
+      <span class="quick-access__content">
+        <strong>${item.label}</strong>
+        ${item.description ? `<small>${item.description}</small>` : ""}
+      </span>
+    `;
+    button.addEventListener("click", () => {
+      if (item.targetId) {
+        const target = document.getElementById(item.targetId);
+        if (target) {
+          setActiveSection(target);
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          const navLabel = target.dataset.navLabel || "";
+          if (navLabel && elements.navigation) {
+            const navButton = Array.from(
+              elements.navigation.querySelectorAll("button"),
+            ).find((nav) => nav.textContent.trim() === navLabel);
+            if (navButton) {
+              setActiveNavButton(navButton);
+            }
+          }
+        }
+      }
+      if (typeof item.action === "function") {
+        item.action();
+      }
+    });
+    listItem.append(button);
+    elements.quickAccessList.append(listItem);
+  });
+
+  refreshIcons();
+}
+
 function setActiveNavButton(activeButton) {
   if (!elements.navigation) return;
   elements.navigation
@@ -963,6 +1094,7 @@ function renderAllSections() {
   updateHeaderStats();
   updateHighlights();
   renderSidebarUserCard(currentUser);
+  buildQuickAccess(currentUser.role);
   if (currentUser.role === "administrador") {
     updateUserManagementControls();
     renderUserTable();
