@@ -855,12 +855,7 @@ function findUserByEmail(email) {
   if (!target) return null;
 
   return (
-    users.find((user) => {
-      const potro = normalizeEmail(user.potroEmail);
-      const institutional = normalizeEmail(user.institutionalEmail);
-      const generic = normalizeEmail(user.email);
-      return potro === target || institutional === target || generic === target;
-    }) || null
+    users.find((user) => getNormalizedEmails(user).includes(target)) || null
   );
 }
 
@@ -978,17 +973,7 @@ function renderAllSections() {
 function renderSidebarUserCard(user) {
   if (elements.sidebarName) elements.sidebarName.textContent = user.name;
   if (elements.sidebarEmail) {
-    const emailCandidates = [user.potroEmail, user.institutionalEmail];
-    if (user.email) {
-      const normalizedEmail = normalizeEmail(user.email);
-      const alreadyPresent = emailCandidates.some(
-        (candidate) => normalizeEmail(candidate) === normalizedEmail,
-      );
-      if (!alreadyPresent) {
-        emailCandidates.push(user.email);
-      }
-    }
-    const emails = emailCandidates.filter(Boolean).join(" • ");
+    const emails = Array.from(new Set(getNormalizedEmails(user))).join(" • ");
     elements.sidebarEmail.textContent = emails;
   }
   if (elements.sidebarCareer) {
@@ -1300,9 +1285,36 @@ async function persistImportedUsers(records) {
   }
 
   try {
+    const normalizedRecords = records
+      .map((record) => createUserRecord(record))
+      .filter((record) => getUserIdentityKeys(record).length);
+
+    if (!normalizedRecords.length) {
+      return { success: true };
+    }
+
+    const dedupedRecordsMap = new Map();
+
+    normalizedRecords.forEach((record) => {
+      const identitySignature = getUserIdentityKeys(record)
+        .slice()
+        .sort()
+        .join("|");
+      const existing = dedupedRecordsMap.get(identitySignature) || {};
+      dedupedRecordsMap.set(identitySignature, { ...existing, ...record });
+    });
+
     const batch = writeBatch(db);
-    records.forEach((record) => {
-      const documentId = record.id || record.controlNumber || generateId("user");
+
+    dedupedRecordsMap.forEach((record) => {
+      const documentId =
+        record.id ||
+        record.userId ||
+        record.controlNumber ||
+        record.firebaseUid ||
+        record.uid ||
+        generateId("user");
+
       const docRef = doc(collection(db, "users"), documentId);
       const payload = {
         name: record.name || "",
@@ -1310,6 +1322,7 @@ async function persistImportedUsers(records) {
         controlNumber: record.controlNumber || "",
         potroEmail: record.potroEmail || "",
         institutionalEmail: record.institutionalEmail || "",
+        email: record.email || "",
         phone: record.phone || "",
         role: record.role || "",
         career: record.career || "",
@@ -1340,17 +1353,36 @@ async function persistImportedUsers(records) {
 }
 
 async function importSoftwareTeachers() {
-  const newTeachers = softwareTeacherImport.filter((teacher) => {
-    const teacherEmail = normalizeEmail(teacher.potroEmail);
-    if (teacherEmail === PRIMARY_ADMIN_EMAIL_NORMALIZED) {
-      return false;
+  const identityRegistry = new Set(
+    users.flatMap((existingUser) => getUserIdentityKeys(existingUser)),
+  );
+
+  const newTeachers = [];
+
+  softwareTeacherImport.forEach((rawTeacher) => {
+    const teacherRecord = createUserRecord(rawTeacher);
+    const identityKeys = getUserIdentityKeys(teacherRecord);
+
+    if (!identityKeys.length) {
+      return;
     }
 
-    return !users.some(
-      (user) =>
-        normalizeEmail(user.potroEmail) === teacherEmail,
+    const hasPrimaryAdminEmail = identityKeys.some(
+      (key) => key === `email:${PRIMARY_ADMIN_EMAIL_NORMALIZED}`,
     );
+    if (hasPrimaryAdminEmail) {
+      return;
+    }
+
+    const isAlreadyKnown = identityKeys.some((key) => identityRegistry.has(key));
+    if (isAlreadyKnown) {
+      return;
+    }
+
+    identityKeys.forEach((key) => identityRegistry.add(key));
+    newTeachers.push({ ...teacherRecord, importedAt: new Date().toISOString() });
   });
+
   if (!newTeachers.length) {
     showMessage(
       elements.importTeachersAlert,
@@ -1360,27 +1392,22 @@ async function importSoftwareTeachers() {
     return;
   }
 
-  const teachersToAdd = newTeachers.map((teacher) => ({
-    ...teacher,
-    importedAt: new Date().toISOString(),
-  }));
-
-  users = [...users, ...teachersToAdd];
-  importedTeachersCount += teachersToAdd.length;
+  users = mergeUserCollections(users, newTeachers);
+  importedTeachersCount += newTeachers.length;
   renderAllSections();
 
-  const persistenceResult = await persistImportedUsers(teachersToAdd);
+  const persistenceResult = await persistImportedUsers(newTeachers);
   let alertType = "success";
-  let alertMessage = `${teachersToAdd.length} docentes agregados correctamente.`;
+  let alertMessage = `${newTeachers.length} docentes agregados correctamente.`;
 
   if (persistenceResult.success) {
-    alertMessage = `${teachersToAdd.length} docentes agregados y sincronizados con Firebase.`;
+    alertMessage = `${newTeachers.length} docentes agregados y sincronizados con Firebase.`;
   } else if (persistenceResult.reason === "missing-config") {
     alertType = "info";
-    alertMessage = `${teachersToAdd.length} docentes agregados. Configura Firebase para sincronizar la información.`;
+    alertMessage = `${newTeachers.length} docentes agregados. Configura Firebase para sincronizar la información.`;
   } else if (persistenceResult.reason === "error") {
     alertType = "error";
-    alertMessage = `${teachersToAdd.length} docentes agregados, pero no fue posible sincronizar con Firebase.`;
+    alertMessage = `${newTeachers.length} docentes agregados, pero no fue posible sincronizar con Firebase.`;
   }
 
   showMessage(elements.importTeachersAlert, alertMessage, alertType);
@@ -1564,10 +1591,13 @@ function getActivitiesForRole(role, user) {
     if (activity.responsibleRole !== role) return false;
     if (!user) return false;
     if (activity.responsibleEmail) {
-      return (
-        activity.responsibleEmail.toLowerCase() ===
-        normalizeEmail(user.potroEmail)
-      );
+      const normalizedResponsible = normalizeEmail(activity.responsibleEmail);
+      if (normalizedResponsible) {
+        const candidateEmails = getNormalizedEmails(user);
+        if (candidateEmails.includes(normalizedResponsible)) {
+          return true;
+        }
+      }
     }
     if (activity.career === "global") return true;
     return activity.career === user.career;
@@ -1577,6 +1607,30 @@ function getActivitiesForRole(role, user) {
 function normalizeEmail(value) {
   const email = String(value || "").trim();
   return email ? email.toLowerCase() : null;
+}
+
+function getNormalizedEmails(user) {
+  if (!user) {
+    return [];
+  }
+
+  const candidateValues = [
+    user.potroEmail,
+    user.institutionalEmail,
+    user.email,
+  ];
+
+  if (Array.isArray(user.emails)) {
+    candidateValues.push(...user.emails);
+  }
+
+  return Array.from(
+    new Set(
+      candidateValues
+        .map((value) => normalizeEmail(value))
+        .filter(Boolean),
+    ),
+  );
 }
 
 function initCharts() {
