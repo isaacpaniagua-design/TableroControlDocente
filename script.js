@@ -4,6 +4,7 @@ import {
   getDocs,
   serverTimestamp,
   writeBatch,
+  deleteDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   GoogleAuthProvider,
@@ -520,6 +521,7 @@ let googleProvider = null;
 let unsubscribeAuth = null;
 let authInitializationAttempted = false;
 let preserveLoginMessage = false;
+let editingUserKey = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   cacheDomElements();
@@ -558,6 +560,27 @@ function cacheDomElements() {
   elements.docenteView = document.getElementById("docenteView");
   elements.auxiliarView = document.getElementById("auxiliarView");
   elements.userTableContainer = document.getElementById("userTableContainer");
+  elements.startAddUserBtn = document.getElementById("startAddUserBtn");
+  elements.userForm = document.getElementById("userForm");
+  elements.userFormTitle = document.getElementById("userFormTitle");
+  elements.userFormDescription = document.getElementById("userFormDescription");
+  elements.userFormSubmit = document.getElementById("userFormSubmit");
+  elements.cancelUserFormBtn = document.getElementById("cancelUserFormBtn");
+  elements.userFormAlert = document.getElementById("userFormAlert");
+  elements.userNameInput = document.getElementById("userName");
+  elements.userIdInput = document.getElementById("userId");
+  elements.userControlNumberInput = document.getElementById("userControlNumber");
+  elements.userPotroEmailInput = document.getElementById("userPotroEmail");
+  elements.userInstitutionalEmailInput = document.getElementById(
+    "userInstitutionalEmail",
+  );
+  elements.userAltEmailInput = document.getElementById("userAltEmail");
+  elements.userPhoneInput = document.getElementById("userPhone");
+  elements.userRoleSelect = document.getElementById("userRole");
+  elements.userCareerSelect = document.getElementById("userCareer");
+  elements.userAllowExternalAuthInput = document.getElementById(
+    "userAllowExternalAuth",
+  );
   elements.adminActivityList = document.getElementById("adminActivityList");
   elements.adminActivityForm = document.getElementById("adminActivityForm");
   elements.adminActivityAlert = document.getElementById("adminActivityAlert");
@@ -613,6 +636,21 @@ function attachEventListeners() {
     elements.importTeachersBtn.addEventListener(
       "click",
       importSoftwareTeachers,
+    );
+  }
+  if (elements.startAddUserBtn) {
+    elements.startAddUserBtn.addEventListener("click", handleStartAddUser);
+  }
+  if (elements.cancelUserFormBtn) {
+    elements.cancelUserFormBtn.addEventListener("click", cancelUserForm);
+  }
+  if (elements.userForm) {
+    elements.userForm.addEventListener("submit", handleUserFormSubmit);
+  }
+  if (elements.userTableContainer) {
+    elements.userTableContainer.addEventListener(
+      "click",
+      handleUserTableClick,
     );
   }
   if (elements.sidebarCollapseBtn) {
@@ -843,6 +881,7 @@ function applyLoggedOutState({ preserveMessages = false } = {}) {
     .querySelectorAll("[data-nav-label]")
     .forEach((section) => section.classList.remove("is-targeted"));
   setSidebarCollapsed(false);
+  hideUserForm({ reset: true });
   updateHeaderStats();
   refreshIcons();
   if (!preserveMessages) {
@@ -956,9 +995,11 @@ function renderAllSections() {
   updateHighlights();
   renderSidebarUserCard(currentUser);
   if (currentUser.role === "administrador") {
+    updateUserManagementControls();
     renderUserTable();
     renderAdminActivityList();
   } else {
+    updateUserManagementControls();
     clearAdminSections();
   }
   if (currentUser.role === "docente") {
@@ -1008,6 +1049,7 @@ function renderUserTable() {
     elements.userTableContainer.innerHTML = "";
     return;
   }
+  const allowManagement = isPrimaryAdmin(currentUser);
   if (!users.length) {
     elements.userTableContainer.innerHTML =
       '<p class="empty-state">Aún no hay usuarios registrados.</p>';
@@ -1018,20 +1060,44 @@ function renderUserTable() {
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((user) => {
       const badgeClass = ROLE_BADGE_CLASS[user.role] || "badge";
+      const roleLabel = ROLE_LABELS[user.role] || "—";
+      const identityKeys = getUserIdentityKeys(user);
+      const datasetKey = encodeURIComponent(
+        identityKeys[0] || `index:${users.indexOf(user)}`,
+      );
+      const actionsCell = allowManagement
+        ? `
+          <td class="actions-cell">
+            <div class="table-actions">
+              <button type="button" class="icon-button edit-user" data-action="edit" data-user-key="${datasetKey}" aria-label="Editar usuario">
+                <i data-lucide="pencil"></i>
+              </button>
+              <button type="button" class="icon-button danger delete-user" data-action="delete" data-user-key="${datasetKey}" aria-label="Eliminar usuario">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>
+          </td>
+        `
+        : "";
       return `
         <tr>
-          <td>${user.name || "—"}</td>
-          <td>${user.id || "—"}</td>
-          <td>${user.controlNumber || "—"}</td>
-          <td>${user.potroEmail || "—"}</td>
-          <td>${user.institutionalEmail || "—"}</td>
-          <td>${CAREER_LABELS[user.career] || "—"}</td>
-          <td><span class="${badgeClass}">${ROLE_LABELS[user.role]}</span></td>
-          <td>${user.phone || "—"}</td>
+          <td>${escapeHtml(user.name || "—")}</td>
+          <td>${escapeHtml(user.id || "—")}</td>
+          <td>${escapeHtml(user.controlNumber || "—")}</td>
+          <td>${escapeHtml(user.potroEmail || "—")}</td>
+          <td>${escapeHtml(user.institutionalEmail || "—")}</td>
+          <td>${escapeHtml(CAREER_LABELS[user.career] || "—")}</td>
+          <td><span class="${badgeClass}">${escapeHtml(roleLabel)}</span></td>
+          <td>${escapeHtml(user.phone || "—")}</td>
+          ${actionsCell}
         </tr>
       `;
     })
     .join("");
+
+  const headerActions = allowManagement
+    ? '<th class="actions-col">Acciones</th>'
+    : "";
 
   elements.userTableContainer.innerHTML = `
     <table>
@@ -1045,11 +1111,413 @@ function renderUserTable() {
           <th>Carrera</th>
           <th>Rol</th>
           <th>Celular</th>
+          ${headerActions}
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
   `;
+}
+
+function updateUserManagementControls() {
+  const isPrimary = Boolean(currentUser && isPrimaryAdmin(currentUser));
+  if (elements.startAddUserBtn) {
+    elements.startAddUserBtn.hidden = !isPrimary;
+  }
+  if (!isPrimary) {
+    hideUserForm({ reset: true });
+    hideMessage(elements.userFormAlert);
+  }
+}
+
+function handleStartAddUser() {
+  if (!currentUser || !isPrimaryAdmin(currentUser)) return;
+  editingUserKey = null;
+  openUserForm("create");
+}
+
+function handleUserTableClick(event) {
+  if (!currentUser || !isPrimaryAdmin(currentUser)) return;
+  const button = event.target.closest("button[data-action][data-user-key]");
+  if (!button) return;
+  const encodedKey = button.dataset.userKey || "";
+  const userKey = decodeURIComponent(encodedKey);
+  if (!userKey) {
+    showMessage(
+      elements.userFormAlert,
+      "No fue posible identificar al usuario seleccionado.",
+    );
+    return;
+  }
+
+  if (button.dataset.action === "edit") {
+    startEditUser(userKey);
+  } else if (button.dataset.action === "delete") {
+    requestUserDeletion(userKey);
+  }
+}
+
+function openUserForm(mode, record = null) {
+  if (!elements.userForm) return;
+  const isEdit = mode === "edit";
+  elements.userForm.hidden = false;
+  elements.userForm.dataset.mode = mode;
+  if (!isEdit) {
+    elements.userForm.reset();
+    if (elements.userAllowExternalAuthInput) {
+      elements.userAllowExternalAuthInput.checked = false;
+    }
+  }
+  if (elements.userFormTitle) {
+    elements.userFormTitle.textContent = isEdit
+      ? "Editar usuario"
+      : "Agregar usuario";
+  }
+  if (elements.userFormDescription) {
+    elements.userFormDescription.textContent = isEdit
+      ? "Actualiza la información del miembro seleccionado."
+      : "Registra un nuevo docente, administrador o auxiliar.";
+  }
+  if (elements.userFormSubmit) {
+    elements.userFormSubmit.textContent = isEdit
+      ? "Guardar cambios"
+      : "Guardar usuario";
+  }
+  if (elements.cancelUserFormBtn) {
+    elements.cancelUserFormBtn.hidden = false;
+  }
+  hideMessage(elements.userFormAlert);
+  if (record) {
+    populateUserForm(record);
+  }
+  if (elements.userNameInput) {
+    elements.userNameInput.focus();
+  }
+}
+
+function populateUserForm(record) {
+  if (!record) return;
+  if (elements.userNameInput) elements.userNameInput.value = record.name || "";
+  if (elements.userIdInput) elements.userIdInput.value = record.id || "";
+  if (elements.userControlNumberInput)
+    elements.userControlNumberInput.value = record.controlNumber || "";
+  if (elements.userPotroEmailInput)
+    elements.userPotroEmailInput.value = record.potroEmail || "";
+  if (elements.userInstitutionalEmailInput)
+    elements.userInstitutionalEmailInput.value = record.institutionalEmail || "";
+  if (elements.userAltEmailInput)
+    elements.userAltEmailInput.value = record.email || "";
+  if (elements.userPhoneInput) elements.userPhoneInput.value = record.phone || "";
+  if (elements.userRoleSelect)
+    elements.userRoleSelect.value = record.role || elements.userRoleSelect.value;
+  if (elements.userCareerSelect)
+    elements.userCareerSelect.value = record.career || elements.userCareerSelect.value;
+  if (elements.userAllowExternalAuthInput)
+    elements.userAllowExternalAuthInput.checked = Boolean(
+      record.allowExternalAuth,
+    );
+}
+
+function startEditUser(userKey) {
+  if (!currentUser || !isPrimaryAdmin(currentUser)) return;
+  const user = findUserByKey(userKey);
+  if (!user) {
+    showMessage(
+      elements.userFormAlert,
+      "No fue posible localizar el usuario seleccionado.",
+    );
+    return;
+  }
+  editingUserKey = userKey;
+  openUserForm("edit", user);
+}
+
+function cancelUserForm() {
+  hideUserForm({ reset: true });
+  hideMessage(elements.userFormAlert);
+}
+
+function hideUserForm({ reset = false } = {}) {
+  editingUserKey = null;
+  if (!elements.userForm) return;
+  if (reset) {
+    elements.userForm.reset();
+    if (elements.userAllowExternalAuthInput) {
+      elements.userAllowExternalAuthInput.checked = false;
+    }
+  }
+  elements.userForm.hidden = true;
+  delete elements.userForm.dataset.mode;
+  if (elements.cancelUserFormBtn) {
+    elements.cancelUserFormBtn.hidden = true;
+  }
+}
+
+async function handleUserFormSubmit(event) {
+  event.preventDefault();
+  if (!currentUser || !isPrimaryAdmin(currentUser)) return;
+  if (!elements.userForm) return;
+
+  const formData = new FormData(elements.userForm);
+  const allowExternalAuth = formData.get("allowExternalAuth") === "on";
+  const rawRecord = {
+    id: formData.get("id"),
+    name: formData.get("name"),
+    controlNumber: formData.get("controlNumber"),
+    potroEmail: formData.get("potroEmail"),
+    institutionalEmail: formData.get("institutionalEmail"),
+    email: formData.get("email"),
+    phone: formData.get("phone"),
+    role: formData.get("role"),
+    career: formData.get("career"),
+    allowExternalAuth,
+  };
+
+  const candidate = createUserRecord(rawRecord);
+  candidate.allowExternalAuth = allowExternalAuth;
+
+  if (!candidate.name) {
+    showMessage(elements.userFormAlert, "Ingresa el nombre completo del usuario.");
+    return;
+  }
+  if (!ROLE_LABELS[candidate.role]) {
+    showMessage(elements.userFormAlert, "Selecciona un rol válido para el usuario.");
+    return;
+  }
+  if (!CAREER_LABELS[candidate.career]) {
+    showMessage(elements.userFormAlert, "Selecciona una carrera válida para el usuario.");
+    return;
+  }
+  const hasIdentifier = [
+    candidate.id,
+    candidate.controlNumber,
+    candidate.potroEmail,
+    candidate.institutionalEmail,
+    candidate.email,
+  ].some((value) => String(value || "").trim().length);
+  if (!hasIdentifier) {
+    showMessage(
+      elements.userFormAlert,
+      "Proporciona al menos un identificador: ID, número de control o correo.",
+    );
+    return;
+  }
+
+  const ignoreKey = editingUserKey;
+  ensureUserId(candidate, ignoreKey);
+
+  if (hasUserConflict(candidate, ignoreKey)) {
+    showMessage(
+      elements.userFormAlert,
+      "Ya existe un usuario con la misma información de identificación.",
+    );
+    return;
+  }
+
+  const isEdit = Boolean(editingUserKey);
+  let recordToPersist = null;
+
+  if (isEdit) {
+    const index = findUserIndexByKey(editingUserKey);
+    if (index < 0) {
+      showMessage(
+        elements.userFormAlert,
+        "No fue posible actualizar la información del usuario.",
+      );
+      return;
+    }
+    const existingUser = users[index];
+    recordToPersist = { ...existingUser, ...candidate, updatedAt: new Date().toISOString() };
+    users = users.map((user, idx) => (idx === index ? recordToPersist : user));
+  } else {
+    recordToPersist = {
+      ...candidate,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    users = [...users, recordToPersist];
+  }
+
+  hideUserForm({ reset: true });
+  renderAllSections();
+  refreshCurrentUser();
+
+  let alertType = "success";
+  let alertMessage = isEdit
+    ? "Usuario actualizado correctamente."
+    : "Usuario agregado correctamente.";
+
+  const persistenceResult = await persistUserChange(recordToPersist);
+  if (persistenceResult.success) {
+    alertMessage = isEdit
+      ? "Usuario actualizado y sincronizado con Firebase."
+      : "Usuario agregado y sincronizado con Firebase.";
+  } else if (persistenceResult.reason === "missing-config") {
+    alertType = "info";
+    alertMessage = isEdit
+      ? "Usuario actualizado. Configura Firebase para sincronizar los cambios."
+      : "Usuario agregado. Configura Firebase para sincronizar los cambios.";
+  } else if (persistenceResult.reason === "missing-id") {
+    alertType = "info";
+    alertMessage = isEdit
+      ? "Usuario actualizado. Define un ID para sincronizar con Firebase."
+      : "Usuario agregado. Define un ID para sincronizar con Firebase.";
+  } else if (persistenceResult.reason === "error") {
+    alertType = "error";
+    alertMessage = isEdit
+      ? "Usuario actualizado, pero no fue posible sincronizar con Firebase."
+      : "Usuario agregado, pero no fue posible sincronizar con Firebase.";
+  }
+
+  showMessage(elements.userFormAlert, alertMessage, alertType);
+  refreshIcons();
+}
+
+async function requestUserDeletion(userKey) {
+  if (!currentUser || !isPrimaryAdmin(currentUser)) return;
+  const user = findUserByKey(userKey);
+  if (!user) {
+    showMessage(
+      elements.userFormAlert,
+      "No fue posible localizar el usuario seleccionado.",
+    );
+    return;
+  }
+
+  const isPrimary = normalizeEmail(user.potroEmail) === PRIMARY_ADMIN_EMAIL_NORMALIZED;
+  if (isPrimary) {
+    showMessage(
+      elements.userFormAlert,
+      "No puedes eliminar la cuenta del administrador principal.",
+    );
+    return;
+  }
+
+  const isCurrentUser =
+    currentUser &&
+    getUserIdentityKeys(currentUser).some((key) =>
+      getUserIdentityKeys(user).includes(key),
+    );
+  if (isCurrentUser) {
+    showMessage(
+      elements.userFormAlert,
+      "No puedes eliminar tu propia cuenta desde esta sección.",
+    );
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `¿Eliminar a ${user.name || "este usuario"}? Esta acción no se puede deshacer.`,
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  const index = findUserIndexByKey(userKey);
+  if (index < 0) {
+    showMessage(
+      elements.userFormAlert,
+      "No fue posible eliminar al usuario seleccionado.",
+    );
+    return;
+  }
+
+  users = users.filter((_, idx) => idx !== index);
+  hideUserForm({ reset: true });
+  renderAllSections();
+
+  let alertType = "success";
+  let alertMessage = "Usuario eliminado correctamente.";
+
+  const persistenceResult = await removeUserFromFirestore(user);
+  if (persistenceResult.success) {
+    alertMessage = "Usuario eliminado y sincronizado con Firebase.";
+  } else if (persistenceResult.reason === "missing-config") {
+    alertType = "info";
+    alertMessage = "Usuario eliminado localmente. Configura Firebase para reflejar los cambios.";
+  } else if (persistenceResult.reason === "missing-id") {
+    alertType = "info";
+    alertMessage = "Usuario eliminado. Asignar un ID permitiría sincronizar la eliminación con Firebase.";
+  } else if (persistenceResult.reason === "error") {
+    alertType = "error";
+    alertMessage = "Usuario eliminado localmente, pero no se pudo sincronizar con Firebase.";
+  }
+
+  showMessage(elements.userFormAlert, alertMessage, alertType);
+  refreshIcons();
+}
+
+function findUserIndexByKey(userKey) {
+  if (!userKey) return -1;
+  if (userKey.startsWith("index:")) {
+    const index = Number(userKey.split(":")[1]);
+    if (!Number.isNaN(index) && users[index]) {
+      return index;
+    }
+  }
+  return users.findIndex((user) => getUserIdentityKeys(user).includes(userKey));
+}
+
+function findUserByKey(userKey) {
+  const index = findUserIndexByKey(userKey);
+  return index >= 0 ? users[index] : null;
+}
+
+function hasUserConflict(candidate, ignoreKey = null) {
+  const candidateKeys = getUserIdentityKeys(candidate);
+  return users.some((user) => {
+    const userKeys = getUserIdentityKeys(user);
+    if (ignoreKey && userKeys.includes(ignoreKey)) {
+      return false;
+    }
+    return candidateKeys.some((key) => userKeys.includes(key));
+  });
+}
+
+function ensureUserId(record, ignoreKey = null) {
+  let baseId = String(record.id || "").trim();
+  if (!baseId && record.controlNumber) {
+    baseId = String(record.controlNumber).trim();
+  }
+  if (!baseId) {
+    const email =
+      normalizeEmail(record.potroEmail) ||
+      normalizeEmail(record.email) ||
+      normalizeEmail(record.institutionalEmail);
+    if (email) {
+      baseId = email.split("@")[0];
+    }
+  }
+  if (!baseId) {
+    baseId = `user-${Date.now()}`;
+  }
+  baseId = baseId
+    .toString()
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (!baseId) {
+    baseId = `user-${Date.now()}`;
+  }
+
+  let finalId = baseId;
+  let attempt = 1;
+  while (
+    users.some((user) => {
+      const userKeys = getUserIdentityKeys(user);
+      if (ignoreKey && userKeys.includes(ignoreKey)) {
+        return false;
+      }
+      return String(user.id || "").trim() === finalId;
+    })
+  ) {
+    attempt += 1;
+    finalId = `${baseId}-${attempt}`;
+  }
+
+  record.id = finalId;
+  return record;
 }
 
 function renderAdminActivityList() {
@@ -1231,6 +1699,7 @@ function renderAuxiliarActivities() {
 function clearAdminSections() {
   if (elements.userTableContainer) elements.userTableContainer.innerHTML = "";
   if (elements.adminActivityList) elements.adminActivityList.innerHTML = "";
+  hideUserForm({ reset: true });
 }
 
 function handleActivityFormSubmit(event) {
@@ -1302,31 +1771,13 @@ async function persistImportedUsers(records) {
   try {
     const batch = writeBatch(db);
     records.forEach((record) => {
-      const documentId = record.id || record.controlNumber || generateId("user");
+      const documentId =
+        resolveUserDocumentId(record) || record.controlNumber || generateId("user");
       const docRef = doc(collection(db, "users"), documentId);
-      const payload = {
-        name: record.name || "",
-        userId: record.id || "",
-        controlNumber: record.controlNumber || "",
-        potroEmail: record.potroEmail || "",
-        institutionalEmail: record.institutionalEmail || "",
-        phone: record.phone || "",
-        role: record.role || "",
-        career: record.career || "",
-        syncedAt: serverTimestamp(),
-      };
-
-      if (record.firebaseUid) {
-        payload.firebaseUid = record.firebaseUid;
-      }
-
-      if (typeof record.allowExternalAuth === "boolean") {
-        payload.allowExternalAuth = record.allowExternalAuth;
-      }
-
-      if (record.importedAt) {
-        payload.importedAtIso = record.importedAt;
-      }
+      const payload = buildFirestoreUserPayload({
+        ...record,
+        id: record.id || documentId,
+      });
 
       batch.set(docRef, payload, { merge: true });
     });
@@ -1337,6 +1788,122 @@ async function persistImportedUsers(records) {
     console.error("Error al sincronizar usuarios con Firebase:", error);
     return { success: false, reason: "error", error };
   }
+}
+
+async function persistUserChange(record) {
+  if (!record) {
+    return { success: true };
+  }
+
+  const db = getFirestoreDb();
+  if (!db) {
+    return { success: false, reason: "missing-config" };
+  }
+
+  const documentId = resolveUserDocumentId(record);
+  if (!documentId) {
+    return { success: false, reason: "missing-id" };
+  }
+
+  try {
+    const batch = writeBatch(db);
+    const docRef = doc(collection(db, "users"), documentId);
+    const payload = buildFirestoreUserPayload({ ...record, id: record.id || documentId });
+    batch.set(docRef, payload, { merge: true });
+    await batch.commit();
+    return { success: true };
+  } catch (error) {
+    console.error("No fue posible sincronizar el usuario con Firebase:", error);
+    return { success: false, reason: "error", error };
+  }
+}
+
+async function removeUserFromFirestore(record) {
+  if (!record) {
+    return { success: true };
+  }
+
+  const db = getFirestoreDb();
+  if (!db) {
+    return { success: false, reason: "missing-config" };
+  }
+
+  const documentId = resolveUserDocumentId(record);
+  if (!documentId) {
+    return { success: false, reason: "missing-id" };
+  }
+
+  try {
+    await deleteDoc(doc(db, "users", documentId));
+    return { success: true };
+  } catch (error) {
+    console.error("No fue posible eliminar el usuario de Firebase:", error);
+    return { success: false, reason: "error", error };
+  }
+}
+
+function buildFirestoreUserPayload(record) {
+  const payload = {
+    name: record.name || "",
+    userId: record.id || "",
+    controlNumber: record.controlNumber || "",
+    potroEmail: record.potroEmail || "",
+    institutionalEmail: record.institutionalEmail || "",
+    email: record.email || "",
+    phone: record.phone || "",
+    role: record.role || "",
+    career: record.career || "",
+    syncedAt: serverTimestamp(),
+  };
+
+  if (record.firebaseUid) {
+    payload.firebaseUid = record.firebaseUid;
+  }
+
+  if (typeof record.allowExternalAuth === "boolean") {
+    payload.allowExternalAuth = record.allowExternalAuth;
+  }
+
+  if (record.importedAt) {
+    payload.importedAtIso = record.importedAt;
+  }
+
+  if (record.createdAt) {
+    payload.createdAtIso = record.createdAt;
+  }
+
+  if (record.updatedAt) {
+    payload.updatedAtIso = record.updatedAt;
+  }
+
+  return payload;
+}
+
+function resolveUserDocumentId(record) {
+  if (!record) return null;
+  const candidates = [
+    record.id,
+    record.userId,
+    record.controlNumber,
+    record.potroEmail,
+    record.email,
+    record.institutionalEmail,
+  ];
+
+  for (const candidate of candidates) {
+    const value = String(candidate || "").trim();
+    if (value) {
+      if (value.includes("@")) {
+        const normalized = normalizeEmail(value);
+        if (normalized) {
+          return normalized;
+        }
+      }
+      return value;
+    }
+  }
+
+  return null;
 }
 
 async function importSoftwareTeachers() {
@@ -1579,6 +2146,14 @@ function normalizeEmail(value) {
   return email ? email.toLowerCase() : null;
 }
 
+function isPrimaryAdmin(user) {
+  if (!user) return false;
+  const candidates = [user.potroEmail, user.email, user.institutionalEmail];
+  return candidates.some(
+    (candidate) => normalizeEmail(candidate) === PRIMARY_ADMIN_EMAIL_NORMALIZED,
+  );
+}
+
 function initCharts() {
   const usersCanvas = document.getElementById("usersChart");
   if (usersCanvas) {
@@ -1699,6 +2274,15 @@ function formatDate(value) {
     month: "short",
     day: "numeric",
   });
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function generateId(prefix) {

@@ -307,6 +307,147 @@
                     </button>
                     <div id="importTeachersAlert"></div>
                   </div>
+                  <div class="user-management-actions">
+                    <button
+                      class="primary"
+                      type="button"
+                      id="startAddUserBtn"
+                      hidden
+                    >
+                      <i data-lucide="user-plus"></i>
+                      <span>Agregar usuario</span>
+                    </button>
+                  </div>
+                  <form id="userForm" class="user-form" hidden>
+                    <header class="user-form-header">
+                      <h3 id="userFormTitle">Agregar usuario</h3>
+                      <p id="userFormDescription">
+                        Registra un nuevo docente, administrador o auxiliar.
+                      </p>
+                    </header>
+                    <div class="form-grid">
+                      <div class="form-field">
+                        <label for="userName">Nombre completo</label>
+                        <input
+                          id="userName"
+                          name="name"
+                          type="text"
+                          placeholder="Ej. Juan Pérez"
+                          required
+                        />
+                      </div>
+                      <div class="form-field">
+                        <label for="userRole">Rol</label>
+                        <select
+                          id="userRole"
+                          name="role"
+                          data-default="docente"
+                        >
+                          <option value="docente" selected>Docente</option>
+                          <option value="auxiliar">Auxiliar</option>
+                          <option value="administrador">Administrador</option>
+                        </select>
+                      </div>
+                      <div class="form-field">
+                        <label for="userCareer">Carrera</label>
+                        <select
+                          id="userCareer"
+                          name="career"
+                          data-default="software"
+                        >
+                          <option value="software" selected>
+                            Ing. en Software
+                          </option>
+                          <option value="manufactura">
+                            Ing. en Manufactura
+                          </option>
+                          <option value="mecatronica">
+                            Ing. en Mecatrónica
+                          </option>
+                          <option value="global">
+                            General (todas las carreras)
+                          </option>
+                        </select>
+                      </div>
+                      <div class="form-field">
+                        <label for="userId">ID</label>
+                        <input
+                          id="userId"
+                          name="id"
+                          type="text"
+                          placeholder="Ej. u-doc-5"
+                        />
+                      </div>
+                      <div class="form-field">
+                        <label for="userControlNumber">Número de control</label>
+                        <input
+                          id="userControlNumber"
+                          name="controlNumber"
+                          type="text"
+                          placeholder="Ej. D230205"
+                        />
+                      </div>
+                      <div class="form-field">
+                        <label for="userPotroEmail">Correo Potro</label>
+                        <input
+                          id="userPotroEmail"
+                          name="potroEmail"
+                          type="email"
+                          placeholder="nombre.apellido@potros.itson.edu.mx"
+                        />
+                      </div>
+                      <div class="form-field">
+                        <label for="userInstitutionalEmail">
+                          Correo institucional
+                        </label>
+                        <input
+                          id="userInstitutionalEmail"
+                          name="institutionalEmail"
+                          type="email"
+                          placeholder="nombre.apellido@itson.edu.mx"
+                        />
+                      </div>
+                      <div class="form-field">
+                        <label for="userAltEmail">Correo alterno</label>
+                        <input
+                          id="userAltEmail"
+                          name="email"
+                          type="email"
+                          placeholder="correo.personal@dominio.com"
+                        />
+                      </div>
+                      <div class="form-field">
+                        <label for="userPhone">Teléfono</label>
+                        <input
+                          id="userPhone"
+                          name="phone"
+                          type="tel"
+                          placeholder="Ej. (644) 123 4567"
+                        />
+                      </div>
+                    </div>
+                    <label class="form-checkbox">
+                      <input
+                        type="checkbox"
+                        id="userAllowExternalAuth"
+                        name="allowExternalAuth"
+                      />
+                      <span>Permitir inicio de sesión con correo externo</span>
+                    </label>
+                    <p class="form-hint">
+                      Solo el administrador principal puede agregar, editar o
+                      eliminar usuarios.
+                    </p>
+                    <div class="form-actions">
+                      <button type="submit" class="primary" id="userFormSubmit">
+                        Guardar usuario
+                      </button>
+                      <button type="button" class="ghost" id="cancelUserFormBtn">
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                  <div id="userFormAlert"></div>
                   <div id="inviteAlert"></div>
                   <div id="userTableContainer" class="table-responsive"></div>
                 </div>
