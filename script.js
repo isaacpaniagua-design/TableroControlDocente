@@ -1772,6 +1772,9 @@ async function handleUserFormSubmit(event) {
 
   const candidate = createUserRecord(rawRecord);
   candidate.allowExternalAuth = allowExternalAuth;
+  const rawInstitutionalProvided = Boolean(
+    String(rawRecord.institutionalEmail || "").trim(),
+  );
 
   if (!candidate.name) {
     showMessage(elements.userFormAlert, "Ingresa el nombre completo del usuario.");
@@ -1803,7 +1806,13 @@ async function handleUserFormSubmit(event) {
   const ignoreKey = editingUserKey;
   ensureUserId(candidate, ignoreKey);
 
-  if (hasUserConflict(candidate, ignoreKey)) {
+  const conflictEvaluation = evaluateUserConflicts(candidate, {
+    ignoreKey,
+    institutionalProvided: rawInstitutionalProvided,
+  });
+  const mergeInfo = conflictEvaluation.mergeTarget;
+
+  if (!mergeInfo && conflictEvaluation.conflicts.length) {
     showMessage(
       elements.userFormAlert,
       "Ya existe un usuario con la misma información de identificación.",
@@ -1811,11 +1820,15 @@ async function handleUserFormSubmit(event) {
     return;
   }
 
-  const isEdit = Boolean(editingUserKey);
+  const isManualEdit = Boolean(editingUserKey);
+  const isMergeUpdate = Boolean(mergeInfo);
+  const isEdit = isManualEdit || isMergeUpdate;
   let recordToPersist = null;
 
   if (isEdit) {
-    const index = findUserIndexByKey(editingUserKey);
+    const index = isMergeUpdate
+      ? mergeInfo.index
+      : findUserIndexByKey(editingUserKey);
     if (index < 0) {
       showMessage(
         elements.userFormAlert,
@@ -1831,9 +1844,12 @@ async function handleUserFormSubmit(event) {
       normalizeEmail(existingUser.createdBy) ||
       "";
 
+    const mergedUser = isMergeUpdate
+      ? mergeUserRecordsForConflict(existingUser, candidate, mergeInfo)
+      : { ...existingUser, ...candidate };
+
     recordToPersist = {
-      ...existingUser,
-      ...candidate,
+      ...mergedUser,
       updatedAt: new Date().toISOString(),
       updatedBy,
     };
@@ -1863,7 +1879,9 @@ async function handleUserFormSubmit(event) {
   refreshCurrentUser();
 
   let alertType = "success";
-  let alertMessage = isEdit
+  let alertMessage = isMergeUpdate
+    ? "Usuario existente actualizado con el nuevo correo Potro."
+    : isEdit
     ? "Usuario actualizado correctamente."
     : "Usuario agregado correctamente.";
 
@@ -2005,23 +2023,152 @@ function findUserByKey(userKey) {
   return index >= 0 ? users[index] : null;
 }
 
-function hasUserConflict(candidate, ignoreKey = null) {
+function getUserConflicts(candidate, ignoreKey = null) {
   const candidateKeys = getUserIdentityKeys(candidate);
   const activeCandidateKeys = candidateKeys.filter(
     (key) => !recentlyDeletedUserKeys.has(key),
   );
 
   if (!activeCandidateKeys.length) {
-    return false;
+    return [];
   }
 
-  return users.some((user) => {
-    const userKeys = getUserIdentityKeys(user);
-    if (ignoreKey && userKeys.includes(ignoreKey)) {
-      return false;
+  return users
+    .map((user, index) => {
+      const userKeys = getUserIdentityKeys(user);
+      if (ignoreKey && userKeys.includes(ignoreKey)) {
+        return null;
+      }
+
+      const sharedKeys = activeCandidateKeys.filter((key) =>
+        userKeys.includes(key),
+      );
+
+      if (!sharedKeys.length) {
+        return null;
+      }
+
+      return { user, index, keys: sharedKeys };
+    })
+    .filter(Boolean);
+}
+
+function evaluateUserConflicts(
+  candidate,
+  { ignoreKey = null, institutionalProvided = false } = {},
+) {
+  const conflicts = getUserConflicts(candidate, ignoreKey);
+  if (!conflicts.length) {
+    return { conflicts: [], mergeTarget: null };
+  }
+
+  if (ignoreKey) {
+    return { conflicts, mergeTarget: null };
+  }
+
+  const candidatePotro = normalizeEmail(candidate.potroEmail);
+  const candidateInstitutional = normalizeEmail(candidate.institutionalEmail);
+  const derivedInstitutional =
+    candidatePotro && candidatePotro.includes("@potros.")
+      ? candidatePotro.replace("@potros.", "@")
+      : null;
+
+  if (
+    candidatePotro &&
+    candidateInstitutional &&
+    derivedInstitutional &&
+    candidateInstitutional === derivedInstitutional &&
+    !institutionalProvided &&
+    conflicts.length === 1
+  ) {
+    const conflict = conflicts[0];
+    const sharedNonEmail = conflict.keys.some(
+      (key) => !key.startsWith("email:"),
+    );
+
+    if (!sharedNonEmail) {
+      const user = conflict.user;
+      const userPotro = normalizeEmail(user.potroEmail);
+      if (userPotro !== candidatePotro) {
+        const userInstitutional = normalizeEmail(user.institutionalEmail);
+        const userGeneric = normalizeEmail(user.email);
+        if (
+          userInstitutional === candidateInstitutional ||
+          userGeneric === candidateInstitutional
+        ) {
+          return {
+            conflicts: [],
+            mergeTarget: { ...conflict, type: "merge-derived-institutional" },
+          };
+        }
+      }
     }
-    return activeCandidateKeys.some((key) => userKeys.includes(key));
+  }
+
+  return { conflicts, mergeTarget: null };
+}
+
+function mergeUserRecordsForConflict(existingUser, candidate, mergeInfo = null) {
+  if (!mergeInfo || mergeInfo.type !== "merge-derived-institutional") {
+    return { ...existingUser, ...candidate };
+  }
+
+  const merged = { ...existingUser };
+  const normalizedCandidatePotro = normalizeEmail(candidate.potroEmail);
+
+  if (candidate.potroEmail) {
+    merged.potroEmail = candidate.potroEmail;
+  }
+
+  if (candidate.institutionalEmail) {
+    const candidateInstitutional = normalizeEmail(candidate.institutionalEmail);
+    const existingInstitutional = normalizeEmail(existingUser.institutionalEmail);
+    if (!existingInstitutional) {
+      merged.institutionalEmail = candidate.institutionalEmail;
+    } else if (
+      candidateInstitutional &&
+      existingInstitutional !== candidateInstitutional
+    ) {
+      merged.institutionalEmail = candidate.institutionalEmail;
+    }
+  }
+
+  const candidateEmailNormalized = normalizeEmail(candidate.email);
+  const existingEmailNormalized = normalizeEmail(existingUser.email);
+  if (
+    candidate.email &&
+    candidateEmailNormalized &&
+    candidateEmailNormalized !== normalizedCandidatePotro &&
+    !existingEmailNormalized
+  ) {
+    merged.email = candidate.email;
+  }
+
+  ["name", "controlNumber", "phone"].forEach((field) => {
+    const candidateValue = String(candidate[field] || "").trim();
+    const existingValue = String(existingUser[field] || "").trim();
+    if (!existingValue && candidateValue) {
+      merged[field] = candidateValue;
+    }
   });
+
+  if (!existingUser.role && candidate.role) {
+    merged.role = candidate.role;
+  }
+
+  if (!existingUser.career && candidate.career) {
+    merged.career = candidate.career;
+  }
+
+  if (candidate.allowExternalAuth && !existingUser.allowExternalAuth) {
+    merged.allowExternalAuth = true;
+  }
+
+  return merged;
+}
+
+function hasUserConflict(candidate, ignoreKey = null) {
+  return getUserConflicts(candidate, ignoreKey).length > 0;
 }
 
 function ensureUserId(record, ignoreKey = null) {
