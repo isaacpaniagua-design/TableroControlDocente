@@ -415,6 +415,7 @@ let firestoreUsersLoaded = false;
 let pendingFirebaseUser = null;
 let firestoreActivitiesLoading = false;
 let firestoreActivitiesLoaded = false;
+const recentlyDeletedUserKeys = new Set();
 
 const LOCAL_STORAGE_KEYS = {
   users: "tcd.users",
@@ -538,6 +539,7 @@ function restoreLocalState() {
       const parsedUsers = JSON.parse(storedUsers);
       if (Array.isArray(parsedUsers)) {
         users = parsedUsers.map((user) => createUserRecord(user));
+        users.forEach((user) => clearDeletedUserKeys(user));
       }
     }
   } catch (error) {
@@ -1479,6 +1481,8 @@ async function handleUserFormSubmit(event) {
     users = [...users, recordToPersist];
   }
 
+  clearDeletedUserKeys(recordToPersist);
+
   persistUsersLocally();
 
   hideUserForm({ reset: true });
@@ -1565,7 +1569,19 @@ async function requestUserDeletion(userKey) {
     return;
   }
 
-  users = users.filter((_, idx) => idx !== index);
+  const identityKeys = getUserIdentityKeys(user);
+  const identityKeySet = new Set(identityKeys);
+
+  users = users.filter((candidate, idx) => {
+    if (idx === index) {
+      return false;
+    }
+
+    const candidateKeys = getUserIdentityKeys(candidate);
+    return !candidateKeys.some((key) => identityKeySet.has(key));
+  });
+
+  registerDeletedUser(user);
   persistUsersLocally();
   hideUserForm({ reset: true });
   renderAllSections();
@@ -1609,12 +1625,20 @@ function findUserByKey(userKey) {
 
 function hasUserConflict(candidate, ignoreKey = null) {
   const candidateKeys = getUserIdentityKeys(candidate);
+  const activeCandidateKeys = candidateKeys.filter(
+    (key) => !recentlyDeletedUserKeys.has(key),
+  );
+
+  if (!activeCandidateKeys.length) {
+    return false;
+  }
+
   return users.some((user) => {
     const userKeys = getUserIdentityKeys(user);
     if (ignoreKey && userKeys.includes(ignoreKey)) {
       return false;
     }
-    return candidateKeys.some((key) => userKeys.includes(key));
+    return activeCandidateKeys.some((key) => userKeys.includes(key));
   });
 }
 
@@ -2439,6 +2463,7 @@ async function importSoftwareTeachers() {
   }));
 
   users = [...users, ...teachersToAdd];
+  teachersToAdd.forEach((teacher) => clearDeletedUserKeys(teacher));
   importedTeachersCount += teachersToAdd.length;
   persistUsersLocally();
   persistImportedTeachersCountLocally();
@@ -2515,6 +2540,7 @@ async function attemptLoadUsersFromFirestore() {
     }
 
     users = mergeUserCollections(users, remoteUsers);
+    users.forEach((user) => clearDeletedUserKeys(user));
     persistUsersLocally();
     firestoreUsersLoaded = true;
     updateHeaderStats();
@@ -2656,6 +2682,18 @@ function getUserIdentityKeys(user) {
   if (user.uid) keys.push(`uid:${String(user.uid)}`);
 
   return Array.from(new Set(keys));
+}
+
+function registerDeletedUser(record) {
+  if (!record) return;
+  const keys = getUserIdentityKeys(record);
+  keys.forEach((key) => recentlyDeletedUserKeys.add(key));
+}
+
+function clearDeletedUserKeys(record) {
+  if (!record) return;
+  const keys = getUserIdentityKeys(record);
+  keys.forEach((key) => recentlyDeletedUserKeys.delete(key));
 }
 
 function mergeUserCollections(localUsers, remoteUsers) {
