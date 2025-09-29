@@ -32,6 +32,22 @@ body {
         55%),
     linear-gradient(180deg, #ffffff 0%, var(--bg) 50%, #eef2ff 100%);
   overflow-x: hidden;
+  position: relative;
+  isolation: isolate;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 70% at 10% 10%, rgba(79, 70, 229, 0.12), transparent 65%),
+    radial-gradient(65% 65% at 85% 15%, rgba(14, 165, 233, 0.12), transparent 60%),
+    radial-gradient(80% 80% at 50% 90%, rgba(236, 72, 153, 0.08), transparent 70%);
+  opacity: 0.85;
+  mix-blend-mode: screen;
 }
 
 .hidden {
@@ -186,6 +202,20 @@ main {
   min-height: calc(100dvh - var(--header-height));
   overflow-y: auto;
   overflow-x: hidden;
+  position: relative;
+  isolation: isolate;
+}
+
+main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(100% 100% at 0% 15%, rgba(37, 99, 235, 0.08), transparent 65%),
+    radial-gradient(110% 110% at 100% 25%, rgba(14, 165, 233, 0.08), transparent 70%),
+    radial-gradient(90% 90% at 50% 100%, rgba(236, 72, 153, 0.05), transparent 75%);
+  z-index: 0;
 }
 
 main > section {
@@ -194,6 +224,9 @@ main > section {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
 }
 
 body.dashboard-active main {
@@ -261,6 +294,26 @@ body.auth-active main {
   justify-content: center;
   align-items: center;
   flex: 1;
+  position: relative;
+  padding: clamp(1rem, 3vw, 2.75rem);
+}
+
+#authSection::before {
+  content: "";
+  position: absolute;
+  inset: clamp(0rem, 1vw, 1.25rem);
+  border-radius: clamp(1.5rem, 3vw, 2.75rem);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(14, 165, 233, 0.08)),
+    radial-gradient(120% 120% at 85% 10%, rgba(250, 204, 21, 0.22), transparent 65%);
+  filter: drop-shadow(0 45px 70px rgba(15, 23, 42, 0.25));
+  pointer-events: none;
+  z-index: 0;
+}
+
+#authSection > * {
+  position: relative;
+  z-index: 1;
 }
 
 .auth-layout {
@@ -270,6 +323,13 @@ body.auth-active main {
   align-items: stretch;
   height: 100%;
   min-height: 0;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.85), rgba(226, 232, 255, 0.9));
+  border-radius: clamp(1.8rem, 3vw, 2.75rem);
+  padding: clamp(1.1rem, 2.4vw, 2.4rem);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  backdrop-filter: blur(22px);
+  box-shadow: 0 55px 120px -80px rgba(15, 23, 42, 0.65);
+  isolation: isolate;
 }
 
 .auth-layout > * {
@@ -384,21 +444,58 @@ body.auth-active main {
 }
 
 .card {
-  background: var(--surface);
+  position: relative;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.92), rgba(226, 232, 255, 0.88));
   border-radius: 26px;
   padding: clamp(1.25rem, 3vw, 2.25rem);
   box-shadow: 0 35px 80px -50px rgba(15, 23, 42, 0.35);
-  border: 1px solid rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.16);
   min-width: 0;
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+  isolation: isolate;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: -25% 35% 45% -20%;
+  background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.15), transparent 65%);
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .dashboard-section {
-  background: var(--surface);
+  position: relative;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.9), rgba(226, 232, 255, 0.86));
   border-radius: 26px;
-  border: 1px solid rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.16);
   box-shadow: 0 35px 80px -50px rgba(15, 23, 42, 0.35);
   overflow: hidden;
   min-width: 0;
+  backdrop-filter: blur(18px);
+  isolation: isolate;
+}
+
+.dashboard-section::before {
+  content: "";
+  position: absolute;
+  inset: -30% 60% 40% -25%;
+  background: radial-gradient(circle at 80% 20%, rgba(14, 165, 233, 0.2), transparent 70%);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dashboard-section > * {
+  position: relative;
+  z-index: 1;
 }
 
 .dashboard-section__summary {
@@ -671,6 +768,29 @@ button.primary:hover {
 }
 
 /* Dashboard layout */
+#dashboard {
+  position: relative;
+  padding-block: clamp(0.75rem, 2vh, 1.6rem);
+}
+
+#dashboard::before {
+  content: "";
+  position: absolute;
+  inset: clamp(0rem, 1vw, 1.5rem);
+  border-radius: clamp(1.6rem, 3vw, 2.8rem);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(14, 165, 233, 0.06)),
+    radial-gradient(120% 120% at 18% 82%, rgba(129, 140, 248, 0.18), transparent 65%);
+  filter: drop-shadow(0 45px 95px rgba(15, 23, 42, 0.18));
+  pointer-events: none;
+  z-index: 0;
+}
+
+#dashboard > * {
+  position: relative;
+  z-index: 1;
+}
+
 .dashboard-shell {
   display: grid;
   grid-template-columns: minmax(252px, 300px) minmax(0, 1fr);
