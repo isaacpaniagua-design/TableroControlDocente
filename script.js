@@ -107,9 +107,17 @@ const QUICK_ACCESS_ITEMS = [
   {
     id: "quick-teacher",
     icon: "check-square",
-    label: "Mis actividades",
+    label: "Actividades por realizar",
     description: "Consulta tus pendientes y avances.",
     targetId: "teacherActivitiesCard",
+    roles: ["docente"],
+  },
+  {
+    id: "quick-teacher-progress",
+    icon: "trending-up",
+    label: "Mi progreso",
+    description: "Revisa el estado de tus actividades asignadas.",
+    targetId: "teacherProgressCard",
     roles: ["docente"],
   },
   {
@@ -614,7 +622,12 @@ function cacheDomElements() {
   elements.importTeachersBtn = document.getElementById("importTeachersBtn");
   elements.importTeachersAlert = document.getElementById("importTeachersAlert");
   elements.inviteAlert = document.getElementById("inviteAlert");
-  elements.teacherActivities = document.getElementById("teacherActivities");
+  elements.teacherPendingActivities = document.getElementById(
+    "teacherPendingActivities",
+  );
+  elements.teacherProgressSummary = document.getElementById(
+    "teacherProgressSummary",
+  );
   elements.auxiliarActivityList = document.getElementById("auxiliarActivityList");
   elements.auxiliarActivityAlert = document.getElementById("auxiliarActivityAlert");
   elements.printReport = document.getElementById("printReport");
@@ -1104,9 +1117,13 @@ function renderAllSections() {
     clearAdminSections();
   }
   if (currentUser.role === "docente") {
-    renderTeacherActivities();
-  } else if (elements.teacherActivities) {
-    elements.teacherActivities.innerHTML = "";
+    renderTeacherPendingActivities();
+    renderTeacherProgress();
+  } else {
+    if (elements.teacherPendingActivities)
+      elements.teacherPendingActivities.innerHTML = "";
+    if (elements.teacherProgressSummary)
+      elements.teacherProgressSummary.innerHTML = "";
   }
   if (currentUser.role === "auxiliar") {
     renderAuxiliarActivities();
@@ -1716,19 +1733,30 @@ function renderAdminActivityList() {
   });
 }
 
-function renderTeacherActivities() {
-  if (!elements.teacherActivities) return;
+function renderTeacherPendingActivities() {
+  if (!elements.teacherPendingActivities) return;
   if (!currentUser || currentUser.role !== "docente") {
-    elements.teacherActivities.innerHTML = "";
+    elements.teacherPendingActivities.innerHTML = "";
     return;
   }
-  const tasks = getActivitiesForRole("docente", currentUser);
+  const tasks = getActivitiesForRole("docente", currentUser)
+    .filter((activity) => activity.status !== "completada")
+    .sort((a, b) => {
+      const dateA = new Date(a.dueDate).getTime();
+      const dateB = new Date(b.dueDate).getTime();
+      if (Number.isNaN(dateA) && Number.isNaN(dateB)) return 0;
+      if (Number.isNaN(dateA)) return 1;
+      if (Number.isNaN(dateB)) return -1;
+      return dateA - dateB;
+    });
+
   if (!tasks.length) {
-    elements.teacherActivities.innerHTML =
-      '<p class="empty-state">No tienes actividades asignadas por ahora.</p>';
+    elements.teacherPendingActivities.innerHTML =
+      '<p class="empty-state">No tienes actividades por realizar en este momento.</p>';
     return;
   }
-  elements.teacherActivities.innerHTML = tasks
+
+  elements.teacherPendingActivities.innerHTML = tasks
     .map((activity) => {
       return `
         <article class="activity-card status-${activity.status}">
@@ -1741,12 +1769,102 @@ function renderTeacherActivities() {
           </header>
           <div class="activity-meta">
             <span><i data-lucide="calendar"></i>${formatDate(activity.dueDate)}</span>
-            <span><i data-lucide="map-pin"></i>${CAREER_LABELS[activity.career] || "General"}</span>
+            <span><i data-lucide="map-pin"></i>${
+              CAREER_LABELS[activity.career] || "General"
+            }</span>
           </div>
         </article>
       `;
     })
     .join("");
+}
+
+function renderTeacherProgress() {
+  if (!elements.teacherProgressSummary) return;
+  if (!currentUser || currentUser.role !== "docente") {
+    elements.teacherProgressSummary.innerHTML = "";
+    return;
+  }
+
+  const tasks = getActivitiesForRole("docente", currentUser);
+  if (!tasks.length) {
+    elements.teacherProgressSummary.innerHTML =
+      '<p class="empty-state">Cuando tengas actividades asignadas podrás ver tu progreso aquí.</p>';
+    return;
+  }
+
+  const totals = STATUS_ORDER.reduce((acc, status) => {
+    acc[status] = 0;
+    return acc;
+  }, {});
+
+  tasks.forEach((activity) => {
+    if (typeof totals[activity.status] === "number") {
+      totals[activity.status] += 1;
+    }
+  });
+
+  const totalTasks = tasks.length;
+  const completedCount = totals.completada || 0;
+  const inProgressCount = totals.en_progreso || 0;
+  const pendingCount = totals.pendiente || 0;
+  const completionPercent = totalTasks
+    ? Math.round((completedCount / totalTasks) * 100)
+    : 0;
+
+  const statusList = STATUS_ORDER.map((status) => {
+    const count = totals[status] || 0;
+    const percent = totalTasks ? Math.round((count / totalTasks) * 100) : 0;
+    const activityLabel = count === 1 ? "actividad" : "actividades";
+    return `
+      <li class="teacher-progress__status-item">
+        <span class="status-badge status-${status}">${
+          STATUS_LABELS[status]
+        }</span>
+        <div class="teacher-progress__status-meta">
+          <span class="teacher-progress__status-count">${count} ${activityLabel}</span>
+          <span class="teacher-progress__status-percent">${percent}%</span>
+        </div>
+      </li>
+    `;
+  }).join("");
+
+  const summaryText = `Tienes ${pendingCount} ${
+    pendingCount === 1 ? "actividad pendiente" : "actividades pendientes"
+  } y ${inProgressCount} ${
+    inProgressCount === 1
+      ? "actividad en progreso"
+      : "actividades en progreso"
+  }.`;
+
+  elements.teacherProgressSummary.innerHTML = `
+    <div class="teacher-progress__header">
+      <div>
+        <p class="teacher-progress__label">Avance general</p>
+        <h3 class="teacher-progress__value">${completionPercent}% completado</h3>
+      </div>
+      <div class="teacher-progress__totals">
+        <span><strong>${totalTasks}</strong> ${
+    totalTasks === 1 ? "actividad" : "actividades"
+  }</span>
+        <span><strong>${completedCount}</strong> ${
+    completedCount === 1 ? "completada" : "completadas"
+  }</span>
+      </div>
+    </div>
+    <div
+      class="teacher-progress__bar"
+      role="img"
+      aria-label="Progreso completado ${completionPercent}%"
+    >
+      <span
+        class="teacher-progress__bar-fill"
+        style="width: ${completionPercent}%"
+      ></span>
+    </div>
+    <p class="teacher-progress__summary">${summaryText}</p>
+    <ul class="teacher-progress__status-list">${statusList}</ul>
+  `;
 }
 
 function renderAuxiliarActivities() {

@@ -543,27 +543,51 @@
 
             <!-- Vistas de Docente -->
             <div id="docenteView" class="hidden">
-              <details
-                class="dashboard-section"
-                id="teacherActivitiesCard"
-                data-nav-label="Mis actividades"
-                data-nav-roles="docente"
-                open
-              >
-                <summary class="dashboard-section__summary">
-                  <div class="dashboard-section__text">
-                    <h2>Mis Actividades</h2>
-                    <p class="card-subtitle">
-                      Consulta el estado de cada actividad asignada a tu
-                      usuario.
-                    </p>
+              <div class="teacher-dashboard">
+                <details
+                  class="dashboard-section"
+                  id="teacherActivitiesCard"
+                  data-nav-label="Actividades por realizar"
+                  data-nav-roles="docente"
+                  open
+                >
+                  <summary class="dashboard-section__summary">
+                    <div class="dashboard-section__text">
+                      <h2>Actividades por realizar</h2>
+                      <p class="card-subtitle">
+                        Visualiza las tareas pendientes y en progreso asignadas
+                        a tu cuenta.
+                      </p>
+                    </div>
+                    <span class="dashboard-section__chevron" aria-hidden="true"></span>
+                  </summary>
+                  <div class="dashboard-section__body">
+                    <div id="teacherPendingActivities" class="activity-cards"></div>
                   </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                </summary>
-                <div class="dashboard-section__body">
-                  <div id="teacherActivities" class="activity-cards"></div>
-                </div>
-              </details>
+                </details>
+
+                <details
+                  class="dashboard-section"
+                  id="teacherProgressCard"
+                  data-nav-label="Mi progreso"
+                  data-nav-roles="docente"
+                  open
+                >
+                  <summary class="dashboard-section__summary">
+                    <div class="dashboard-section__text">
+                      <h2>Mi progreso</h2>
+                      <p class="card-subtitle">
+                        Consulta el avance general y el estado de tus
+                        actividades asignadas.
+                      </p>
+                    </div>
+                    <span class="dashboard-section__chevron" aria-hidden="true"></span>
+                  </summary>
+                  <div class="dashboard-section__body">
+                    <div id="teacherProgressSummary" class="teacher-progress"></div>
+                  </div>
+                </details>
+              </div>
             </div>
 
             <!-- Vistas de Auxiliar -->
