@@ -1261,35 +1261,6 @@ textarea:focus {
   box-shadow: 0 25px 60px -58px rgba(15, 23, 42, 0.35);
 }
 
-.bulk-teacher-form {
-  margin: 1rem 0 1.5rem;
-}
-
-.bulk-teacher-form .user-form {
-  margin-bottom: 0;
-}
-
-.bulk-teacher-form textarea {
-  min-height: 180px;
-  resize: vertical;
-}
-
-.bulk-teacher-options {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.bulk-teacher-options .form-field {
-  flex: 1 1 220px;
-  min-width: 220px;
-}
-
-.bulk-teacher-options .form-checkbox {
-  margin-bottom: 0;
-}
-
 .user-form-header h3 {
   margin: 0;
   font-size: 1.1rem;

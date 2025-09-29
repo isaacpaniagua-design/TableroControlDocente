@@ -301,88 +301,10 @@
                   <div id="admin-user-management">
                     <div class="import-toolbar">
                       <button class="primary" type="button" id="importTeachersBtn">
-                        <i data-lucide="list-plus"></i>
-                        <span>Registrar docentes en lote</span>
+                        <i data-lucide="file-input"></i>
+                        <span>Importar docentes de Ing. en Software</span>
                       </button>
                       <div id="importTeachersAlert"></div>
-                    </div>
-                    <div
-                      id="bulkTeacherFormContainer"
-                      class="bulk-teacher-form"
-                      hidden
-                    >
-                      <form id="bulkTeacherForm" class="user-form">
-                        <header class="user-form-header">
-                          <h3>Registrar docentes</h3>
-                          <p>
-                            Agrega varios docentes pegando su información en el
-                            siguiente campo. Cada registro se guardará en
-                            Firebase automáticamente.
-                          </p>
-                        </header>
-                        <div class="form-field">
-                          <label for="bulkTeacherList">Listado de docentes</label>
-                          <textarea
-                            id="bulkTeacherList"
-                            name="entries"
-                            placeholder="Ej. Juan Pérez, juan.perez@potros.itson.edu.mx, (644) 123 4567, Software"
-                            required
-                          ></textarea>
-                        </div>
-                        <div class="bulk-teacher-options">
-                          <div class="form-field">
-                            <label for="bulkTeacherDefaultCareer">
-                              Carrera predeterminada
-                            </label>
-                            <select
-                              id="bulkTeacherDefaultCareer"
-                              name="defaultCareer"
-                              data-default="software"
-                            >
-                              <option value="software" selected>
-                                Ing. en Software
-                              </option>
-                              <option value="manufactura">
-                                Ing. en Manufactura
-                              </option>
-                              <option value="mecatronica">
-                                Ing. en Mecatrónica
-                              </option>
-                              <option value="global">
-                                General (todas las carreras)
-                              </option>
-                            </select>
-                          </div>
-                          <label class="form-checkbox">
-                            <input
-                              type="checkbox"
-                              id="bulkTeacherAllowExternal"
-                              name="allowExternalAuth"
-                            />
-                            <span>
-                              Permitir inicio de sesión con correo externo
-                            </span>
-                          </label>
-                        </div>
-                        <p class="form-hint">
-                          Ingresa un docente por línea con el formato:
-                          nombre, correo, teléfono (opcional), carrera
-                          (opcional). Si no indicas una carrera se utilizará la
-                          predeterminada.
-                        </p>
-                        <div class="form-actions">
-                          <button class="primary" type="submit">
-                            Guardar docentes
-                          </button>
-                          <button
-                            class="ghost"
-                            type="button"
-                            id="bulkTeacherCancelBtn"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </form>
                     </div>
                     <div class="user-management-actions">
                       <button
