@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isInstitutionalUser() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && lower(request.auth.token.email).endsWith('@potros.itson.edu.mx');
+    }
+
+    function isPrimaryAdmin() {
+      return isInstitutionalUser()
+        && lower(request.auth.token.email) == 'isaac.paniagua@potros.itson.edu.mx';
+    }
+
+    match /users/{userId} {
+      allow read: if isInstitutionalUser();
+      allow create, update, delete: if isPrimaryAdmin();
+    }
+
+    match /activities/{activityId} {
+      allow read: if isInstitutionalUser();
+      allow create, update, delete: if isPrimaryAdmin();
+    }
+  }
+}
