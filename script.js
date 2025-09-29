@@ -26,32 +26,6 @@ const CAREER_LABELS = {
   global: "General (todas las carreras)",
 };
 
-const CAREER_ALIASES = {
-  software: [
-    "software",
-    "ing. en software",
-    "ingenieria en software",
-    "ingeniería en software",
-    "is",
-  ],
-  manufactura: [
-    "manufactura",
-    "ing. en manufactura",
-    "ingenieria en manufactura",
-    "ingeniería en manufactura",
-    "im",
-  ],
-  mecatronica: [
-    "mecatronica",
-    "mecatrónica",
-    "ing. en mecatronica",
-    "ingenieria en mecatronica",
-    "ingeniería en mecatrónica",
-    "ime",
-  ],
-  global: ["global", "general", "todas", "multi", "transversal"],
-};
-
 const ROLE_LABELS = {
   administrador: "Administrador",
   docente: "Docente",
@@ -247,6 +221,190 @@ function createUserRecord(raw) {
 
 const initialUsers = [];
 
+const softwareTeacherImport = [
+  {
+    id: "u-imp-2",
+    name: "Julio Nava",
+    controlNumber: "D230202",
+    potroEmail: "julio.nava@potros.itson.edu.mx",
+    institutionalEmail: "julio.nava@itson.edu.mx",
+    role: "docente",
+    career: "software",
+    phone: "(622) 100 2760",
+  },
+  {
+    id: "00000092313",
+    name: "Aarón Gilberto León Flores",
+    controlNumber: "87007190",
+    potroEmail: "aaron.leon92313@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 165 7826",
+  },
+  {
+    id: "00000090476",
+    name: "Arturo García Saiza",
+    controlNumber: "87006214",
+    potroEmail: "arturo.garcia90476@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 149 1249",
+  },
+  {
+    id: "00000013648",
+    name: "Bertha Julia Valle Cruz",
+    controlNumber: "85000551",
+    potroEmail: "bertha.valle13648@potros.itson.edu.mx",
+    institutionalEmail: "bvalle@itson.edu.mx",
+    role: "docente",
+    career: "software",
+    phone: "(622) 109 2074",
+  },
+  {
+    id: "00000231195",
+    name: "Carlos Alberto Ruiz Castrejón",
+    controlNumber: "",
+    potroEmail: "carlos.ruizc@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "",
+  },
+  {
+    id: "00000017041",
+    name: "Eduardo Lara García",
+    controlNumber: "87006213",
+    potroEmail: "eduardo.garcia17041@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 107 2068",
+  },
+  {
+    id: "00000099610",
+    name: "Jesús Abraham Zazueta Castillo",
+    controlNumber: "87006157",
+    potroEmail: "jesus.zazueta99610@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 172 9061",
+  },
+  {
+    id: "00000009726",
+    name: "Jesús Antonio Pérez Ceceña",
+    controlNumber: "87005932",
+    potroEmail: "jesus.perez9726@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 227 5714",
+  },
+  {
+    id: "00000262383",
+    name: "Jesús Carlos Gaytán Salazar",
+    controlNumber: "",
+    potroEmail: "jesuscarlosgaytan@gmail.com",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "",
+  },
+  {
+    id: "00000162447",
+    name: "Jesús Rigoberto Villavicencio Navarro",
+    controlNumber: "89003065",
+    potroEmail: "jesus.villavicencio162447@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 227 5527",
+  },
+  {
+    id: "00000016329",
+    name: "Jorge Alberto Norzagaray Mora",
+    controlNumber: "87005932",
+    potroEmail: "jorge.norzagaray16329@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 100 4274",
+  },
+  {
+    id: "00000019413",
+    name: "Juan Manuel Osuna Aceves",
+    controlNumber: "87001734",
+    potroEmail: "juan.osuna19413@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 147 7961",
+  },
+  {
+    id: "00000092307",
+    name: "Julio Isaac Nava Cordero",
+    controlNumber: "87007034",
+    potroEmail: "julio.nava92307@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 100 2760",
+  },
+  {
+    id: "00000020641",
+    name: "Miguel Ángel Moroyoqui Parra",
+    controlNumber: "87004412",
+    potroEmail: "miguel.moroyoqui20641@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 120 0257",
+  },
+  {
+    id: "00000019401",
+    name: "Roberto Limon Ulloa",
+    controlNumber: "85000836",
+    potroEmail: "roberto.limon@potros.itson.edu.mx",
+    institutionalEmail: "rlimon@itson.edu.mx",
+    role: "docente",
+    career: "software",
+    phone: "(622) 108 8833",
+  },
+  {
+    id: "00000090851",
+    name: "Sergio Castellanos Bustamante",
+    controlNumber: "",
+    potroEmail: "sergio.castellanos90851@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "",
+  },
+  {
+    id: "00000206923",
+    name: "Vinko Antonio Nevescanín Moreno",
+    controlNumber: "87007385",
+    potroEmail: "vinko.nevescanin206923@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 123 6661",
+  },
+  {
+    id: "00000091125",
+    name: "Zaira Guadalupe Bermúdez Pérez",
+    controlNumber: "87006990",
+    potroEmail: "zaira.bermudez91125@potros.itson.edu.mx",
+    institutionalEmail: "",
+    role: "docente",
+    career: "software",
+    phone: "(622) 127 5763",
+  },
+].map(createUserRecord);
+
+const initialActivities = [];
 
 let users = initialUsers.map((user) => ({ ...user }));
 let activities = initialActivities.map((activity) => ({ ...activity }));
@@ -488,23 +646,6 @@ function cacheDomElements() {
   elements.adminActivityAlert = document.getElementById("adminActivityAlert");
   elements.importTeachersBtn = document.getElementById("importTeachersBtn");
   elements.importTeachersAlert = document.getElementById("importTeachersAlert");
-  if (elements.importTeachersBtn) {
-    elements.importTeachersBtn.setAttribute("aria-expanded", "false");
-  }
-  elements.bulkTeacherFormContainer = document.getElementById(
-    "bulkTeacherFormContainer",
-  );
-  elements.bulkTeacherForm = document.getElementById("bulkTeacherForm");
-  elements.bulkTeacherListInput = document.getElementById("bulkTeacherList");
-  elements.bulkTeacherDefaultCareer = document.getElementById(
-    "bulkTeacherDefaultCareer",
-  );
-  elements.bulkTeacherAllowExternal = document.getElementById(
-    "bulkTeacherAllowExternal",
-  );
-  elements.bulkTeacherCancelBtn = document.getElementById(
-    "bulkTeacherCancelBtn",
-  );
   elements.inviteAlert = document.getElementById("inviteAlert");
   elements.teacherPendingActivities = document.getElementById(
     "teacherPendingActivities",
@@ -559,20 +700,8 @@ function attachEventListeners() {
   if (elements.importTeachersBtn) {
     elements.importTeachersBtn.addEventListener(
       "click",
-      toggleBulkTeacherForm,
+      importSoftwareTeachers,
     );
-  }
-  if (elements.bulkTeacherForm) {
-    elements.bulkTeacherForm.addEventListener(
-      "submit",
-      handleBulkTeacherFormSubmit,
-    );
-  }
-  if (elements.bulkTeacherCancelBtn) {
-    elements.bulkTeacherCancelBtn.addEventListener("click", () => {
-      setBulkTeacherFormVisible(false);
-      hideMessage(elements.importTeachersAlert);
-    });
   }
   if (elements.startAddUserBtn) {
     elements.startAddUserBtn.addEventListener("click", handleStartAddUser);
@@ -1135,21 +1264,12 @@ function renderUserTable() {
 
 function updateUserManagementControls() {
   const isPrimary = Boolean(currentUser && isPrimaryAdmin(currentUser));
-  if (elements.importTeachersBtn) {
-    elements.importTeachersBtn.hidden = !isPrimary;
-    elements.importTeachersBtn.disabled = !isPrimary;
-    if (!isPrimary) {
-      elements.importTeachersBtn.removeAttribute("aria-expanded");
-    }
-  }
   if (elements.startAddUserBtn) {
     elements.startAddUserBtn.hidden = !isPrimary;
   }
   if (!isPrimary) {
-    setBulkTeacherFormVisible(false);
     hideUserForm({ reset: true });
     hideMessage(elements.userFormAlert);
-    hideMessage(elements.importTeachersAlert);
   }
 }
 
@@ -2316,264 +2436,31 @@ function createActivityRecord(raw) {
   };
 }
 
-function toggleBulkTeacherForm() {
-  if (!currentUser || !isPrimaryAdmin(currentUser)) {
+async function importSoftwareTeachers() {
+  const newTeachers = softwareTeacherImport.filter((teacher) => {
+    const teacherEmail = normalizeEmail(teacher.potroEmail);
+    if (teacherEmail === PRIMARY_ADMIN_EMAIL_NORMALIZED) {
+      return false;
+    }
+
+    return !users.some(
+      (user) =>
+        normalizeEmail(user.potroEmail) === teacherEmail,
+    );
+  });
+  if (!newTeachers.length) {
     showMessage(
       elements.importTeachersAlert,
-      "Solo el administrador principal puede registrar docentes en lote.",
-      "error",
+      "Los docentes de Ing. en Software ya fueron importados.",
+      "info",
     );
     return;
   }
 
-  if (!elements.bulkTeacherFormContainer) {
-    return;
-  }
-
-  if (elements.bulkTeacherFormContainer.hidden) {
-    hideMessage(elements.importTeachersAlert);
-    setBulkTeacherFormVisible(true);
-  } else {
-    setBulkTeacherFormVisible(false, { preserveValues: true });
-  }
-}
-
-function setBulkTeacherFormVisible(visible, { preserveValues = false } = {}) {
-  const container = elements.bulkTeacherFormContainer;
-  if (!container) return;
-
-  container.hidden = !visible;
-
-  if (elements.importTeachersBtn) {
-    elements.importTeachersBtn.setAttribute("aria-expanded", String(visible));
-  }
-
-  if (visible) {
-    if (elements.bulkTeacherListInput) {
-      elements.bulkTeacherListInput.focus();
-    }
-    return;
-  }
-
-  if (preserveValues) {
-    return;
-  }
-
-  if (elements.bulkTeacherForm) {
-    elements.bulkTeacherForm.reset();
-  }
-  if (elements.bulkTeacherListInput) {
-    elements.bulkTeacherListInput.value = "";
-  }
-  if (elements.bulkTeacherAllowExternal) {
-    elements.bulkTeacherAllowExternal.checked = false;
-  }
-  if (elements.bulkTeacherDefaultCareer) {
-    const defaultValue =
-      elements.bulkTeacherDefaultCareer.dataset.default || "software";
-    elements.bulkTeacherDefaultCareer.value = defaultValue;
-  }
-}
-
-function parseBulkTeacherEntries(rawText) {
-  const lines = String(rawText || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim());
-
-  const entries = [];
-  const errors = [];
-
-  lines.forEach((line, index) => {
-    if (!line) {
-      return;
-    }
-
-    const segments = line
-      .split(/[;|,\t]/)
-      .map((segment) => segment.trim())
-      .filter((segment) => segment.length);
-
-    if (segments.length < 2) {
-      errors.push(
-        `Línea ${index + 1}: agrega nombre y correo separados por coma.`,
-      );
-      return;
-    }
-
-    const [name, email, phone = "", career = ""] = segments;
-    entries.push({ line: index + 1, name, email, phone, career });
-  });
-
-  return { entries, errors };
-}
-
-function resolveCareerFromInput(value, fallbackCareer = "software") {
-  const normalized = normalizeText(value);
-  if (!normalized) {
-    return fallbackCareer;
-  }
-
-  if (CAREER_LABELS[normalized]) {
-    return normalized;
-  }
-
-  for (const [careerKey, aliases] of Object.entries(CAREER_ALIASES)) {
-    if (aliases.includes(normalized)) {
-      return careerKey;
-    }
-  }
-
-  return fallbackCareer;
-}
-
-function summarizeSkippedEntries(skippedEntries, limit = 3) {
-  if (!Array.isArray(skippedEntries) || !skippedEntries.length) {
-    return "";
-  }
-
-  const details = skippedEntries
-    .slice(0, limit)
-    .map((entry) => `Línea ${entry.line}: ${entry.reason}`);
-
-  const remaining = skippedEntries.length - details.length;
-  if (remaining > 0) {
-    details.push(`y ${remaining} registro${remaining === 1 ? "" : "s"} más.`);
-  }
-
-  return details.join(" ");
-}
-
-async function handleBulkTeacherFormSubmit(event) {
-  event.preventDefault();
-
-  if (!currentUser || !isPrimaryAdmin(currentUser)) {
-    showMessage(
-      elements.importTeachersAlert,
-      "Solo el administrador principal puede registrar docentes en lote.",
-      "error",
-    );
-    return;
-  }
-
-  if (!elements.bulkTeacherListInput) {
-    return;
-  }
-
-  const rawEntries = elements.bulkTeacherListInput.value;
-  const defaultCareer =
-    elements.bulkTeacherDefaultCareer?.value || "software";
-  const allowExternalAuth = Boolean(
-    elements.bulkTeacherAllowExternal?.checked,
-  );
-
-  const { entries, errors } = parseBulkTeacherEntries(rawEntries);
-
-  if (!entries.length) {
-    const message =
-      errors.length > 0
-        ? errors.join(" ")
-        : "Ingresa al menos un docente para continuar.";
-    showMessage(elements.importTeachersAlert, message, "error");
-    return;
-  }
-
-  if (errors.length) {
-    showMessage(elements.importTeachersAlert, errors.join(" "), "error");
-    return;
-  }
-
-  const nowIso = new Date().toISOString();
-  const teachersToAdd = [];
-  const skippedEntries = [];
-  const newIdentityKeys = new Set();
-
-  entries.forEach((entry) => {
-    const resolvedCareer = resolveCareerFromInput(entry.career, defaultCareer);
-    const candidate = createUserRecord({
-      name: entry.name,
-      potroEmail: entry.email,
-      email: entry.email,
-      phone: entry.phone,
-      career: resolvedCareer,
-      role: "docente",
-      allowExternalAuth,
-    });
-    candidate.role = "docente";
-    candidate.career = resolvedCareer;
-    candidate.allowExternalAuth = allowExternalAuth;
-
-    if (!candidate.name) {
-      skippedEntries.push({
-        line: entry.line,
-        reason: "el nombre está vacío.",
-      });
-      return;
-    }
-
-    const normalizedEmail = normalizeEmail(
-      candidate.potroEmail || candidate.email,
-    );
-    if (!normalizedEmail) {
-      skippedEntries.push({
-        line: entry.line,
-        reason: "el correo es inválido o está vacío.",
-      });
-      return;
-    }
-
-    if (normalizedEmail === PRIMARY_ADMIN_EMAIL_NORMALIZED) {
-      skippedEntries.push({
-        line: entry.line,
-        reason: "corresponde al administrador principal.",
-      });
-      return;
-    }
-
-    const identityKeys = getUserIdentityKeys(candidate);
-    if (!identityKeys.length) {
-      skippedEntries.push({
-        line: entry.line,
-        reason: "no se encontró un identificador único.",
-      });
-      return;
-    }
-
-    if (identityKeys.some((key) => newIdentityKeys.has(key))) {
-      skippedEntries.push({
-        line: entry.line,
-        reason: "duplica a otro docente en este registro.",
-      });
-      return;
-    }
-
-    if (hasUserConflict(candidate)) {
-      skippedEntries.push({
-        line: entry.line,
-        reason: "ya existe un docente con los mismos datos.",
-      });
-      return;
-    }
-
-    ensureUserId(candidate);
-    const recordKeys = getUserIdentityKeys(candidate);
-    recordKeys.forEach((key) => newIdentityKeys.add(key));
-
-    teachersToAdd.push({
-      ...candidate,
-      importedAt: nowIso,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-    });
-  });
-
-  if (!teachersToAdd.length) {
-    const summary = summarizeSkippedEntries(skippedEntries);
-    const message = summary
-      ? `No se registraron docentes. ${summary}`
-      : "No se registraron docentes. Verifica la información proporcionada.";
-    showMessage(elements.importTeachersAlert, message, "error", null);
-    return;
-  }
+  const teachersToAdd = newTeachers.map((teacher) => ({
+    ...teacher,
+    importedAt: new Date().toISOString(),
+  }));
 
   users = [...users, ...teachersToAdd];
   teachersToAdd.forEach((teacher) => clearDeletedUserKeys(teacher));
@@ -2584,42 +2471,24 @@ async function handleBulkTeacherFormSubmit(event) {
 
   const persistenceResult = await persistImportedUsers(teachersToAdd);
   let alertType = "success";
-  let alertMessage = `${teachersToAdd.length} docente${
-    teachersToAdd.length === 1 ? "" : "s"
-  } registrados correctamente.`;
+  let alertMessage = `${teachersToAdd.length} docentes agregados correctamente.`;
 
   if (persistenceResult.success) {
-    alertMessage = `${teachersToAdd.length} docente${
-      teachersToAdd.length === 1 ? "" : "s"
-    } registrados y sincronizados con Firebase.`;
+    alertMessage = `${teachersToAdd.length} docentes agregados y sincronizados con Firebase.`;
   } else if (persistenceResult.reason === "missing-config") {
     alertType = "info";
-    alertMessage = `${teachersToAdd.length} docente${
-      teachersToAdd.length === 1 ? "" : "s"
-    } registrados. Configura Firebase para sincronizar la información.`;
+    alertMessage = `${teachersToAdd.length} docentes agregados. Configura Firebase para sincronizar la información.`;
   } else if (persistenceResult.reason === "error") {
     alertType = "error";
-    alertMessage = `${teachersToAdd.length} docente${
-      teachersToAdd.length === 1 ? "" : "s"
-    } registrados, pero no fue posible sincronizar con Firebase.`;
+    alertMessage = `${teachersToAdd.length} docentes agregados, pero no fue posible sincronizar con Firebase.`;
   }
 
-  if (skippedEntries.length) {
-    const summary = summarizeSkippedEntries(skippedEntries);
-    alertType = alertType === "error" ? "error" : "info";
-    alertMessage += ` ${skippedEntries.length} registro${
-      skippedEntries.length === 1 ? "" : "s"
-    } se omitieron. ${summary}`;
-  }
-
-  showMessage(elements.importTeachersAlert, alertMessage, alertType, null);
+  showMessage(elements.importTeachersAlert, alertMessage, alertType);
   showMessage(
     elements.inviteAlert,
-    "Comparte el acceso con los docentes recién registrados.",
+    "Comparte el acceso con los docentes recién importados.",
     "info",
-    null,
   );
-  setBulkTeacherFormVisible(false);
 }
 
 async function attemptLoadUsersFromFirestore() {
@@ -2893,8 +2762,8 @@ function updateHighlights() {
   if (highlights[2]) {
     highlights[2].querySelector("p").textContent =
       importedTeachersCount
-        ? `Se registraron ${importedTeachersCount} docentes recientemente desde el panel.`
-        : "Registra docentes en lote para mantener actualizada la base.";
+        ? `Se incorporaron ${importedTeachersCount} docentes de Ing. en Software recientemente.`
+        : "Integra nuevos docentes con plantillas precargadas.";
   }
 }
 
@@ -2911,14 +2780,6 @@ function getActivitiesForRole(role, user) {
     if (activity.career === "global") return true;
     return activity.career === user.career;
   });
-}
-
-function normalizeText(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function normalizeEmail(value) {
