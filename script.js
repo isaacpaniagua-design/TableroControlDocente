@@ -4,6 +4,7 @@ import {
   getDocs,
   serverTimestamp,
   writeBatch,
+  setDoc,
   deleteDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
@@ -414,6 +415,7 @@ let firestoreUsersLoaded = false;
 let pendingFirebaseUser = null;
 let firestoreActivitiesLoading = false;
 let firestoreActivitiesLoaded = false;
+const recentlyDeletedUserKeys = new Set();
 
 const LOCAL_STORAGE_KEYS = {
   users: "tcd.users",
@@ -537,6 +539,7 @@ function restoreLocalState() {
       const parsedUsers = JSON.parse(storedUsers);
       if (Array.isArray(parsedUsers)) {
         users = parsedUsers.map((user) => createUserRecord(user));
+        users.forEach((user) => clearDeletedUserKeys(user));
       }
     }
   } catch (error) {
@@ -1478,6 +1481,8 @@ async function handleUserFormSubmit(event) {
     users = [...users, recordToPersist];
   }
 
+  clearDeletedUserKeys(recordToPersist);
+
   persistUsersLocally();
 
   hideUserForm({ reset: true });
@@ -1564,7 +1569,19 @@ async function requestUserDeletion(userKey) {
     return;
   }
 
-  users = users.filter((_, idx) => idx !== index);
+  const identityKeys = getUserIdentityKeys(user);
+  const identityKeySet = new Set(identityKeys);
+
+  users = users.filter((candidate, idx) => {
+    if (idx === index) {
+      return false;
+    }
+
+    const candidateKeys = getUserIdentityKeys(candidate);
+    return !candidateKeys.some((key) => identityKeySet.has(key));
+  });
+
+  registerDeletedUser(user);
   persistUsersLocally();
   hideUserForm({ reset: true });
   renderAllSections();
@@ -1608,12 +1625,20 @@ function findUserByKey(userKey) {
 
 function hasUserConflict(candidate, ignoreKey = null) {
   const candidateKeys = getUserIdentityKeys(candidate);
+  const activeCandidateKeys = candidateKeys.filter(
+    (key) => !recentlyDeletedUserKeys.has(key),
+  );
+
+  if (!activeCandidateKeys.length) {
+    return false;
+  }
+
   return users.some((user) => {
     const userKeys = getUserIdentityKeys(user);
     if (ignoreKey && userKeys.includes(ignoreKey)) {
       return false;
     }
-    return candidateKeys.some((key) => userKeys.includes(key));
+    return activeCandidateKeys.some((key) => userKeys.includes(key));
   });
 }
 
@@ -2128,9 +2153,14 @@ async function persistImportedUsers(records) {
   try {
     const batch = writeBatch(db);
     records.forEach((record) => {
-      const documentId =
+      const resolvedId =
         resolveUserDocumentId(record) || record.controlNumber || generateId("user");
-      const docRef = doc(collection(db, "users"), documentId);
+      const documentId = String(resolvedId || "").trim();
+      if (!documentId) {
+        return;
+      }
+
+      const docRef = doc(db, "users", documentId);
       const payload = buildFirestoreUserPayload({
         ...record,
         id: record.id || documentId,
@@ -2157,17 +2187,16 @@ async function persistUserChange(record) {
     return { success: false, reason: "missing-config" };
   }
 
-  const documentId = resolveUserDocumentId(record);
+  const documentIdCandidate = resolveUserDocumentId(record);
+  const documentId = String(documentIdCandidate || "").trim();
   if (!documentId) {
     return { success: false, reason: "missing-id" };
   }
 
   try {
-    const batch = writeBatch(db);
-    const docRef = doc(collection(db, "users"), documentId);
+    const docRef = doc(db, "users", documentId);
     const payload = buildFirestoreUserPayload({ ...record, id: record.id || documentId });
-    batch.set(docRef, payload, { merge: true });
-    await batch.commit();
+    await setDoc(docRef, payload, { merge: true });
     return { success: true };
   } catch (error) {
     console.error("No fue posible sincronizar el usuario con Firebase:", error);
@@ -2256,6 +2285,7 @@ async function removeActivityFromFirestore(record) {
 
 function buildFirestoreUserPayload(record) {
   const payload = {
+    id: record.id || "",
     name: record.name || "",
     userId: record.id || "",
     controlNumber: record.controlNumber || "",
@@ -2433,6 +2463,7 @@ async function importSoftwareTeachers() {
   }));
 
   users = [...users, ...teachersToAdd];
+  teachersToAdd.forEach((teacher) => clearDeletedUserKeys(teacher));
   importedTeachersCount += teachersToAdd.length;
   persistUsersLocally();
   persistImportedTeachersCountLocally();
@@ -2509,6 +2540,7 @@ async function attemptLoadUsersFromFirestore() {
     }
 
     users = mergeUserCollections(users, remoteUsers);
+    users.forEach((user) => clearDeletedUserKeys(user));
     persistUsersLocally();
     firestoreUsersLoaded = true;
     updateHeaderStats();
@@ -2650,6 +2682,18 @@ function getUserIdentityKeys(user) {
   if (user.uid) keys.push(`uid:${String(user.uid)}`);
 
   return Array.from(new Set(keys));
+}
+
+function registerDeletedUser(record) {
+  if (!record) return;
+  const keys = getUserIdentityKeys(record);
+  keys.forEach((key) => recentlyDeletedUserKeys.add(key));
+}
+
+function clearDeletedUserKeys(record) {
+  if (!record) return;
+  const keys = getUserIdentityKeys(record);
+  keys.forEach((key) => recentlyDeletedUserKeys.delete(key));
 }
 
 function mergeUserCollections(localUsers, remoteUsers) {
