@@ -468,7 +468,7 @@ function isPermissionDeniedError(error) {
 
 function getFirestoreSyncErrorMessage(resourceLabel, error) {
   if (isPermissionDeniedError(error)) {
-    return `No fue posible sincronizar ${resourceLabel}. Verifica los permisos de lectura en Firebase Firestore.`;
+    return `No fue posible sincronizar ${resourceLabel}. Verifica las reglas de Firebase Firestore (consulta firebase/README.md).`;
   }
 
   return `Ocurrió un error al sincronizar ${resourceLabel} desde Firebase. Inténtalo nuevamente más tarde.`;
@@ -1864,8 +1864,8 @@ async function handleUserFormSubmit(event) {
   } else if (persistenceResult.reason === "permission-denied") {
     alertType = "error";
     alertMessage = isEdit
-      ? "Usuario actualizado, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa las reglas de seguridad."
-      : "Usuario agregado, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa las reglas de seguridad.";
+      ? "Usuario actualizado, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa firebase/README.md para ajustar las reglas de seguridad."
+      : "Usuario agregado, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa firebase/README.md para ajustar las reglas de seguridad.";
   } else if (persistenceResult.reason === "error") {
     alertType = "error";
     alertMessage = isEdit
@@ -1958,7 +1958,7 @@ async function requestUserDeletion(userKey) {
   } else if (persistenceResult.reason === "permission-denied") {
     alertType = "error";
     alertMessage =
-      "Usuario eliminado localmente, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa las reglas de seguridad.";
+      "Usuario eliminado localmente, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa firebase/README.md para ajustar las reglas de seguridad.";
   } else if (persistenceResult.reason === "error") {
     alertType = "error";
     alertMessage = "Usuario eliminado localmente, pero no se pudo sincronizar con Firebase.";
@@ -2382,7 +2382,7 @@ async function handleActivityFormSubmit(event) {
   } else if (persistenceResult.reason === "permission-denied") {
     showMessage(
       elements.adminActivityAlert,
-      "Actividad registrada, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa las reglas de seguridad.",
+      "Actividad registrada, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa firebase/README.md para ajustar las reglas de seguridad.",
       "error",
     );
   } else if (persistenceResult.reason === "error") {
@@ -2460,8 +2460,8 @@ async function updateActivityStatus(activityId, newStatus, source) {
     if (feedbackElement) {
       const errorMessage =
         source === "admin"
-          ? "Tu cuenta no tiene permisos para sincronizar con Firebase. El cambio se revirtió."
-          : "Tu cuenta no tiene permisos para sincronizar con Firebase. El cambio se revirtió.";
+          ? "Tu cuenta no tiene permisos para sincronizar con Firebase. Revisa firebase/README.md y el cambio se revirtió."
+          : "Tu cuenta no tiene permisos para sincronizar con Firebase. Revisa firebase/README.md y el cambio se revirtió.";
       showMessage(feedbackElement, errorMessage, "error");
     }
     return;
@@ -2519,7 +2519,7 @@ async function removeActivity(activityId) {
     renderAllSections();
     showMessage(
       elements.adminActivityAlert,
-      "Tu cuenta no tiene permisos para sincronizar con Firebase. La eliminación se revirtió.",
+      "Tu cuenta no tiene permisos para sincronizar con Firebase. Revisa firebase/README.md; la eliminación se revirtió.",
       "error",
     );
     return;
@@ -2890,7 +2890,7 @@ async function importSoftwareTeachers() {
     alertMessage = `${teachersToAdd.length} docentes agregados. Configura Firebase para sincronizar la información.`;
   } else if (persistenceResult.reason === "permission-denied") {
     alertType = "error";
-    alertMessage = `${teachersToAdd.length} docentes agregados, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa las reglas de seguridad.`;
+    alertMessage = `${teachersToAdd.length} docentes agregados, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa firebase/README.md para ajustar las reglas de seguridad.`;
   } else if (persistenceResult.reason === "error") {
     alertType = "error";
     alertMessage = `${teachersToAdd.length} docentes agregados, pero no fue posible sincronizar con Firebase.`;
