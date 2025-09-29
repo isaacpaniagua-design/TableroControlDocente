@@ -1883,7 +1883,7 @@ async function requestUserDeletion(userKey) {
   if (!user) {
     showMessage(
       elements.userFormAlert,
-      "No fue posible localizar el usuario seleccionado.",
+      "No fue posible localizar al usuario seleccionado.",
     );
     return;
   }
@@ -2559,6 +2559,7 @@ async function persistImportedUsers(records) {
       const payload = buildFirestoreUserPayload({
         ...record,
         id: record.id || documentId,
+        isNew: true, // Indica que es un registro nuevo para asegurar la marca de tiempo de creación
       });
 
       batch.set(docRef, payload, { merge: true });
@@ -2593,7 +2594,13 @@ async function persistUserChange(record) {
 
   try {
     const docRef = doc(db, "users", documentId);
-    const payload = buildFirestoreUserPayload({ ...record, id: record.id || documentId });
+    const isNew = !users.some(u => resolveUserDocumentId(u) === documentId);
+    const payload = buildFirestoreUserPayload({ 
+      ...record, 
+      id: record.id || documentId,
+      isNew
+    });
+    
     await setDoc(docRef, payload, { merge: true });
     return { success: true };
   } catch (error) {
@@ -2650,10 +2657,14 @@ async function persistActivityChange(record) {
   try {
     const batch = writeBatch(db);
     const docRef = doc(collection(db, "activities"), documentId);
+    
+    const isNew = !activities.some(a => resolveActivityDocumentId(a) === documentId);
     const payload = buildFirestoreActivityPayload({
       ...record,
       id: record.id || documentId,
+      isNew
     });
+    
     batch.set(docRef, payload, { merge: true });
     await batch.commit();
     return { success: true };
@@ -2715,17 +2726,21 @@ function buildFirestoreUserPayload(record) {
   if (typeof record.allowExternalAuth === "boolean") {
     payload.allowExternalAuth = record.allowExternalAuth;
   }
+  
+  // *** MEJORA DE FIREBASE: Usar serverTimestamp() para una hora precisa y de servidor ***
+  // Si es nuevo (isNew es true) o no tiene una marca de tiempo de creación local.
+  if (record.isNew || !record.createdAt) {
+      payload.createdAt = serverTimestamp();
+  } else if (record.createdAt) {
+      payload.createdAtIso = record.createdAt;
+  }
+  
+  // Siempre actualiza la marca de tiempo de actualización
+  payload.updatedAt = serverTimestamp();
+
 
   if (record.importedAt) {
     payload.importedAtIso = record.importedAt;
-  }
-
-  if (record.createdAt) {
-    payload.createdAtIso = record.createdAt;
-  }
-
-  if (record.updatedAt) {
-    payload.updatedAtIso = record.updatedAt;
   }
 
   return payload;
@@ -2772,17 +2787,19 @@ function buildFirestoreActivityPayload(record) {
     status: STATUS_ORDER.includes(record.status) ? record.status : "pendiente",
     syncedAt: serverTimestamp(),
   };
-
-  if (record.createdAt) {
-    payload.createdAtIso = record.createdAt;
+  
+  // *** MEJORA DE FIREBASE: Usar serverTimestamp() para una hora precisa y de servidor ***
+  if (record.isNew || !record.createdAt) {
+      payload.createdAt = serverTimestamp();
+  } else if (record.createdAt) {
+      payload.createdAtIso = record.createdAt;
   }
+  
+  payload.updatedAt = serverTimestamp();
+
 
   if (record.createdBy) {
     payload.createdBy = record.createdBy;
-  }
-
-  if (record.updatedAt) {
-    payload.updatedAtIso = record.updatedAt;
   }
 
   if (record.updatedBy) {
