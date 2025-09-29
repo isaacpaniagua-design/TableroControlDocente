@@ -218,6 +218,8 @@ function createUserRecord(raw) {
     institutionalEmail: institutionalEmail || "",
     email: genericEmail || potroEmail || "",
     firebaseUid,
+    createdBy: toEmail(raw.createdBy ?? raw.created_by ?? "") || "",
+    updatedBy: toEmail(raw.updatedBy ?? raw.updated_by ?? "") || "",
     allowExternalAuth: Boolean(raw.allowExternalAuth ?? false),
   };
 }
@@ -1822,13 +1824,32 @@ async function handleUserFormSubmit(event) {
       return;
     }
     const existingUser = users[index];
-    recordToPersist = { ...existingUser, ...candidate, updatedAt: new Date().toISOString() };
+    const updatedBy =
+      normalizeEmail(currentUser?.potroEmail) ||
+      normalizeEmail(currentUser?.email) ||
+      normalizeEmail(existingUser.updatedBy) ||
+      normalizeEmail(existingUser.createdBy) ||
+      "";
+
+    recordToPersist = {
+      ...existingUser,
+      ...candidate,
+      updatedAt: new Date().toISOString(),
+      updatedBy,
+    };
     users = users.map((user, idx) => (idx === index ? recordToPersist : user));
   } else {
+    const actorEmail =
+      normalizeEmail(currentUser?.potroEmail) ||
+      normalizeEmail(currentUser?.email) ||
+      "";
+
     recordToPersist = {
       ...candidate,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      createdBy: actorEmail,
+      updatedBy: actorEmail,
     };
     users = [...users, recordToPersist];
   }
@@ -2726,7 +2747,15 @@ function buildFirestoreUserPayload(record) {
   if (typeof record.allowExternalAuth === "boolean") {
     payload.allowExternalAuth = record.allowExternalAuth;
   }
-  
+
+  if (record.createdBy) {
+    payload.createdBy = normalizeEmail(record.createdBy) || "";
+  }
+
+  if (record.updatedBy) {
+    payload.updatedBy = normalizeEmail(record.updatedBy) || "";
+  }
+
   // *** MEJORA DE FIREBASE: Usar serverTimestamp() para una hora precisa y de servidor ***
   // Si es nuevo (isNew es true) o no tiene una marca de tiempo de creación local.
   if (record.isNew || !record.createdAt) {
