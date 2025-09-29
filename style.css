@@ -1589,6 +1589,129 @@ td small {
   max-width: 220px;
 }
 
+.teacher-dashboard {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 992px) {
+  .teacher-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .teacher-dashboard .dashboard-section {
+    height: 100%;
+  }
+}
+
+.teacher-progress {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.teacher-progress__header {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.teacher-progress__label {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.teacher-progress__value {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+}
+
+.teacher-progress__totals {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.teacher-progress__totals span {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: baseline;
+}
+
+.teacher-progress__totals strong {
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.teacher-progress__bar {
+  position: relative;
+  height: 0.75rem;
+  background: rgba(37, 99, 235, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.teacher-progress__bar-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--primary), #60a5fa);
+  border-radius: inherit;
+  transition: width 0.4s ease;
+}
+
+.teacher-progress__summary {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.teacher-progress__status-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.teacher-progress__status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 14px;
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.teacher-progress__status-item .status-badge {
+  margin-right: auto;
+}
+
+.teacher-progress__status-meta {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  font-weight: 600;
+}
+
+.teacher-progress__status-count {
+  font-size: 1rem;
+}
+
+.teacher-progress__status-percent {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 button.small {
   font-size: 0.85rem;
   padding: 0.55rem 0.9rem;
