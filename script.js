@@ -1861,6 +1861,11 @@ async function handleUserFormSubmit(event) {
     alertMessage = isEdit
       ? "Usuario actualizado. Define un ID para sincronizar con Firebase."
       : "Usuario agregado. Define un ID para sincronizar con Firebase.";
+  } else if (persistenceResult.reason === "permission-denied") {
+    alertType = "error";
+    alertMessage = isEdit
+      ? "Usuario actualizado, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa las reglas de seguridad."
+      : "Usuario agregado, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa las reglas de seguridad.";
   } else if (persistenceResult.reason === "error") {
     alertType = "error";
     alertMessage = isEdit
@@ -1950,6 +1955,10 @@ async function requestUserDeletion(userKey) {
   } else if (persistenceResult.reason === "missing-id") {
     alertType = "info";
     alertMessage = "Usuario eliminado. Asignar un ID permitiría sincronizar la eliminación con Firebase.";
+  } else if (persistenceResult.reason === "permission-denied") {
+    alertType = "error";
+    alertMessage =
+      "Usuario eliminado localmente, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa las reglas de seguridad.";
   } else if (persistenceResult.reason === "error") {
     alertType = "error";
     alertMessage = "Usuario eliminado localmente, pero no se pudo sincronizar con Firebase.";
@@ -2370,6 +2379,12 @@ async function handleActivityFormSubmit(event) {
       "Actividad registrada. Configura Firebase para sincronizar con Firestore.",
       "info",
     );
+  } else if (persistenceResult.reason === "permission-denied") {
+    showMessage(
+      elements.adminActivityAlert,
+      "Actividad registrada, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa las reglas de seguridad.",
+      "error",
+    );
   } else if (persistenceResult.reason === "error") {
     showMessage(
       elements.adminActivityAlert,
@@ -2438,6 +2453,20 @@ async function updateActivityStatus(activityId, newStatus, source) {
     return;
   }
 
+  if (persistenceResult.reason === "permission-denied") {
+    activities[index] = previousActivity;
+    persistActivitiesLocally();
+    renderAllSections();
+    if (feedbackElement) {
+      const errorMessage =
+        source === "admin"
+          ? "Tu cuenta no tiene permisos para sincronizar con Firebase. El cambio se revirtió."
+          : "Tu cuenta no tiene permisos para sincronizar con Firebase. El cambio se revirtió.";
+      showMessage(feedbackElement, errorMessage, "error");
+    }
+    return;
+  }
+
   activities[index] = previousActivity;
   persistActivitiesLocally();
   renderAllSections();
@@ -2480,6 +2509,18 @@ async function removeActivity(activityId) {
       elements.adminActivityAlert,
       "Actividad eliminada localmente. Configura Firebase para sincronizar.",
       "info",
+    );
+    return;
+  }
+
+  if (persistenceResult.reason === "permission-denied") {
+    activities = originalActivities;
+    persistActivitiesLocally();
+    renderAllSections();
+    showMessage(
+      elements.adminActivityAlert,
+      "Tu cuenta no tiene permisos para sincronizar con Firebase. La eliminación se revirtió.",
+      "error",
     );
     return;
   }
@@ -2527,6 +2568,9 @@ async function persistImportedUsers(records) {
     return { success: true };
   } catch (error) {
     console.error("Error al sincronizar usuarios con Firebase:", error);
+    if (isPermissionDeniedError(error)) {
+      return { success: false, reason: "permission-denied", error };
+    }
     return { success: false, reason: "error", error };
   }
 }
@@ -2554,6 +2598,9 @@ async function persistUserChange(record) {
     return { success: true };
   } catch (error) {
     console.error("No fue posible sincronizar el usuario con Firebase:", error);
+    if (isPermissionDeniedError(error)) {
+      return { success: false, reason: "permission-denied", error };
+    }
     return { success: false, reason: "error", error };
   }
 }
@@ -2578,6 +2625,9 @@ async function removeUserFromFirestore(record) {
     return { success: true };
   } catch (error) {
     console.error("No fue posible eliminar el usuario de Firebase:", error);
+    if (isPermissionDeniedError(error)) {
+      return { success: false, reason: "permission-denied", error };
+    }
     return { success: false, reason: "error", error };
   }
 }
@@ -2609,6 +2659,9 @@ async function persistActivityChange(record) {
     return { success: true };
   } catch (error) {
     console.error("No fue posible sincronizar la actividad con Firebase:", error);
+    if (isPermissionDeniedError(error)) {
+      return { success: false, reason: "permission-denied", error };
+    }
     return { success: false, reason: "error", error };
   }
 }
@@ -2633,6 +2686,9 @@ async function removeActivityFromFirestore(record) {
     return { success: true };
   } catch (error) {
     console.error("No fue posible eliminar la actividad de Firebase:", error);
+    if (isPermissionDeniedError(error)) {
+      return { success: false, reason: "permission-denied", error };
+    }
     return { success: false, reason: "error", error };
   }
 }
@@ -2832,6 +2888,9 @@ async function importSoftwareTeachers() {
   } else if (persistenceResult.reason === "missing-config") {
     alertType = "info";
     alertMessage = `${teachersToAdd.length} docentes agregados. Configura Firebase para sincronizar la información.`;
+  } else if (persistenceResult.reason === "permission-denied") {
+    alertType = "error";
+    alertMessage = `${teachersToAdd.length} docentes agregados, pero tu cuenta no tiene permisos para sincronizar con Firebase. Revisa las reglas de seguridad.`;
   } else if (persistenceResult.reason === "error") {
     alertType = "error";
     alertMessage = `${teachersToAdd.length} docentes agregados, pero no fue posible sincronizar con Firebase.`;
