@@ -1119,6 +1119,17 @@ function buildQuickAccess(role) {
     elements.quickAccess.toggleAttribute("hidden", allowedItems.length === 0);
   }
 
+  const ensureSectionExpanded = (element) => {
+    if (!element) return;
+    if (element instanceof HTMLDetailsElement) {
+      element.open = true;
+    }
+    const parentDetails = element.closest("details");
+    if (parentDetails) {
+      parentDetails.open = true;
+    }
+  };
+
   allowedItems.forEach((item) => {
     const listItem = document.createElement("li");
     const button = document.createElement("button");
@@ -1138,6 +1149,7 @@ function buildQuickAccess(role) {
       if (item.targetId) {
         const target = document.getElementById(item.targetId);
         if (target) {
+          ensureSectionExpanded(target);
           setActiveSection(target);
           target.scrollIntoView({ behavior: "smooth", block: "start" });
           const navLabel = target.dataset.navLabel || "";
