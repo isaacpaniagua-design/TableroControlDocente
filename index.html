@@ -448,6 +448,45 @@
                     </form>
                     <div id="userFormAlert"></div>
                     <div id="inviteAlert"></div>
+                    <div class="user-management-toolbar" id="userManagementToolbar">
+                      <div id="userSyncStatus" class="user-sync-status"></div>
+                      <div id="userSummaryGrid" class="user-summary-grid"></div>
+                      <div class="user-management-filters">
+                        <div class="user-search">
+                          <i data-lucide="search"></i>
+                          <input
+                            type="search"
+                            id="userSearchInput"
+                            placeholder="Buscar por nombre, correo o número"
+                            autocomplete="off"
+                            aria-label="Buscar usuarios"
+                          />
+                        </div>
+                        <select id="userRoleFilter" aria-label="Filtrar por rol">
+                          <option value="all" selected>Todos los roles</option>
+                          <option value="administrador">Administradores</option>
+                          <option value="docente">Docentes</option>
+                          <option value="auxiliar">Auxiliares</option>
+                        </select>
+                        <select id="userCareerFilter" aria-label="Filtrar por carrera">
+                          <option value="all" selected>Todas las carreras</option>
+                          <option value="software">Ing. en Software</option>
+                          <option value="manufactura">Ing. en Manufactura</option>
+                          <option value="mecatronica">Ing. en Mecatrónica</option>
+                          <option value="global">General</option>
+                        </select>
+                        <select id="userAuthFilter" aria-label="Filtrar por tipo de acceso">
+                          <option value="all" selected>Todos los accesos</option>
+                          <option value="allowed">Acceso externo habilitado</option>
+                          <option value="restricted">Solo institucional</option>
+                        </select>
+                        <button type="button" class="ghost small" id="clearUserFiltersBtn">
+                          <i data-lucide="x-circle"></i>
+                          <span>Limpiar filtros</span>
+                        </button>
+                      </div>
+                      <div id="userTableMeta" class="table-meta"></div>
+                    </div>
                     <div id="userTableContainer" class="table-responsive"></div>
                   </div>
                 </div>

@@ -1,11 +1,14 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
+  orderBy,
+  query,
   serverTimestamp,
-  writeBatch,
   setDoc,
-  deleteDoc,
+  writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   GoogleAuthProvider,
@@ -412,6 +415,15 @@ let currentUser = null;
 let importedTeachersCount = 0;
 let firestoreUsersLoading = false;
 let firestoreUsersLoaded = false;
+let unsubscribeUsersListener = null;
+let firestoreUsersError = null;
+let firestoreUsersLastUpdated = null;
+const userFilters = {
+  search: "",
+  role: "all",
+  career: "all",
+  auth: "all",
+};
 let pendingFirebaseUser = null;
 let firestoreActivitiesLoading = false;
 let firestoreActivitiesLoaded = false;
@@ -594,7 +606,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateCharts();
   refreshIcons();
   initializeAuthentication();
-  attemptLoadUsersFromFirestore();
+  subscribeToFirestoreUsers();
   attemptLoadActivitiesFromFirestore();
 });
 
@@ -641,6 +653,14 @@ function cacheDomElements() {
   elements.userAllowExternalAuthInput = document.getElementById(
     "userAllowExternalAuth",
   );
+  elements.userSummaryGrid = document.getElementById("userSummaryGrid");
+  elements.userSearchInput = document.getElementById("userSearchInput");
+  elements.userRoleFilter = document.getElementById("userRoleFilter");
+  elements.userCareerFilter = document.getElementById("userCareerFilter");
+  elements.userAuthFilter = document.getElementById("userAuthFilter");
+  elements.clearUserFiltersBtn = document.getElementById("clearUserFiltersBtn");
+  elements.userTableMeta = document.getElementById("userTableMeta");
+  elements.userSyncStatus = document.getElementById("userSyncStatus");
   elements.adminActivityList = document.getElementById("adminActivityList");
   elements.adminActivityForm = document.getElementById("adminActivityForm");
   elements.adminActivityAlert = document.getElementById("adminActivityAlert");
@@ -716,6 +736,33 @@ function attachEventListeners() {
     elements.userTableContainer.addEventListener(
       "click",
       handleUserTableClick,
+    );
+  }
+  if (elements.userSearchInput) {
+    elements.userSearchInput.addEventListener("input", handleUserSearchInput);
+  }
+  if (elements.userRoleFilter) {
+    elements.userRoleFilter.addEventListener(
+      "change",
+      handleUserRoleFilterChange,
+    );
+  }
+  if (elements.userCareerFilter) {
+    elements.userCareerFilter.addEventListener(
+      "change",
+      handleUserCareerFilterChange,
+    );
+  }
+  if (elements.userAuthFilter) {
+    elements.userAuthFilter.addEventListener(
+      "change",
+      handleUserAuthFilterChange,
+    );
+  }
+  if (elements.clearUserFiltersBtn) {
+    elements.clearUserFiltersBtn.addEventListener(
+      "click",
+      resetUserFilters,
     );
   }
   if (elements.sidebarCollapseBtn) {
@@ -963,8 +1010,9 @@ function applyLoggedOutState({ preserveMessages = false } = {}) {
     .querySelectorAll("[data-nav-label]")
     .forEach((section) => section.classList.remove("is-targeted"));
   setSidebarCollapsed(false);
-  hideUserForm({ reset: true });
+  clearAdminSections();
   updateHeaderStats();
+  renderUserSyncStatus();
   refreshIcons();
   if (!preserveMessages) {
     hideMessage(elements.loginError);
@@ -1133,12 +1181,14 @@ function renderAllSections() {
   updateHighlights();
   renderSidebarUserCard(currentUser);
   buildQuickAccess(currentUser.role);
+  updateUserManagementControls();
   if (currentUser.role === "administrador") {
-    updateUserManagementControls();
+    renderUserSyncStatus();
+    renderUserSummary();
     renderUserTable();
     renderAdminActivityList();
   } else {
-    updateUserManagementControls();
+    renderUserSyncStatus();
     clearAdminSections();
   }
   if (currentUser.role === "docente") {
@@ -1186,21 +1236,316 @@ function renderSidebarUserCard(user) {
   }
 }
 
+function handleUserSearchInput(event) {
+  const value = String(event.target.value || "");
+  userFilters.search = value.trim().toLowerCase();
+  renderUserTable();
+}
+
+function handleUserRoleFilterChange(event) {
+  userFilters.role = event.target.value || "all";
+  renderUserTable();
+}
+
+function handleUserCareerFilterChange(event) {
+  userFilters.career = event.target.value || "all";
+  renderUserTable();
+}
+
+function handleUserAuthFilterChange(event) {
+  userFilters.auth = event.target.value || "all";
+  renderUserTable();
+}
+
+function resetUserFilters() {
+  userFilters.search = "";
+  userFilters.role = "all";
+  userFilters.career = "all";
+  userFilters.auth = "all";
+  if (elements.userSearchInput) elements.userSearchInput.value = "";
+  if (elements.userRoleFilter) elements.userRoleFilter.value = "all";
+  if (elements.userCareerFilter) elements.userCareerFilter.value = "all";
+  if (elements.userAuthFilter) elements.userAuthFilter.value = "all";
+  renderUserTable();
+}
+
+function areUserFiltersActive() {
+  return (
+    Boolean(userFilters.search) ||
+    userFilters.role !== "all" ||
+    userFilters.career !== "all" ||
+    userFilters.auth !== "all"
+  );
+}
+
+function getFilteredUsers() {
+  const searchTerm = userFilters.search;
+  return users.filter((user) => {
+    if (userFilters.role !== "all" && user.role !== userFilters.role) {
+      return false;
+    }
+    if (userFilters.career !== "all" && user.career !== userFilters.career) {
+      return false;
+    }
+    if (userFilters.auth === "allowed" && !user.allowExternalAuth) {
+      return false;
+    }
+    if (userFilters.auth === "restricted" && user.allowExternalAuth) {
+      return false;
+    }
+    if (searchTerm) {
+      const haystack = [
+        user.name,
+        user.id,
+        user.controlNumber,
+        user.potroEmail,
+        user.institutionalEmail,
+        user.email,
+        user.phone,
+      ]
+        .map((value) => String(value || "").toLowerCase())
+        .join(" ");
+      if (!haystack.includes(searchTerm)) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+function renderUserTableMeta(filteredUsers) {
+  if (!elements.userTableMeta) return;
+  if (!currentUser || currentUser.role !== "administrador") {
+    elements.userTableMeta.textContent = "";
+    elements.userTableMeta.classList.remove("error");
+    return;
+  }
+
+  elements.userTableMeta.classList.remove("error");
+
+  if (firestoreUsersError) {
+    elements.userTableMeta.textContent = firestoreUsersError;
+    elements.userTableMeta.classList.add("error");
+    return;
+  }
+
+  if (!firestoreUsersLoaded && firestoreUsersLoading) {
+    elements.userTableMeta.textContent =
+      "Sincronizando usuarios con Firebase…";
+    return;
+  }
+
+  if (!users.length) {
+    elements.userTableMeta.textContent =
+      "No hay usuarios registrados todavía.";
+    return;
+  }
+
+  if (!filteredUsers.length) {
+    elements.userTableMeta.textContent = areUserFiltersActive()
+      ? "No se encontraron usuarios con los filtros aplicados."
+      : "No hay usuarios registrados con los criterios seleccionados.";
+    return;
+  }
+
+  if (!areUserFiltersActive()) {
+    elements.userTableMeta.textContent = `Mostrando ${filteredUsers.length} usuarios.`;
+  } else {
+    elements.userTableMeta.textContent = `Mostrando ${filteredUsers.length} de ${users.length} usuarios.`;
+  }
+}
+
+function renderUserSummary() {
+  if (!elements.userSummaryGrid) return;
+  if (!currentUser || currentUser.role !== "administrador") {
+    elements.userSummaryGrid.innerHTML = "";
+    return;
+  }
+
+  if (!firestoreUsersLoaded && firestoreUsersLoading && !users.length) {
+    elements.userSummaryGrid.innerHTML = `
+      <div class="user-summary-empty">
+        <i data-lucide="loader-2"></i>
+        <span>Sincronizando usuarios con Firebase…</span>
+      </div>
+    `;
+    refreshIcons();
+    return;
+  }
+
+  if (!users.length) {
+    const emptyIcon = firestoreUsersError ? "alert-triangle" : "users";
+    const emptyMessage = firestoreUsersError
+      ? escapeHtml(firestoreUsersError)
+      : "Agrega docentes desde Firebase o importa la plantilla de Ing. en Software.";
+    elements.userSummaryGrid.innerHTML = `
+      <div class="user-summary-empty">
+        <i data-lucide="${emptyIcon}"></i>
+        <span>${emptyMessage}</span>
+      </div>
+    `;
+    refreshIcons();
+    return;
+  }
+
+  const totalUsers = users.length;
+  const adminCount = users.filter((user) => user.role === "administrador").length;
+  const docenteCount = users.filter((user) => user.role === "docente").length;
+  const auxiliarCount = users.filter((user) => user.role === "auxiliar").length;
+  const externalCount = users.filter((user) => user.allowExternalAuth).length;
+  const externalPercent = totalUsers
+    ? Math.round((externalCount / totalUsers) * 100)
+    : 0;
+  const totalSegments = [
+    `Admins ${adminCount}`,
+    `Docentes ${docenteCount}`,
+    `Auxiliares ${auxiliarCount}`,
+  ];
+  if (importedTeachersCount) {
+    totalSegments.push(`${importedTeachersCount} importados`);
+  }
+
+  const careerNames = Array.from(
+    new Set(
+      users
+        .map((user) => CAREER_LABELS[user.career] || null)
+        .filter(Boolean),
+    ),
+  );
+
+  const programHelper =
+    careerNames.length === 0
+      ? "Asigna carreras al registrar cada usuario."
+      : careerNames.length > 2
+      ? `${careerNames.slice(0, 2).join(", ")} +${careerNames.length - 2}`
+      : careerNames.join(", ");
+
+  const summaryItems = [
+    {
+      icon: "users",
+      label: "Usuarios totales",
+      value: totalUsers,
+      helper: totalSegments.join(" • "),
+    },
+    {
+      icon: "share-2",
+      label: "Acceso externo",
+      value: externalCount,
+      helper:
+        externalCount > 0
+          ? `${externalPercent}% con inicio externo`
+          : "Restringido a cuentas institucionales",
+    },
+    {
+      icon: "map-pin",
+      label: "Programas atendidos",
+      value: careerNames.length,
+      helper: programHelper,
+    },
+  ];
+
+  elements.userSummaryGrid.innerHTML = summaryItems
+    .map(
+      (item) => `
+        <article class="user-summary-card">
+          <span class="user-summary-icon">
+            <i data-lucide="${item.icon}"></i>
+          </span>
+          <div class="user-summary-content">
+            <span class="user-summary-label">${escapeHtml(item.label)}</span>
+            <span class="user-summary-value">${escapeHtml(String(item.value))}</span>
+            ${
+              item.helper
+                ? `<span class="user-summary-helper">${escapeHtml(item.helper)}</span>`
+                : ""
+            }
+          </div>
+        </article>
+      `,
+    )
+    .join("");
+  refreshIcons();
+}
+
+function renderUserSyncStatus() {
+  if (!elements.userSyncStatus) return;
+  if (!currentUser || currentUser.role !== "administrador") {
+    elements.userSyncStatus.textContent = "";
+    elements.userSyncStatus.className = "user-sync-status";
+    return;
+  }
+
+  let statusClass = "user-sync-status";
+  let message = "";
+
+  if (firestoreUsersError) {
+    statusClass += " error";
+    message = firestoreUsersError;
+  } else if (firestoreUsersLoading && !firestoreUsersLoaded) {
+    statusClass += " loading";
+    message = "Sincronizando usuarios con Firebase…";
+  } else if (firestoreUsersLoaded) {
+    statusClass += " success";
+    if (firestoreUsersLastUpdated) {
+      const formattedTime = formatSyncTime(firestoreUsersLastUpdated);
+      message = formattedTime
+        ? `Usuarios sincronizados con Firebase. Actualizado a las ${formattedTime} h.`
+        : "Usuarios sincronizados con Firebase.";
+    } else {
+      message = "Usuarios sincronizados con Firebase.";
+    }
+  } else {
+    statusClass += " muted";
+    message = "Configura Firebase para sincronizar los usuarios.";
+  }
+
+  elements.userSyncStatus.textContent = message;
+  elements.userSyncStatus.className = statusClass;
+}
+
 function renderUserTable() {
   if (!elements.userTableContainer) return;
   if (!currentUser || currentUser.role !== "administrador") {
     elements.userTableContainer.innerHTML = "";
+    renderUserTableMeta([]);
     return;
   }
-  const allowManagement = isPrimaryAdmin(currentUser);
+
+  if (!firestoreUsersLoaded && firestoreUsersLoading && !users.length) {
+    elements.userTableContainer.innerHTML =
+      '<div class="loading-state">Sincronizando usuarios con Firebase…</div>';
+    renderUserTableMeta([]);
+    refreshIcons();
+    return;
+  }
+
+  const filteredUsers = getFilteredUsers();
+  renderUserTableMeta(filteredUsers);
+
   if (!users.length) {
     elements.userTableContainer.innerHTML =
-      '<p class="empty-state">Aún no hay usuarios registrados.</p>';
+      '<p class="empty-state">Conecta con Firebase o agrega nuevos usuarios para comenzar.</p>';
+    refreshIcons();
     return;
   }
-  const rows = users
+
+  if (!filteredUsers.length) {
+    elements.userTableContainer.innerHTML =
+      '<p class="empty-state">No se encontraron usuarios con los filtros seleccionados.</p>';
+    refreshIcons();
+    return;
+  }
+
+  const allowManagement = isPrimaryAdmin(currentUser);
+  const sortedUsers = filteredUsers
     .slice()
-    .sort((a, b) => a.name.localeCompare(b.name))
+    .sort((a, b) =>
+      String(a.name || "").localeCompare(String(b.name || ""), "es", {
+        sensitivity: "base",
+      }),
+    );
+
+  const rows = sortedUsers
     .map((user) => {
       const badgeClass = ROLE_BADGE_CLASS[user.role] || "badge";
       const roleLabel = ROLE_LABELS[user.role] || "—";
@@ -1208,6 +1553,9 @@ function renderUserTable() {
       const datasetKey = encodeURIComponent(
         identityKeys[0] || `index:${users.indexOf(user)}`,
       );
+      const externalBadge = user.allowExternalAuth
+        ? '<span class="badge external">Permitido</span>'
+        : '<span class="badge external off">Solo institucional</span>';
       const actionsCell = allowManagement
         ? `
           <td class="actions-cell">
@@ -1222,6 +1570,7 @@ function renderUserTable() {
           </td>
         `
         : "";
+
       return `
         <tr>
           <td>${escapeHtml(user.name || "—")}</td>
@@ -1231,6 +1580,7 @@ function renderUserTable() {
           <td>${escapeHtml(user.institutionalEmail || "—")}</td>
           <td>${escapeHtml(CAREER_LABELS[user.career] || "—")}</td>
           <td><span class="${badgeClass}">${escapeHtml(roleLabel)}</span></td>
+          <td>${externalBadge}</td>
           <td>${escapeHtml(user.phone || "—")}</td>
           ${actionsCell}
         </tr>
@@ -1253,6 +1603,7 @@ function renderUserTable() {
           <th>Correo institucional</th>
           <th>Carrera</th>
           <th>Rol</th>
+          <th>Acceso externo</th>
           <th>Celular</th>
           ${headerActions}
         </tr>
@@ -1260,6 +1611,7 @@ function renderUserTable() {
       <tbody>${rows}</tbody>
     </table>
   `;
+  refreshIcons();
 }
 
 function updateUserManagementControls() {
@@ -1966,7 +2318,9 @@ function renderAuxiliarActivities() {
 }
 
 function clearAdminSections() {
+  if (elements.userSummaryGrid) elements.userSummaryGrid.innerHTML = "";
   if (elements.userTableContainer) elements.userTableContainer.innerHTML = "";
+  if (elements.userTableMeta) elements.userTableMeta.textContent = "";
   if (elements.adminActivityList) elements.adminActivityList.innerHTML = "";
   hideUserForm({ reset: true });
 }
@@ -2491,76 +2845,105 @@ async function importSoftwareTeachers() {
   );
 }
 
-async function attemptLoadUsersFromFirestore() {
-  if (firestoreUsersLoaded || firestoreUsersLoading) {
+function subscribeToFirestoreUsers() {
+  if (unsubscribeUsersListener || firestoreUsersLoading) {
     return;
   }
 
   const db = getFirestoreDb();
   if (!db) {
     firestoreUsersLoaded = true;
+    firestoreUsersLoading = false;
+    firestoreUsersError =
+      "Configura Firebase para sincronizar los usuarios.";
+    renderUserSyncStatus();
+    renderUserTable();
+    renderUserSummary();
     retryPendingLogin();
     return;
   }
 
   firestoreUsersLoading = true;
+  firestoreUsersError = null;
+  renderUserSyncStatus();
 
-  try {
-    const snapshot = await getDocs(collection(db, "users"));
-    if (snapshot.empty) {
+  const usersRef = collection(db, "users");
+  const usersQuery = query(usersRef, orderBy("name", "asc"));
+
+  unsubscribeUsersListener = onSnapshot(
+    usersQuery,
+    (snapshot) => {
       firestoreUsersLoaded = true;
+      firestoreUsersLoading = false;
+      firestoreUsersError = null;
+      firestoreUsersLastUpdated = new Date();
+
+      const remoteUsers = snapshot.docs
+        .map((docSnapshot) => {
+          const data = docSnapshot.data() || {};
+          const candidate = createUserRecord({
+            ...data,
+            id: data.id || data.userId || docSnapshot.id || "",
+          });
+
+          if (!candidate.id) {
+            candidate.id = docSnapshot.id;
+          }
+
+          return candidate;
+        })
+        .filter((user) => Boolean(user.name || user.potroEmail || user.email));
+
+      users = remoteUsers;
+      users.forEach((user) => clearDeletedUserKeys(user));
+      persistUsersLocally();
+      updateHeaderStats();
+      updateHighlights();
+      updateCharts();
+
+      if (currentUser) {
+        renderAllSections();
+      } else {
+        refreshIcons();
+      }
+
+      renderUserSyncStatus();
       retryPendingLogin();
-      return;
-    }
-
-    const remoteUsers = snapshot.docs
-      .map((docSnapshot) => {
-        const data = docSnapshot.data() || {};
-        const candidate = {
-          id: data.id || data.userId || docSnapshot.id || "",
-          name: data.name || "",
-          controlNumber: data.controlNumber || "",
-          potroEmail: data.potroEmail || data.email || "",
-          email: data.email || "",
-          institutionalEmail: data.institutionalEmail || "",
-          phone: data.phone || "",
-          role: data.role || "",
-          career: data.career || "",
-          firebaseUid: data.firebaseUid || "",
-          allowExternalAuth: data.allowExternalAuth ?? false,
-        };
-
-        return createUserRecord(candidate);
-      })
-      .filter((user) => Boolean(user.name || user.potroEmail || user.email));
-
-    if (!remoteUsers.length) {
+    },
+    (error) => {
+      unsubscribeUsersListener = null;
       firestoreUsersLoaded = true;
-      return;
-    }
+      firestoreUsersLoading = false;
+      firestoreUsersError = getFirestoreSyncErrorMessage(
+        "los usuarios",
+        error,
+      );
+      console.error(
+        "No fue posible suscribirse a los usuarios de Firebase:",
+        error,
+      );
 
-    users = mergeUserCollections(users, remoteUsers);
-    users.forEach((user) => clearDeletedUserKeys(user));
-    persistUsersLocally();
-    firestoreUsersLoaded = true;
-    updateHeaderStats();
-    updateHighlights();
-    updateCharts();
-    refreshIcons();
-    refreshCurrentUser();
-    retryPendingLogin();
-  } catch (error) {
-    console.error("No fue posible obtener usuarios de Firebase:", error);
-    firestoreUsersLoaded = true;
+      renderUserSyncStatus();
+      if (currentUser && currentUser.role === "administrador") {
+        showMessage(
+          elements.userFormAlert,
+          firestoreUsersError,
+          "error",
+          null,
+        );
+        showMessage(
+          elements.importTeachersAlert,
+          firestoreUsersError,
+          "error",
+          null,
+        );
+      }
 
-    const syncMessage = getFirestoreSyncErrorMessage("los usuarios", error);
-    showMessage(elements.userFormAlert, syncMessage, "error", null);
-    showMessage(elements.importTeachersAlert, syncMessage, "error", null);
-
-    retryPendingLogin();
-  } finally {
-    firestoreUsersLoading = false;
-  }
+      renderUserTable();
+      renderUserSummary();
+      retryPendingLogin();
+    },
+  );
 }
 
 async function attemptLoadActivitiesFromFirestore() {
@@ -2694,26 +3077,6 @@ function clearDeletedUserKeys(record) {
   if (!record) return;
   const keys = getUserIdentityKeys(record);
   keys.forEach((key) => recentlyDeletedUserKeys.delete(key));
-}
-
-function mergeUserCollections(localUsers, remoteUsers) {
-  const merged = [...localUsers];
-
-  remoteUsers.forEach((remoteUser) => {
-    const existingIndex = merged.findIndex((candidate) => {
-      const candidateKeys = getUserIdentityKeys(candidate);
-      const remoteKeys = getUserIdentityKeys(remoteUser);
-      return remoteKeys.some((key) => candidateKeys.includes(key));
-    });
-
-    if (existingIndex >= 0) {
-      merged[existingIndex] = { ...merged[existingIndex], ...remoteUser };
-    } else {
-      merged.push(remoteUser);
-    }
-  });
-
-  return merged;
 }
 
 function retryPendingLogin() {
@@ -2904,6 +3267,21 @@ function hideMessage(element) {
 function refreshIcons() {
   if (typeof lucide !== "undefined" && lucide.createIcons) {
     lucide.createIcons();
+  }
+}
+
+function formatSyncTime(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  try {
+    return new Intl.DateTimeFormat("es-MX", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  } catch (error) {
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 }
 
