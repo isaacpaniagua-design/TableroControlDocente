@@ -438,6 +438,28 @@ let authInitializationAttempted = false;
 let preserveLoginMessage = false;
 let editingUserKey = null;
 
+function isPermissionDeniedError(error) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const code = typeof error.code === "string" ? error.code : "";
+  if (code === "permission-denied") {
+    return true;
+  }
+
+  const message = typeof error.message === "string" ? error.message : "";
+  return message.toLowerCase().includes("missing or insufficient permissions");
+}
+
+function getFirestoreSyncErrorMessage(resourceLabel, error) {
+  if (isPermissionDeniedError(error)) {
+    return `No fue posible sincronizar ${resourceLabel}. Verifica los permisos de lectura en Firebase Firestore.`;
+  }
+
+  return `Ocurrió un error al sincronizar ${resourceLabel} desde Firebase. Inténtalo nuevamente más tarde.`;
+}
+
 function getSafeLocalStorage() {
   if (cachedLocalStorage) {
     return cachedLocalStorage;
@@ -2498,6 +2520,11 @@ async function attemptLoadUsersFromFirestore() {
   } catch (error) {
     console.error("No fue posible obtener usuarios de Firebase:", error);
     firestoreUsersLoaded = true;
+
+    const syncMessage = getFirestoreSyncErrorMessage("los usuarios", error);
+    showMessage(elements.userFormAlert, syncMessage, "error", null);
+    showMessage(elements.importTeachersAlert, syncMessage, "error", null);
+
     retryPendingLogin();
   } finally {
     firestoreUsersLoading = false;
@@ -2557,6 +2584,19 @@ async function attemptLoadActivitiesFromFirestore() {
     }
   } catch (error) {
     console.error("No fue posible obtener actividades de Firebase:", error);
+    firestoreActivitiesLoaded = true;
+
+    const syncMessage = getFirestoreSyncErrorMessage(
+      "las actividades",
+      error,
+    );
+
+    showMessage(elements.adminActivityAlert, syncMessage, "error", null);
+    showMessage(elements.auxiliarActivityAlert, syncMessage, "error", null);
+
+    if (currentUser) {
+      renderAllSections();
+    }
   } finally {
     firestoreActivitiesLoading = false;
   }
