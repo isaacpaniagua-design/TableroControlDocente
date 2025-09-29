@@ -60,7 +60,8 @@ service cloud.firestore {
     }
 
     function matchesUserDocumentId(userId, data) {
-      return (data.userId != null && normalizedEmail(data.userId) == userId) ||
+      return isPrimaryAdmin() ||
+        (data.userId != null && normalizedEmail(data.userId) == userId) ||
         (data.potroEmail != null && normalizedEmail(data.potroEmail) == userId) ||
         (data.institutionalEmail != null && normalizedEmail(data.institutionalEmail) == userId) ||
         (data.email != null && normalizedEmail(data.email) == userId) ||
