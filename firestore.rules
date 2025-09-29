@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function normalizedEmail(email) {
+      return email == null ? null : lower(email);
+    }
+
+    function authDocumentId() {
+      return normalizedEmail(request.auth.token.email);
+    }
+
+    function userDocument(pathId) {
+      return /databases/$(database)/documents/users/$(pathId);
+    }
+
+    function isPrimaryAdmin() {
+      return normalizedEmail(request.auth.token.email) == 'isaac.paniagua@potros.itson.edu.mx';
+    }
+
+    function isRegisteredAdmin() {
+      return isSignedIn() &&
+        authDocumentId() != null &&
+        exists(userDocument(authDocumentId())) &&
+        get(userDocument(authDocumentId())).data.role == 'administrador';
+    }
+
+    function canManageData() {
+      return isPrimaryAdmin() || isRegisteredAdmin();
+    }
+
+    function isFromAllowedDomain() {
+       return isSignedIn() &&
+         request.auth.token.email != null &&
+         request.auth.token.email.matches('(?i).*@potros\\.itson\\.edu\\.mx$');
+    }
+
+    function isValidRole(role) {
+      return role in ['administrador', 'docente', 'auxiliar'];
+    }
+
+    function isValidCareer(career) {
+      return career in ['software', 'manufactura', 'mecatronica', 'global'];
+    }
+
+    function isValidUserPayload(data) {
+      return data.name is string && data.name.size() > 0 &&
+        data.role is string && isValidRole(data.role) &&
+        data.career is string && isValidCareer(data.career);
+    }
+
+    function isValidActivityPayload(data) {
+      return data.title is string && data.title.size() > 0 &&
+        data.status is string && data.status in ['pendiente', 'en_progreso', 'completada'] &&
+        data.career is string && isValidCareer(data.career);
+    }
+
+    function matchesUserDocumentId(userId, data) {
+      return (data.userId != null && normalizedEmail(data.userId) == userId) ||
+        (data.potroEmail != null && normalizedEmail(data.potroEmail) == userId) ||
+        (data.institutionalEmail != null && normalizedEmail(data.institutionalEmail) == userId) ||
+        (data.email != null && normalizedEmail(data.email) == userId) ||
+        (data.controlNumber != null && data.controlNumber == userId);
+    }
+
+    function hasAllowedUserFields(data) {
+      return data.keys().hasOnly([
+        'id',
+        'userId',
+        'name',
+        'controlNumber',
+        'potroEmail',
+        'institutionalEmail',
+        'email',
+        'phone',
+        'role',
+        'career',
+        'syncedAt',
+        'createdAt',
+        'createdAtIso',
+        'updatedAt',
+        'updatedBy',
+        'createdBy',
+        'firebaseUid',
+        'allowExternalAuth',
+        'importedAtIso'
+      ]);
+    }
+
+    function isValidUserUpdatePayload(data) {
+      return hasAllowedUserFields(data) &&
+        (!('name' in data) || (data.name is string && data.name.size() > 0)) &&
+        (!('role' in data) || (data.role is string && isValidRole(data.role))) &&
+        (!('career' in data) || (data.career is string && isValidCareer(data.career)));
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() &&
+        (isPrimaryAdmin() ||
+         isRegisteredAdmin() ||
+         isFromAllowedDomain() ||
+         (exists(userDocument(authDocumentId())) && get(userDocument(authDocumentId())).data.allowExternalAuth == true)
+        );
+
+      allow create: if canManageData() &&
+                    hasAllowedUserFields(request.resource.data) &&
+                    isValidUserPayload(request.resource.data) &&
+                    matchesUserDocumentId(userId, request.resource.data);
+
+      allow update: if canManageData() &&
+                    isValidUserUpdatePayload(request.resource.data) &&
+                    matchesUserDocumentId(userId, request.resource.data);
+
+      allow delete: if canManageData();
+    }
+
+    match /activities/{activityId} {
+      allow read: if isSignedIn();
+
+      allow create, update, delete: if canManageData() && isValidActivityPayload(request.resource.data);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
