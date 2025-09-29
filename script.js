@@ -4,6 +4,7 @@ import {
   getDocs,
   serverTimestamp,
   writeBatch,
+  setDoc,
   deleteDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
@@ -2128,9 +2129,14 @@ async function persistImportedUsers(records) {
   try {
     const batch = writeBatch(db);
     records.forEach((record) => {
-      const documentId =
+      const resolvedId =
         resolveUserDocumentId(record) || record.controlNumber || generateId("user");
-      const docRef = doc(collection(db, "users"), documentId);
+      const documentId = String(resolvedId || "").trim();
+      if (!documentId) {
+        return;
+      }
+
+      const docRef = doc(db, "users", documentId);
       const payload = buildFirestoreUserPayload({
         ...record,
         id: record.id || documentId,
@@ -2157,17 +2163,16 @@ async function persistUserChange(record) {
     return { success: false, reason: "missing-config" };
   }
 
-  const documentId = resolveUserDocumentId(record);
+  const documentIdCandidate = resolveUserDocumentId(record);
+  const documentId = String(documentIdCandidate || "").trim();
   if (!documentId) {
     return { success: false, reason: "missing-id" };
   }
 
   try {
-    const batch = writeBatch(db);
-    const docRef = doc(collection(db, "users"), documentId);
+    const docRef = doc(db, "users", documentId);
     const payload = buildFirestoreUserPayload({ ...record, id: record.id || documentId });
-    batch.set(docRef, payload, { merge: true });
-    await batch.commit();
+    await setDoc(docRef, payload, { merge: true });
     return { success: true };
   } catch (error) {
     console.error("No fue posible sincronizar el usuario con Firebase:", error);
@@ -2256,6 +2261,7 @@ async function removeActivityFromFirestore(record) {
 
 function buildFirestoreUserPayload(record) {
   const payload = {
+    id: record.id || "",
     name: record.name || "",
     userId: record.id || "",
     controlNumber: record.controlNumber || "",
