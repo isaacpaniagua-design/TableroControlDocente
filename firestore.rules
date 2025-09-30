@@ -1,3 +1,5 @@
+// Contenido de tu archivo: isaacpaniagua-design/tablerocontroldocente/TableroControlDocente-ba439a077ddd19619e89baf2aaa13e7a48a11fe6/firestore.rules
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -59,14 +61,19 @@ service cloud.firestore {
         data.career is string && isValidCareer(data.career);
     }
 
+    // 🔥 **INICIO DE LA CORRECCIÓN** 🔥
+    // Se agregan las validaciones para 'id' y 'userId'
     function matchesUserDocumentId(userId, data) {
       return isPrimaryAdmin() ||
-        (data.userId != null && normalizedEmail(data.userId) == userId) ||
+        (data.id != null && data.id == userId) ||
+        (data.userId != null && data.userId == userId) ||
         (data.potroEmail != null && normalizedEmail(data.potroEmail) == userId) ||
         (data.institutionalEmail != null && normalizedEmail(data.institutionalEmail) == userId) ||
         (data.email != null && normalizedEmail(data.email) == userId) ||
         (data.controlNumber != null && data.controlNumber == userId);
     }
+    // 🔥 **FIN DE LA CORRECCIÓN** 🔥
+
 
     function hasAllowedUserFields(data) {
       return data.keys().hasOnly([
@@ -106,22 +113,18 @@ service cloud.firestore {
          isFromAllowedDomain() ||
          (exists(userDocument(authDocumentId())) && get(userDocument(authDocumentId())).data.allowExternalAuth == true)
         );
-
       allow create: if canManageData() &&
                     hasAllowedUserFields(request.resource.data) &&
                     isValidUserPayload(request.resource.data) &&
                     matchesUserDocumentId(userId, request.resource.data);
-
       allow update: if canManageData() &&
                     isValidUserUpdatePayload(request.resource.data) &&
                     matchesUserDocumentId(userId, request.resource.data);
-
       allow delete: if canManageData();
     }
 
     match /activities/{activityId} {
       allow read: if isSignedIn();
-
       allow create, update, delete: if canManageData() && isValidActivityPayload(request.resource.data);
     }
 
