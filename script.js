@@ -2754,26 +2754,29 @@ async function persistUserChange(record) {
     return { success: false, reason: "missing-config" };
   }
 
-  // 🔥 **INICIO DE LA CORRECCIÓN** 🔥
-  // Nos aseguramos de que el ID del documento sea siempre el campo 'id' del registro.
-  // Esto elimina la ambigüedad y hace la regla de seguridad más confiable.
-  const documentId = String(record.id || "").trim();
-  if (!documentId) {
-    console.error("No se pudo determinar un ID de documento para el usuario:", record);
-    return { success: false, reason: "missing-id" };
-  }
-  // 🔥 **FIN DE LA CORRECCIÓN** 🔥
-
   try {
-    const docRef = doc(db, "users", documentId);
-    const isNew = !users.some(u => u.id === documentId);
-    const payload = buildFirestoreUserPayload({
-      ...record,
-      id: documentId, // Aseguramos que el payload también lo contenga
-      isNew
-    });
+    // 🔥 INICIO DE LA CORRECCIÓN 🔥
+    // Determina si estamos editando (ya tiene ID) o creando (no tiene ID).
+    const isEdit = record.id && String(record.id).trim() !== "";
+    
+    // Si es un nuevo usuario, crea una referencia de documento vacía para que Firebase genere el ID.
+    // Si es una edición, usa el ID existente.
+    const docRef = isEdit 
+      ? doc(db, "users", record.id)
+      : doc(collection(db, "users"));
 
+    // Obtenemos el ID (ya sea el existente o el recién generado) y lo asignamos al payload.
+    // Esto es CLAVE para que el campo 'id' dentro del documento coincida con su ID real.
+    const documentId = docRef.id;
+    record.id = documentId;
+    
+    const payload = buildFirestoreUserPayload(record);
+    
+    // Escribimos los datos en la referencia del documento.
     await setDoc(docRef, payload, { merge: true });
+    
+    // 🔥 FIN DE LA CORRECCIÓN 🔥
+
     return { success: true };
   } catch (error) {
     console.error("No fue posible sincronizar el usuario con Firebase:", error);
