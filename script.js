@@ -2754,21 +2754,25 @@ async function persistUserChange(record) {
     return { success: false, reason: "missing-config" };
   }
 
-  const documentIdCandidate = resolveUserDocumentId(record);
-  const documentId = String(documentIdCandidate || "").trim();
+  // 🔥 **INICIO DE LA CORRECCIÓN** 🔥
+  // Nos aseguramos de que el ID del documento sea siempre el campo 'id' del registro.
+  // Esto elimina la ambigüedad y hace la regla de seguridad más confiable.
+  const documentId = String(record.id || "").trim();
   if (!documentId) {
+    console.error("No se pudo determinar un ID de documento para el usuario:", record);
     return { success: false, reason: "missing-id" };
   }
+  // 🔥 **FIN DE LA CORRECCIÓN** 🔥
 
   try {
     const docRef = doc(db, "users", documentId);
-    const isNew = !users.some(u => resolveUserDocumentId(u) === documentId);
-    const payload = buildFirestoreUserPayload({ 
-      ...record, 
-      id: record.id || documentId,
+    const isNew = !users.some(u => u.id === documentId);
+    const payload = buildFirestoreUserPayload({
+      ...record,
+      id: documentId, // Aseguramos que el payload también lo contenga
       isNew
     });
-    
+
     await setDoc(docRef, payload, { merge: true });
     return { success: true };
   } catch (error) {
@@ -2779,6 +2783,7 @@ async function persistUserChange(record) {
     return { success: false, reason: "error", error };
   }
 }
+
 
 async function removeUserFromFirestore(record) {
   if (!record) {
