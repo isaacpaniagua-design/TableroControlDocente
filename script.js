@@ -57,82 +57,11 @@ const STATUS_COLORS = {
 };
 
 const QUICK_ACCESS_ITEMS = [
-  {
-    id: "quick-dashboard",
-    icon: "layout-dashboard",
-    label: "Panel de control",
-    description: "Vuelve al resumen general.",
-    targetId: "dashboardIntro",
-  },
-  {
-    id: "quick-report",
-    icon: "bar-chart-3",
-    label: "Reporte general",
-    description: "Revisa indicadores clave del departamento.",
-    targetId: "generalReportCard",
-    roles: ["administrador"],
-  },
-  {
-    id: "quick-refresh",
-    icon: "refresh-cw",
-    label: "Actualizar indicadores",
-    description: "Sincroniza los datos más recientes.",
-    targetId: "generalReportCard",
-    roles: ["administrador"],
-    action: () => {
-      if (elements.refreshDashboard) {
-        elements.refreshDashboard.click();
-      } else {
-        renderAllSections();
-      }
-    },
-  },
-  {
-    id: "quick-users",
-    icon: "users",
-    label: "Gestión de usuarios",
-    description: "Administra accesos y registros.",
-    targetId: "userManagementCard",
-    roles: ["administrador"],
-  },
-  {
-    id: "quick-print",
-    icon: "printer",
-    label: "Imprimir reporte",
-    description: "Genera una versión para compartir.",
-    roles: ["administrador", "docente", "auxiliar"],
-    action: () => {
-      if (elements.printReport) {
-        elements.printReport.click();
-      } else {
-        window.print();
-      }
-    },
-  },
-  {
-    id: "quick-teacher",
-    icon: "check-square",
-    label: "Actividades por realizar",
-    description: "Consulta tus pendientes y avances.",
-    targetId: "teacherActivitiesCard",
-    roles: ["docente"],
-  },
-  {
-    id: "quick-teacher-progress",
-    icon: "trending-up",
-    label: "Mi progreso",
-    description: "Revisa el estado de tus actividades asignadas.",
-    targetId: "teacherProgressCard",
-    roles: ["docente"],
-  },
-  {
-    id: "quick-auxiliar",
-    icon: "clipboard-list",
-    label: "Actividades de apoyo",
-    description: "Actualiza el seguimiento asignado.",
-    targetId: "auxiliarActivitiesCard",
-    roles: ["auxiliar"],
-  },
+  { id: "quick-dashboard", icon: "layout-dashboard", label: "Panel de control", description: "Vuelve al resumen general.", targetId: "dashboardIntro" },
+  { id: "quick-report", icon: "bar-chart-3", label: "Reporte general", description: "Revisa indicadores clave.", targetId: "generalReportCard", roles: ["administrador"] },
+  { id: "quick-users", icon: "users", label: "Gestión de usuarios", description: "Administra accesos y registros.", targetId: "userManagementCard", roles: ["administrador"] },
+  { id: "quick-print", icon: "printer", label: "Imprimir reporte", description: "Genera una versión para compartir.", roles: ["administrador", "docente", "auxiliar"], action: () => window.print() },
+  { id: "quick-teacher", icon: "check-square", label: "Actividades por realizar", description: "Consulta tus pendientes y avances.", targetId: "teacherActivitiesCard", roles: ["docente"] },
 ];
 
 
@@ -140,21 +69,12 @@ const QUICK_ACCESS_ITEMS = [
 let users = [];
 let activities = [];
 let currentUser = null;
-let importedTeachersCount = 0;
-let firestoreUsersLoading = false;
 let firestoreUsersLoaded = false;
 let unsubscribeUsersListener = null;
 let firestoreUsersError = null;
 let firestoreUsersLastUpdated = null;
-const userFilters = {
-  search: "",
-  role: "all",
-  career: "all",
-  auth: "all",
-};
+const userFilters = { search: "", role: "all", career: "all", auth: "all" };
 let pendingFirebaseUser = null;
-let firestoreActivitiesLoading = false;
-let firestoreActivitiesLoaded = false;
 
 const elements = {};
 const charts = { users: null, activities: null };
@@ -164,7 +84,6 @@ let googleProvider = null;
 
 
 // --- CICLO DE VIDA DE LA APLICACIÓN ---
-
 document.addEventListener("DOMContentLoaded", () => {
   cacheDomElements();
   updateLayoutMode();
@@ -173,13 +92,11 @@ document.addEventListener("DOMContentLoaded", () => {
   initCharts();
   initializeAuthentication();
   subscribeToFirestoreUsers();
-  attemptLoadActivitiesFromFirestore();
   window.addEventListener("resize", syncHeaderHeight);
 });
 
 
 // --- INICIALIZACIÓN Y MANEJO DEL DOM ---
-
 function cacheDomElements() {
   const ids = [
     "authSection", "dashboard", "dashboardShell", "googleSignInBtn", "loginError", "logoutBtn",
@@ -196,9 +113,7 @@ function cacheDomElements() {
     "teacherProgressSummary", "auxiliarActivityList", "auxiliarActivityAlert", "printReport",
     "refreshDashboard", "sidebarCollapseBtn", "sidebarExpandBtn"
   ];
-  ids.forEach(id => {
-    elements[id] = document.getElementById(id);
-  });
+  ids.forEach(id => { elements[id] = document.getElementById(id); });
 }
 
 function attachEventListeners() {
@@ -206,8 +121,6 @@ function attachEventListeners() {
     elements.logoutBtn?.addEventListener("click", handleLogout);
     elements.printReport?.addEventListener("click", () => window.print());
     elements.refreshDashboard?.addEventListener("click", renderAllSections);
-    elements.adminActivityForm?.addEventListener("submit", handleActivityFormSubmit);
-    elements.importTeachersBtn?.addEventListener("click", importSoftwareTeachers);
     elements.startAddUserBtn?.addEventListener("click", () => openUserForm("create"));
     elements.cancelUserFormBtn?.addEventListener("click", () => hideUserForm({ reset: true }));
     elements.userForm?.addEventListener("submit", handleUserFormSubmit);
@@ -223,7 +136,6 @@ function attachEventListeners() {
 
 
 // --- LÓGICA DE AUTENTICACIÓN ---
-
 function initializeAuthentication() {
   try {
     auth = getFirebaseAuth();
@@ -256,19 +168,13 @@ async function handleGoogleSignIn() {
 }
 
 function handleLogout() {
-  if (auth) {
-    signOut(auth).catch(error => console.error("Error al cerrar sesión:", error));
-  }
+  if (auth) signOut(auth).catch(error => console.error("Error al cerrar sesión:", error));
 }
 
 function handleAuthStateChange(firebaseUser) {
   if (firebaseUser) {
     pendingFirebaseUser = firebaseUser;
-    // Si los usuarios de Firestore ya se cargaron, procesamos el login.
-    // Si no, esperamos a que el listener de Firestore termine.
-    if (firestoreUsersLoaded) {
-      processLogin(firebaseUser);
-    }
+    if (firestoreUsersLoaded) processLogin(firebaseUser);
   } else {
     applyLoggedOutState();
   }
@@ -276,50 +182,49 @@ function handleAuthStateChange(firebaseUser) {
 
 function processLogin(firebaseUser) {
     if (!pendingFirebaseUser) return;
-    pendingFirebaseUser = null; // Evita re-procesar
+    const userToProcess = pendingFirebaseUser;
+    pendingFirebaseUser = null;
 
-    const normalizedEmail = (firebaseUser.email || "").toLowerCase();
+    const normalizedEmail = (userToProcess.email || "").toLowerCase();
     const isAllowedDomain = normalizedEmail.endsWith(`@${ALLOWED_DOMAIN}`);
     
     const userRecord = users.find(u => 
         (u.potroEmail?.toLowerCase() === normalizedEmail) ||
         (u.institutionalEmail?.toLowerCase() === normalizedEmail) ||
         (u.email?.toLowerCase() === normalizedEmail) ||
-        (u.firebaseUid === firebaseUser.uid)
+        (u.firebaseUid === userToProcess.uid)
     );
 
     if (!isAllowedDomain && !(userRecord && userRecord.allowExternalAuth)) {
         showMessage(elements.loginError, `Debes usar una cuenta @${ALLOWED_DOMAIN}.`, "error", null);
         return handleLogout();
     }
-
     if (!userRecord) {
-        showMessage(elements.loginError, "Tu cuenta no tiene permisos para acceder a esta plataforma.", "error", null);
+        showMessage(elements.loginError, "Tu cuenta no tiene permisos para acceder.", "error", null);
         return handleLogout();
     }
 
-    // Vincula el UID de Firebase si no está presente
+    // 🔥 **INICIO DE LA CORRECCIÓN** 🔥
+    // Si es el primer login del usuario (no tiene UID), se lo asignamos y actualizamos.
     if (!userRecord.firebaseUid) {
-        userRecord.firebaseUid = firebaseUser.uid;
-        persistUserChange(userRecord); // Actualiza en segundo plano
+        const updatedRecord = {
+            ...userRecord,
+            firebaseUid: userToProcess.uid,
+            // Aseguramos que 'updatedBy' tenga un valor válido.
+            updatedBy: (userToProcess.email || "").toLowerCase()
+        };
+        persistUserChange(updatedRecord); // Actualiza en segundo plano
     }
+    // 🔥 **FIN DE LA CORRECCIÓN** 🔥
 
-    currentUser = {
-        ...userRecord,
-        name: userRecord.name || firebaseUser.displayName,
-        firebaseUid: firebaseUser.uid,
-    };
-    
-    if (normalizedEmail === PRIMARY_ADMIN_EMAIL_NORMALIZED) {
-        currentUser.role = 'administrador';
-    }
+    currentUser = { ...userRecord, name: userRecord.name || userToProcess.displayName, firebaseUid: userToProcess.uid };
+    if (normalizedEmail === PRIMARY_ADMIN_EMAIL_NORMALIZED) currentUser.role = 'administrador';
 
     loginUser(currentUser);
 }
 
 
-// --- GESTIÓN DE USUARIOS (LÓGICA CORREGIDA) ---
-
+// --- GESTIÓN DE USUARIOS ---
 function openUserForm(mode, user = null) {
   hideMessage(elements.userFormAlert);
   elements.userForm.hidden = false;
@@ -327,7 +232,6 @@ function openUserForm(mode, user = null) {
   
   const isEdit = mode === 'edit' && user;
   elements.userForm.dataset.editingId = isEdit ? user.id : "";
-  
   elements.userFormTitle.textContent = isEdit ? "Editar usuario" : "Agregar usuario";
   elements.userFormSubmit.textContent = isEdit ? "Guardar cambios" : "Crear usuario";
 
@@ -372,12 +276,8 @@ async function handleUserFormSubmit(event) {
     allowExternalAuth: formData.get("allowExternalAuth") === "on",
   };
 
-  if (!userData.name) {
-    return showMessage(elements.userFormAlert, "El nombre completo es obligatorio.");
-  }
-  if (!userData.potroEmail && !userData.controlNumber && !userData.institutionalEmail && !userData.email) {
-    return showMessage(elements.userFormAlert, "Proporciona al menos un correo o número de control.");
-  }
+  if (!userData.name) return showMessage(elements.userFormAlert, "El nombre completo es obligatorio.");
+  if (!userData.potroEmail && !userData.controlNumber) return showMessage(elements.userFormAlert, "Proporciona un correo Potro o número de control.");
 
   const isDuplicate = users.some(user => {
     if (user.id === editingUserId) return false;
@@ -386,9 +286,7 @@ async function handleUserFormSubmit(event) {
     return hasSamePotro || hasSameControl;
   });
 
-  if (isDuplicate) {
-    return showMessage(elements.userFormAlert, "Ya existe un usuario con ese correo Potro o número de control.");
-  }
+  if (isDuplicate) return showMessage(elements.userFormAlert, "Ya existe un usuario con ese correo Potro o número de control.");
 
   const recordToPersist = { ...userData, id: editingUserId, updatedBy: currentUser.email };
   const result = await persistUserChange(recordToPersist);
@@ -421,12 +319,12 @@ async function persistUserChange(record) {
       role: record.role,
       career: record.career,
       allowExternalAuth: record.allowExternalAuth,
-      updatedBy: record.updatedBy,
+      updatedBy: record.updatedBy || null, // Asegura que el valor sea null en lugar de undefined
       updatedAt: serverTimestamp(),
     };
 
     if (!isEdit) {
-      payload.createdBy = record.updatedBy;
+      payload.createdBy = record.updatedBy || null; // Asegura que el valor sea null en lugar de undefined
       payload.createdAt = serverTimestamp();
     }
     
@@ -451,11 +349,8 @@ function handleUserTableClick(event) {
   const user = users.find(u => u.id === userId);
   if (!user) return;
 
-  if (button.dataset.action === "edit") {
-    openUserForm("edit", user);
-  } else if (button.dataset.action === "delete") {
-    requestUserDeletion(user);
-  }
+  if (button.dataset.action === "edit") openUserForm("edit", user);
+  else if (button.dataset.action === "delete") requestUserDeletion(user);
 }
 
 async function requestUserDeletion(user) {
@@ -465,8 +360,7 @@ async function requestUserDeletion(user) {
     if (user.id === currentUser.id) {
         return showMessage(elements.userFormAlert, "No puedes eliminar tu propia cuenta.", "error");
     }
-
-    if (confirm(`¿Estás seguro de que quieres eliminar a ${user.name}? Esta acción no se puede deshacer.`)) {
+    if (confirm(`¿Estás seguro de que quieres eliminar a ${user.name}?`)) {
         try {
             await deleteDoc(doc(getFirestoreDb(), "users", user.id));
             showMessage(elements.userFormAlert, "Usuario eliminado.", "success");
@@ -479,7 +373,6 @@ async function requestUserDeletion(user) {
 
 
 // --- SINCRONIZACIÓN CON FIRESTORE ---
-
 function subscribeToFirestoreUsers() {
   const db = getFirestoreDb();
   if (!db) {
@@ -487,7 +380,6 @@ function subscribeToFirestoreUsers() {
     renderAllSections();
     return;
   }
-
   firestoreUsersLoading = true;
   const q = query(collection(db, "users"), orderBy("name"));
 
@@ -499,29 +391,25 @@ function subscribeToFirestoreUsers() {
       firestoreUsersError = null;
       firestoreUsersLastUpdated = new Date();
       renderAllSections();
-      if (pendingFirebaseUser) {
-        processLogin(pendingFirebaseUser);
-      }
+      if (pendingFirebaseUser) processLogin(pendingFirebaseUser);
     },
     (error) => {
       console.error("Error al suscribirse a los usuarios:", error);
       firestoreUsersLoading = false;
-      firestoreUsersLoaded = true; // Se intentó cargar, pero falló
-      firestoreUsersError = "No se pudieron cargar los usuarios en tiempo real.";
+      firestoreUsersLoaded = true;
+      firestoreUsersError = "No se pudieron cargar los usuarios.";
       renderAllSections();
-      if (pendingFirebaseUser) {
-        processLogin(pendingFirebaseUser);
-      }
+      if (pendingFirebaseUser) processLogin(pendingFirebaseUser);
     }
   );
 }
 
 async function attemptLoadActivitiesFromFirestore() {
-    // Implementación pendiente si se necesita
+    // Lógica para cargar actividades si es necesario en el futuro.
 }
 
-// --- RENDERIZADO DE LA INTERFAZ ---
 
+// --- RENDERIZADO Y LÓGICA DE UI ---
 function renderAllSections() {
     updateLayoutMode();
     syncHeaderHeight();
@@ -530,19 +418,14 @@ function renderAllSections() {
         buildQuickAccess(currentUser.role);
         renderSidebarUserCard(currentUser);
         configureRoleViews(currentUser.role);
-        
         if (currentUser.role === 'administrador') {
             updateUserManagementControls();
             renderUserSummary();
             renderUserTable();
             renderUserSyncStatus();
         }
-        // Aquí irían las llamadas a renderizar vistas de otros roles
     } else {
-        // Limpiar vistas si no hay usuario
-        elements.adminView?.classList.add("hidden");
-        elements.docenteView?.classList.add("hidden");
-        elements.auxiliarView?.classList.add("hidden");
+        configureRoleViews(null); // Oculta todas las vistas específicas de rol
     }
     updateCharts();
     refreshIcons();
@@ -571,6 +454,7 @@ function applyLoggedOutState() {
   pendingFirebaseUser = null;
   elements.headerUserMeta?.classList.add("hidden");
   updateLayoutMode();
+  renderAllSections(); // Llama a renderAll para limpiar las vistas
 }
 
 function renderUserTable() {
@@ -579,10 +463,9 @@ function renderUserTable() {
     renderUserTableMeta(filteredUsers);
 
     if (users.length === 0 && !firestoreUsersLoading) {
-        elements.userTableContainer.innerHTML = `<p class="empty-state">No hay usuarios registrados.</p>`;
+        elements.userTableContainer.innerHTML = `<p class="empty-state">No hay usuarios registrados. Agrega el primero para comenzar.</p>`;
         return;
     }
-    
     if (filteredUsers.length === 0 && users.length > 0) {
         elements.userTableContainer.innerHTML = `<p class="empty-state">No se encontraron usuarios con los filtros aplicados.</p>`;
         return;
@@ -606,7 +489,7 @@ function renderUserTable() {
 
         return `
             <tr>
-                <td>${escapeHtml(user.name)}<br><small>${escapeHtml(user.potroEmail || user.email)}</small></td>
+                <td>${escapeHtml(user.name)}<br><small>${escapeHtml(user.potroEmail || user.email || 'Sin correo')}</small></td>
                 <td>${escapeHtml(user.controlNumber || 'N/A')}</td>
                 <td>${escapeHtml(CAREER_LABELS[user.career] || 'N/A')}</td>
                 <td><span class="${ROLE_BADGE_CLASS[user.role]}">${ROLE_LABELS[user.role]}</span></td>
@@ -617,16 +500,7 @@ function renderUserTable() {
 
     elements.userTableContainer.innerHTML = `
         <table class="user-table">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>N° Control</th>
-                    <th>Carrera</th>
-                    <th>Rol</th>
-                    <th>Acceso</th>
-                    ${headerActions}
-                </tr>
-            </thead>
+            <thead> <tr> <th>Nombre</th> <th>N° Control</th> <th>Carrera</th> <th>Rol</th> <th>Acceso</th> ${headerActions} </tr> </thead>
             <tbody>${rows}</tbody>
         </table>`;
     
@@ -643,25 +517,16 @@ function renderUserTableMeta(filteredUsers) {
         elements.userTableMeta.textContent = 'No hay usuarios para mostrar.';
         return;
     }
-    const total = users.length;
-    const showing = filteredUsers.length;
-    elements.userTableMeta.textContent = `Mostrando ${showing} de ${total} usuarios.`;
+    elements.userTableMeta.textContent = `Mostrando ${filteredUsers.length} de ${users.length} usuarios.`;
 }
 
 function getFilteredUsers() {
     return users.filter(user => {
         const search = userFilters.search.toLowerCase();
-        const matchesSearch = !search || 
-            user.name.toLowerCase().includes(search) || 
-            (user.potroEmail || "").toLowerCase().includes(search) ||
-            (user.controlNumber || "").toLowerCase().includes(search);
-            
+        const matchesSearch = !search || (user.name || "").toLowerCase().includes(search) || (user.potroEmail || "").toLowerCase().includes(search) || (user.controlNumber || "").toLowerCase().includes(search);
         const matchesRole = userFilters.role === 'all' || user.role === userFilters.role;
         const matchesCareer = userFilters.career === 'all' || user.career === userFilters.career;
-        const matchesAuth = userFilters.auth === 'all' || 
-            (userFilters.auth === 'allowed' && user.allowExternalAuth) ||
-            (userFilters.auth === 'restricted' && !user.allowExternalAuth);
-            
+        const matchesAuth = userFilters.auth === 'all' || (userFilters.auth === 'allowed' && user.allowExternalAuth) || (userFilters.auth === 'restricted' && !user.allowExternalAuth);
         return matchesSearch && matchesRole && matchesCareer && matchesAuth;
     });
 }
@@ -671,10 +536,10 @@ function resetUserFilters() {
     userFilters.role = "all";
     userFilters.career = "all";
     userFilters.auth = "all";
-    elements.userSearchInput.value = "";
-    elements.userRoleFilter.value = "all";
-    elements.userCareerFilter.value = "all";
-    elements.userAuthFilter.value = "all";
+    if (elements.userSearchInput) elements.userSearchInput.value = "";
+    if (elements.userRoleFilter) elements.userRoleFilter.value = "all";
+    if (elements.userCareerFilter) elements.userCareerFilter.value = "all";
+    if (elements.userAuthFilter) elements.userAuthFilter.value = "all";
     renderUserTable();
 }
 
@@ -686,7 +551,6 @@ function updateUserManagementControls() {
 
 
 // --- FUNCIONES UTILITARIAS Y DE UI ---
-
 function isPrimaryAdmin(user) {
   return user && (user.potroEmail || "").toLowerCase() === PRIMARY_ADMIN_EMAIL_NORMALIZED;
 }
@@ -696,12 +560,7 @@ function isPermissionDeniedError(error) {
 }
 
 function escapeHtml(str) {
-    return String(str ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    return String(str ?? "").replace(/[&<>"']/g, match => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'})[match]);
 }
 
 function hideLoader() {
@@ -712,35 +571,27 @@ function showMessage(element, message, type = "error", duration = 5000) {
   if (!element) return;
   element.textContent = message;
   element.className = `alert ${type} show`;
-  if (duration) {
-    setTimeout(() => element.classList.remove("show"), duration);
-  }
+  if (duration) setTimeout(() => element.classList.remove("show"), duration);
 }
 
 function hideMessage(element) {
-  if (!element) return;
-  element.classList.remove("show");
+  if (element) element.classList.remove("show");
 }
 
 function refreshIcons() {
-  if (window.lucide) {
-    window.lucide.createIcons();
-  }
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function syncHeaderHeight() {
     const header = document.querySelector(".app-header");
-    const headerHeight = header ? header.offsetHeight : 0;
-    document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
+    document.documentElement.style.setProperty("--header-height", `${header?.offsetHeight || 0}px`);
 }
 
 function setSidebarCollapsed(value) {
   if (!elements.dashboardShell) return;
   elements.dashboardShell.classList.toggle("sidebar-collapsed", value);
   elements.sidebarCollapseBtn?.setAttribute("aria-expanded", String(!value));
-  if (elements.sidebarExpandBtn) {
-    elements.sidebarExpandBtn.hidden = !value;
-  }
+  if (elements.sidebarExpandBtn) elements.sidebarExpandBtn.hidden = !value;
 }
 
 function configureRoleViews(role) {
@@ -750,13 +601,11 @@ function configureRoleViews(role) {
 }
 
 function buildNavigation(role) {
-    if (!elements.navigation) return;
-    // Implementación pendiente si se requiere
+    // Implementación futura si se necesita navegación dinámica
 }
 
 function buildQuickAccess(role) {
-    if (!elements.quickAccessList) return;
-    // Implementación pendiente si se requiere
+    // Implementación futura
 }
 
 function renderSidebarUserCard(user) {
@@ -770,73 +619,36 @@ function renderUserSummary() {
     const total = users.length;
     const admins = users.filter(u => u.role === 'administrador').length;
     const docentes = users.filter(u => u.role === 'docente').length;
-    
     elements.userSummaryGrid.innerHTML = `
-        <article class="user-summary-card">
-          <span class="user-summary-icon"><i data-lucide="users"></i></span>
-          <div class="user-summary-content">
-            <span class="user-summary-label">Usuarios totales</span>
-            <span class="user-summary-value">${total}</span>
-          </div>
-        </article>
-        <article class="user-summary-card">
-          <span class="user-summary-icon"><i data-lucide="shield"></i></span>
-          <div class="user-summary-content">
-            <span class="user-summary-label">Administradores</span>
-            <span class="user-summary-value">${admins}</span>
-          </div>
-        </article>
-        <article class="user-summary-card">
-          <span class="user-summary-icon"><i data-lucide="book-open"></i></span>
-          <div class="user-summary-content">
-            <span class="user-summary-label">Docentes</span>
-            <span class="user-summary-value">${docentes}</span>
-          </div>
-        </article>
-    `;
+        <article class="user-summary-card"><span class="user-summary-icon"><i data-lucide="users"></i></span><div><span class="user-summary-label">Total</span><span class="user-summary-value">${total}</span></div></article>
+        <article class="user-summary-card"><span class="user-summary-icon"><i data-lucide="shield"></i></span><div><span class="user-summary-label">Admins</span><span class="user-summary-value">${admins}</span></div></article>
+        <article class="user-summary-card"><span class="user-summary-icon"><i data-lucide="book-open"></i></span><div><span class="user-summary-label">Docentes</span><span class="user-summary-value">${docentes}</span></div></article>`;
     refreshIcons();
 }
 
 function renderUserSyncStatus() {
     if (!elements.userSyncStatus) return;
-    let className = "user-sync-status";
-    let text = "";
-
-    if (firestoreUsersLoading) {
-        className += " loading";
-        text = "Sincronizando...";
-    } else if (firestoreUsersError) {
-        className += " error";
-        text = firestoreUsersError;
-    } else if (firestoreUsersLoaded) {
-        className += " success";
-        text = `Sincronizado. Última actualización: ${new Date(firestoreUsersLastUpdated).toLocaleTimeString()}`;
-    }
-    elements.userSyncStatus.className = className;
+    let cn = "user-sync-status", text = "";
+    if (firestoreUsersLoading) { cn += " loading"; text = "Sincronizando..."; } 
+    else if (firestoreUsersError) { cn += " error"; text = firestoreUsersError; } 
+    else if (firestoreUsersLoaded) { cn += " success"; text = `Sincronizado. Última actualización: ${new Date(firestoreUsersLastUpdated).toLocaleTimeString()}`; }
+    elements.userSyncStatus.className = cn;
     elements.userSyncStatus.textContent = text;
 }
 
 function initCharts() {
-  const usersCanvas = document.getElementById("usersChart");
-  if (usersCanvas) {
-    charts.users = new Chart(usersCanvas.getContext("2d"), {
-      type: "bar", data: { labels: [], datasets: [{ label: 'Usuarios', data: [] }] }
-    });
-  }
-  const activitiesCanvas = document.getElementById("activitiesChart");
-  if (activitiesCanvas) {
-    charts.activities = new Chart(activitiesCanvas.getContext("2d"), {
-      type: "doughnut", data: { labels: [], datasets: [{ data: [] }] }
-    });
-  }
+    const chartOptions = { responsive: true, maintainAspectRatio: false };
+    if (document.getElementById("usersChart")) {
+        charts.users = new Chart(document.getElementById("usersChart"), { type: "bar", data: { labels: [], datasets: [{ label: 'Usuarios', data: [], backgroundColor: 'rgba(37, 99, 235, 0.85)' }] }, options: chartOptions });
+    }
+    if (document.getElementById("activitiesChart")) {
+        charts.activities = new Chart(document.getElementById("activitiesChart"), { type: "doughnut", data: { labels: [], datasets: [{ data: [] }] }, options: chartOptions });
+    }
 }
 
 function updateCharts() {
   if (charts.users) {
-    const careerCounts = users.reduce((acc, user) => {
-        acc[user.career] = (acc[user.career] || 0) + 1;
-        return acc;
-    }, {});
+    const careerCounts = users.reduce((acc, user) => { acc[user.career] = (acc[user.career] || 0) + 1; return acc; }, {});
     charts.users.data.labels = Object.keys(careerCounts).map(key => CAREER_LABELS[key] || key);
     charts.users.data.datasets[0].data = Object.values(careerCounts);
     charts.users.update();
@@ -844,12 +656,10 @@ function updateCharts() {
 }
 
 // --- FUNCIONES PENDIENTES DE IMPLEMENTAR ---
-
 async function importSoftwareTeachers() {
-    showMessage(elements.importTeachersAlert, "Función de importación no implementada en esta versión.", "info");
+    showMessage(elements.importTeachersAlert, "Función de importación no implementada.", "info");
 }
-
 async function handleActivityFormSubmit(event) {
     event.preventDefault();
-    showMessage(elements.adminActivityAlert, "Gestión de actividades no implementada en esta versión.", "info");
+    showMessage(elements.adminActivityAlert, "Gestión de actividades no implementada.", "info");
 }
