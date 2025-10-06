@@ -1,135 +1,67 @@
-// Contenido de tu archivo: isaacpaniagua-design/tablerocontroldocente/TableroControlDocente-ba439a077ddd19619e89baf2aaa13e7a48a11fe6/firestore.rules
-
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // --- REGLA FUNDAMENTAL: Denegar todo acceso por defecto ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- FUNCIONES DE UTILIDAD Y AUTORIZACIÓN ---
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function normalizedEmail(email) {
-      return email == null ? null : lower(email);
+    // Obtiene el documento del usuario que realiza la petición.
+    // El ID del documento DEBE ser el email normalizado para que esto funcione.
+    function getRequestingUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.token.email.lower()));
     }
 
-    function authDocumentId() {
-      return normalizedEmail(request.auth.token.email);
-    }
-
-    function userDocument(pathId) {
-      return /databases/$(database)/documents/users/$(pathId);
-    }
-
-    function isPrimaryAdmin() {
-      return normalizedEmail(request.auth.token.email) == 'isaac.paniagua@potros.itson.edu.mx';
-    }
-
+    // Verifica si el usuario autenticado tiene el rol de 'administrador' en la DB.
+    // 🔥 CORRECCIÓN: Se elimina la dependencia del 'Primary Admin' hardcodeado.
     function isRegisteredAdmin() {
-      return isSignedIn() &&
-        authDocumentId() != null &&
-        exists(userDocument(authDocumentId())) &&
-        get(userDocument(authDocumentId())).data.role == 'administrador';
+      return isSignedIn() && getRequestingUserDoc().data.role == 'administrador';
     }
 
-    function canManageData() {
-      return isPrimaryAdmin() || isRegisteredAdmin();
+    // --- REGLAS PARA LA COLECCIÓN DE USUARIOS (`users`) ---
+    match /users/{userEmail} {
+      // 🔥 REGLA CORREGIDA: Un usuario solo puede leer su propio perfil.
+      // Un administrador puede leer cualquier perfil.
+      allow read: if isSignedIn() && (request.auth.token.email.lower() == userEmail || isRegisteredAdmin());
+
+      // Solo un administrador puede crear usuarios.
+      allow create: if isRegisteredAdmin();
+
+      // 🔥 REGLA CORREGIDA Y SEGURA:
+      // Un admin puede actualizar cualquier campo.
+      // Un usuario puede actualizar su propio perfil, PERO no puede cambiar su rol
+      // ni sobrescribir un UID existente. Puede escribir su UID solo una vez.
+      allow update: if isSignedIn() && (
+        isRegisteredAdmin() || (
+          request.auth.token.email.lower() == userEmail &&
+          request.resource.data.role == resource.data.role && // El rol no puede cambiar
+          (
+            request.resource.data.firebaseUid == request.auth.uid &&
+            resource.data.firebaseUid == null // Solo se puede escribir el UID si no existe
+          )
+        )
+      );
+
+      // Solo un administrador puede eliminar usuarios.
+      allow delete: if isRegisteredAdmin();
     }
 
-    function isFromAllowedDomain() {
-       return isSignedIn() &&
-         request.auth.token.email != null &&
-         request.auth.token.email.matches('(?i).*@potros\\.itson\\.edu\\.mx$');
-    }
-
-    function isValidRole(role) {
-      return role in ['administrador', 'docente', 'auxiliar'];
-    }
-
-    function isValidCareer(career) {
-      return career in ['software', 'manufactura', 'mecatronica', 'global'];
-    }
-
-    function isValidUserPayload(data) {
-      return data.name is string && data.name.size() > 0 &&
-        data.role is string && isValidRole(data.role) &&
-        data.career is string && isValidCareer(data.career);
-    }
-
-    function isValidActivityPayload(data) {
-      return data.title is string && data.title.size() > 0 &&
-        data.status is string && data.status in ['pendiente', 'en_progreso', 'completada'] &&
-        data.career is string && isValidCareer(data.career);
-    }
-
-    // 🔥 **INICIO DE LA CORRECCIÓN** 🔥
-    // Se agregan las validaciones para 'id' y 'userId'
-    function matchesUserDocumentId(userId, data) {
-      return isPrimaryAdmin() ||
-        (data.id != null && data.id == userId) ||
-        (data.userId != null && data.userId == userId) ||
-        (data.potroEmail != null && normalizedEmail(data.potroEmail) == userId) ||
-        (data.institutionalEmail != null && normalizedEmail(data.institutionalEmail) == userId) ||
-        (data.email != null && normalizedEmail(data.email) == userId) ||
-        (data.controlNumber != null && data.controlNumber == userId);
-    }
-    // 🔥 **FIN DE LA CORRECCIÓN** 🔥
-
-
-    function hasAllowedUserFields(data) {
-      return data.keys().hasOnly([
-        'id',
-        'userId',
-        'name',
-        'controlNumber',
-        'potroEmail',
-        'institutionalEmail',
-        'email',
-        'phone',
-        'role',
-        'career',
-        'syncedAt',
-        'createdAt',
-        'createdAtIso',
-        'updatedAt',
-        'updatedBy',
-        'createdBy',
-        'firebaseUid',
-        'allowExternalAuth',
-        'importedAtIso'
-      ]);
-    }
-
-    function isValidUserUpdatePayload(data) {
-      return hasAllowedUserFields(data) &&
-        (!('name' in data) || (data.name is string && data.name.size() > 0)) &&
-        (!('role' in data) || (data.role is string && isValidRole(data.role))) &&
-        (!('career' in data) || (data.career is string && isValidCareer(data.career)));
-    }
-
-    match /users/{userId} {
-      allow read: if isSignedIn() &&
-        (isPrimaryAdmin() ||
-         isRegisteredAdmin() ||
-         isFromAllowedDomain() ||
-         (exists(userDocument(authDocumentId())) && get(userDocument(authDocumentId())).data.allowExternalAuth == true)
-        );
-      allow create: if canManageData() &&
-                    hasAllowedUserFields(request.resource.data) &&
-                    isValidUserPayload(request.resource.data) &&
-                    matchesUserDocumentId(userId, request.resource.data);
-      allow update: if canManageData() &&
-                    isValidUserUpdatePayload(request.resource.data) &&
-                    matchesUserDocumentId(userId, request.resource.data);
-      allow delete: if canManageData();
-    }
-
+    // --- REGLAS PARA LA COLECCIÓN DE ACTIVIDADES (`activities`) ---
     match /activities/{activityId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if canManageData() && isValidActivityPayload(request.resource.data);
-    }
+      // 🔥 REGLA CORREGIDA: Un usuario puede leer una actividad si es admin o si está asignado a ella.
+      // (Se asume que la actividad tiene un campo como `responsibleEmail` o `assignedTo`).
+      allow read: if isSignedIn() &&
+        (isRegisteredAdmin() || resource.data.responsibleEmail.lower() == request.auth.token.email.lower());
 
-    match /{document=**} {
-      allow read, write: if false;
+      // Solo administradores pueden crear, actualizar o eliminar actividades.
+      allow create, update, delete: if isRegisteredAdmin();
     }
   }
 }
