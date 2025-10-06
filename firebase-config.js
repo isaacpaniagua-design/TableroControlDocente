@@ -1,25 +1,22 @@
+
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const FALLBACK_CONFIG = {
-  apiKey: "AIzaSyBWa6nNgWGdsqS12OhqAfIlJcSbT59cLGs",
-  authDomain: "tablerocontroldocente.firebaseapp.com",
-  projectId: "tablerocontroldocente",
-  storageBucket: "tablerocontroldocente.firebasestorage.app",
-  messagingSenderId: "184781501380",
-  appId: "1:184781501380:web:cc14875f679e077f28ea91",
-};
-
 let firebaseApp = null;
 let firestoreDb = null;
 
+// 🔥 **INICIO DE LA CORRECCIÓN** 🔥
+// Se elimina el objeto FALLBACK_CONFIG. La configuración ahora DEBE
+// provenir de window.firebaseConfig, inyectado por Firebase Hosting.
 function resolveConfig() {
   if (typeof window !== "undefined" && window.firebaseConfig) {
     return window.firebaseConfig;
   }
-  return FALLBACK_CONFIG;
+  // No hay fallback. Si la configuración no está, la app no debe funcionar.
+  return null;
 }
+// 🔥 **FIN DE LA CORRECCIÓN** 🔥
 
 export function getFirebaseConfig() {
   return resolveConfig();
@@ -33,7 +30,7 @@ export function getFirebaseApp() {
   const config = resolveConfig();
   if (!config || !config.projectId) {
     console.warn(
-      "Firebase no está configurado. Define window.firebaseConfig con las credenciales de tu proyecto.",
+      "Firebase no está configurado. Asegúrate de que Firebase Hosting esté sirviendo la configuración.",
     );
     return null;
   }
