@@ -1,667 +1,245 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero de Control Docente</title>
-    <!-- Fuentes y Librerías -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <script
-      src="https://cdn.jsdelivr.net/npm/chart.js"
-      integrity="sha256-opnmbTJrwNAiFWSRpTTmsi9/fvCxO5DN2SbnABkDxIA="
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://unpkg.com/lucide@latest"
-      integrity="sha384-6g5NqGkHIjLp2o3d3u20HlVjso/7E0J/5M23bQ/w9p4vkj3b6BRVfImeHNJ+1VAI"
-      crossorigin="anonymous"
-    ></script>
-    <!-- Hoja de Estilos Propia -->
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <!-- Elementos para loader y modal -->
-    <div id="loader">
-      <div class="spinner"></div>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest" integrity="sha384-s2Bf99fCTzOxWHpWEoXVtGJrqy0Ba0dc9EPd71KJR1gNx1kGozhYXtgSmVtprhVf" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" integrity="sha256-Lye89HGy1p3XhJT24hcvsoRw64Q4IOL5a7hdOflhjTA=" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div id="app-container">
+        <aside id="sidebar">
+            <header id="sidebar-header">
+                <h1 id="app-title">Control<br>Docente</h1>
+            </header>
+            <nav id="main-nav">
+                <ul>
+                    <li><a href="#" class="nav-link active" data-view="dashboard"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+                    <li><a href="#" class="nav-link" data-view="courses"><i data-lucide="book-copy"></i> Cursos</a></li>
+                    <li><a href="#" class="nav-link" data-view="students"><i data-lucide="users"></i> Alumnos</a></li>
+                    <li><a href="#" class="nav-link" data-view="reports"><i data-lucide="file-text"></i> Reportes</a></li>
+                </ul>
+            </nav>
+            <footer id="sidebar-footer">
+                <div id="user-profile">
+                    <img src="https://i.pravatar.cc/40?u=docente" alt="Avatar del usuario" id="user-avatar">
+                    <div id="user-info">
+                        <span id="user-name">Isaac Paniagua</span>
+                        <span id="user-role">Docente</span>
+                    </div>
+                </div>
+                <button id="logout-btn"><i data-lucide="log-out"></i></button>
+            </footer>
+        </aside>
+        <main id="main-content">
+            <!-- El contenido de la vista se cargará aquí -->
+        </main>
     </div>
-    <div id="modal-backdrop" class="hidden"></div>
 
-    <header class="app-header">
-      <div class="app-header__inner">
-        <div class="brand-area">
-          <span class="brand-pill">ITSon</span>
-          <div>
-            <h1>
-              <i data-lucide="layout-dashboard"></i> Tablero de Control Docente
-            </h1>
-            <p class="brand-description">
-              Planifica, monitorea y comunica el trabajo académico en una
-              interfaz unificada.
-            </p>
-          </div>
+    <!-- Plantillas para las vistas -->
+    <template id="dashboard-template">
+        <div id="dashboard-view">
+            <header class="view-header">
+                <h2>Dashboard</h2>
+                <div class="header-actions">
+                    <button id="add-widget-btn" class="button-primary"><i data-lucide="plus-circle"></i> Agregar Widget</button>
+                </div>
+            </header>
+            <section class="view-content">
+                <div id="dashboard-grid">
+                    <div class="widget">
+                        <h3>Próximas Tareas</h3>
+                        <ul id="task-list">
+                            <!-- Tareas se cargarán aquí -->
+                        </ul>
+                    </div>
+                    <div class="widget">
+                        <h3>Actividad Reciente</h3>
+                        <ul id="activity-feed">
+                            <!-- Actividad se cargará aquí -->
+                        </ul>
+                    </div>
+                    <div class="widget large">
+                        <h3>Rendimiento General</h3>
+                        <canvas id="performance-chart"></canvas>
+                    </div>
+                    <div class="widget">
+                        <h3>Notificaciones</h3>
+                        <ul id="notifications-list">
+                            <!-- Notificaciones se cargarán aquí -->
+                        </ul>
+                    </div>
+                </div>
+            </section>
         </div>
-        <div class="header-tools">
-          <div class="user-meta hidden" id="headerUserMeta">
-            <span id="headerUserName"></span>
-            <span class="badge" id="headerUserRole"></span>
-            <button id="logoutBtn" type="button">
-              <i data-lucide="log-out"></i><span>Cerrar sesión</span>
-            </button>
-          </div>
+    </template>
+
+    <template id="courses-template">
+        <div id="courses-view">
+            <header class="view-header">
+                <h2>Mis Cursos</h2>
+                <div class="header-actions">
+                    <button id="add-course-btn" class="button-primary"><i data-lucide="plus-circle"></i> Nuevo Curso</button>
+                </div>
+            </header>
+            <section class="view-content">
+                <div id="course-list">
+                    <!-- Las tarjetas de curso se insertarán aquí -->
+                </div>
+            </section>
         </div>
-      </div>
-    </header>
+    </template>
 
-    <main>
-      <!-- Sección de Autenticación -->
-      <section id="authSection">
-        <div class="auth-layout">
-          <div class="auth-hero">
-            <span class="eyebrow">Gestión académica</span>
-            <h2>Organiza el trabajo docente con claridad</h2>
-            <p>
-              Centraliza indicadores, actividades y seguimientos en un solo
-              lugar.
-            </p>
-            <ul class="auth-highlights">
-              <li>Visualiza el avance de las actividades en tiempo real.</li>
-              <li>Coordina responsabilidades entre docentes y auxiliares.</li>
-              <li>Genera reportes claros para la toma de decisiones.</li>
-            </ul>
-            <div class="auth-metrics">
-              <div>
-                <span class="metric-value">+120</span>
-                <span class="metric-label">Actividades gestionadas</span>
-              </div>
-              <div>
-                <span class="metric-value">8</span>
-                <span class="metric-label">Programas académicos</span>
-              </div>
-              <div>
-                <span class="metric-value">24/7</span>
-                <span class="metric-label">Acceso disponible</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="auth-panel">
-            <div class="card" id="loginCard">
-              <div class="card-header">
-                <div>
-                  <span class="eyebrow">Bienvenido</span>
-                  <h2>Ingresa a tu panel</h2>
+    <template id="course-card-template">
+        <div class="course-card">
+            <div class="card-header">
+                <h3 class="course-title"></h3>
+                <div class="card-menu">
+                    <button class="menu-btn"><i data-lucide="more-vertical"></i></button>
+                    <div class="menu-dropdown">
+                        <a href="#" class="edit-btn">Editar</a>
+                        <a href="#" class="delete-btn">Eliminar</a>
+                    </div>
                 </div>
-                <i data-lucide="lock"></i>
-              </div>
-              <p>
-                Accede con tu correo institucional
-                <strong>@potros.itson.edu.mx</strong> y gestiona tus tareas sin
-                complicaciones. Inicia sesión con Google para validar tus
-                permisos en la plataforma.
-              </p>
-              <div class="form-actions">
-                <button class="primary" type="button" id="googleSignInBtn">
-                  <i data-lucide="log-in"></i>
-                  <span>Ingresar con Google</span>
-                </button>
-              </div>
-              <p class="form-help">
-                Solo se permiten cuentas de Google con dominio
-                <strong>@potros.itson.edu.mx</strong>. Si necesitas acceso,
-                contacta al administrador principal.
-              </p>
-              <div class="alert error" id="loginError"></div>
             </div>
-            <div class="auth-support">
-              <div class="auth-support__intro">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path
-                    d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"
-                  ></path>
-                  <path d="M21 16v2a4 4 0 0 1-4 4h-5"></path>
-                </svg>
-                <div>
-                  <h3>¿Necesitas ayuda?</h3>
-                  <p>
-                    Nuestro equipo académico puede orientarte con la migración
-                    de datos o la incorporación de nuevos usuarios.
-                  </p>
+            <div class="card-body">
+                <p class="course-code"></p>
+                <div class="course-progress">
+                    <div class="progress-bar">
+                        <div class="progress"></div>
+                    </div>
+                    <span class="progress-label"></span>
                 </div>
-              </div>
-              <ul>
-                <li>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path
-                      d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"
-                    ></path>
-                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                  </svg>
-                  isaac.paniagua@potros.itson.edu.mx
-                </li>
-              </ul>
             </div>
-          </div>
+            <div class="card-footer">
+                <div class="student-avatars"></div>
+                <a href="#" class="details-link">Ver detalles <i data-lucide="arrow-right"></i></a>
+            </div>
         </div>
-      </section>
+    </template>
 
-      <!-- Dashboard Principal -->
-      <section id="dashboard" class="hidden">
-        <div class="dashboard-shell" id="dashboardShell">
-          <aside class="sidebar">
-            <button
-              type="button"
-              class="sidebar-toggle"
-              id="sidebarCollapseBtn"
-              aria-label="Ocultar menú lateral"
-              aria-expanded="true"
-            >
-              <i data-lucide="panel-left-close"></i>
-              <span>Ocultar menú</span>
-            </button>
-            <div class="quick-access" id="quickAccess" hidden>
-              <h4>Accesos rápidos</h4>
-              <ul id="quickAccessList" class="quick-access__list"></ul>
-            </div>
-            <div class="sidebar-footer">
-              <p>
-                Mantente al día con tus actividades y comparte avances con tu
-                coordinación.
-              </p>
-            </div>
-          </aside>
-          <section class="content-area">
-            <button
-              type="button"
-              class="sidebar-toggle sidebar-toggle--floating"
-              id="sidebarExpandBtn"
-              aria-label="Mostrar menú lateral"
-              hidden
-            >
-              <i data-lucide="panel-left"></i>
-              <span>Mostrar menú</span>
-            </button>
-            <div
-              class="content-intro"
-              id="dashboardIntro"
-              data-nav-label="Panel de control"
-              data-nav-roles="administrador,docente,auxiliar"
-            >
-              <div>
-                <h2>Panel de control</h2>
-                <p>
-                  Revisa tus indicadores, tareas y reportes de manera visual y
-                  organizada.
-                </p>
-              </div>
-              <button class="ghost" type="button" id="printReport">
-                <i data-lucide="printer"></i> Imprimir reporte
-              </button>
-            </div>
-
-            <!-- Vistas de Admin -->
-            <div id="adminView" class="hidden">
-              <div
-                class="overview-grid"
-                id="dashboardHighlights"
-                data-nav-label="Resumen"
-                data-nav-roles="administrador"
-              >
-                <article class="summary-card">
-                  <i data-lucide="users"></i>
-                  <div>
-                    <h3>Usuarios por carrera</h3>
-                    <p>Identifica la distribución y crecimiento de docentes.</p>
-                  </div>
-                </article>
-                <article class="summary-card">
-                  <i data-lucide="check-circle"></i>
-                  <div>
-                    <h3>Estado de actividades</h3>
-                    <p>Evalúa el progreso y detecta tareas pendientes.</p>
-                  </div>
-                </article>
-                <article class="summary-card">
-                  <i data-lucide="upload-cloud"></i>
-                  <div>
-                    <h3>Importación inteligente</h3>
-                    <p>Integra nuevos docentes con plantillas precargadas.</p>
-                  </div>
-                </article>
-              </div>
-
-              <details
-                class="dashboard-section"
-                id="generalReportCard"
-                data-nav-label="Reporte general"
-                data-nav-roles="administrador"
-                open
-              >
-                <summary class="dashboard-section__summary">
-                  <div class="dashboard-section__text">
-                    <h2>Reporte General</h2>
-                    <p class="card-subtitle">
-                      Analiza de forma visual la actividad del departamento.
-                    </p>
-                  </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                </summary>
-                <div class="dashboard-section__body">
-                  <div class="dashboard-section__actions">
-                    <button class="ghost" type="button" id="refreshDashboard">
-                      <i data-lucide="refresh-cw"></i> Actualizar
-                    </button>
-                  </div>
-                  <div class="chart-grid">
-                    <div class="chart-card">
-                      <header>
-                        <h4>Usuarios por Carrera</h4>
-                      </header>
-                      <canvas id="usersChart"></canvas>
-                    </div>
-                    <div class="chart-card">
-                      <header>
-                        <h4>Estado de Actividades</h4>
-                      </header>
-                      <canvas id="activitiesChart"></canvas>
-                    </div>
-                  </div>
+    <template id="students-template">
+        <div id="students-view">
+            <header class="view-header">
+                <h2>Alumnos</h2>
+                 <div class="header-actions">
+                    <input type="search" id="student-search" placeholder="Buscar alumno...">
+                    <button id="add-student-btn" class="button-primary"><i data-lucide="user-plus"></i> Nuevo Alumno</button>
                 </div>
-              </details>
-
-              <details
-                class="dashboard-section"
-                id="userManagementCard"
-                data-nav-label="Gestión de usuarios"
-                data-nav-roles="administrador"
-                open
-              >
-                <summary class="dashboard-section__summary">
-                  <div class="dashboard-section__text">
-                    <h2 class="text-2xl font-bold">Gestión de Usuarios</h2>
-                    <p class="card-subtitle">
-                      Desde aquí puedes ver, agregar, editar y eliminar usuarios.
-                    </p>
-                  </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                </summary>
-                <div class="dashboard-section__body">
-                  <div id="admin-user-management">
-                    <div class="import-toolbar">
-                      <button class="primary" type="button" id="importTeachersBtn">
-                        <i data-lucide="file-input"></i>
-                        <span>Importar docentes de Ing. en Software</span>
-                      </button>
-                      <div id="importTeachersAlert"></div>
-                    </div>
-                    <div class="user-management-actions">
-                      <button
-                        class="primary"
-                        type="button"
-                        id="startAddUserBtn"
-                        hidden
-                      >
-                        <i data-lucide="user-plus"></i>
-                        <span>Agregar usuario</span>
-                      </button>
-                    </div>
-                    <form id="userForm" class="user-form" hidden>
-                      <header class="user-form-header">
-                        <h3 id="userFormTitle">Agregar usuario</h3>
-                        <p id="userFormDescription">
-                          Registra un nuevo docente, administrador o auxiliar.
-                        </p>
-                      </header>
-                      <div class="form-grid">
-                        <div class="form-field">
-                          <label for="userName">Nombre completo</label>
-                          <input
-                            id="userName"
-                            name="name"
-                            type="text"
-                            placeholder="Ej. Juan Pérez"
-                            required
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="userRole">Rol</label>
-                          <select
-                            id="userRole"
-                            name="role"
-                            data-default="docente"
-                          >
-                            <option value="docente" selected>Docente</option>
-                            <option value="auxiliar">Auxiliar</option>
-                            <option value="administrador">Administrador</option>
-                          </select>
-                        </div>
-                        <div class="form-field">
-                          <label for="userCareer">Carrera</label>
-                          <select
-                            id="userCareer"
-                            name="career"
-                            data-default="software"
-                          >
-                            <option value="software" selected>
-                              Ing. en Software
-                            </option>
-                            <option value="manufactura">
-                              Ing. en Manufactura
-                            </option>
-                            <option value="mecatronica">
-                              Ing. en Mecatrónica
-                            </option>
-                            <option value="global">
-                              General (todas las carreras)
-                            </option>
-                          </select>
-                        </div>
-                        <div class="form-field">
-                          <label for="userControlNumber">Número de control</label>
-                          <input
-                            id="userControlNumber"
-                            name="controlNumber"
-                            type="text"
-                            placeholder="Ej. D230205"
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="userPotroEmail">Correo Potro</label>
-                          <input
-                            id="userPotroEmail"
-                            name="potroEmail"
-                            type="email"
-                            placeholder="nombre.apellido@potros.itson.edu.mx"
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="userInstitutionalEmail">
-                            Correo institucional
-                          </label>
-                          <input
-                            id="userInstitutionalEmail"
-                            name="institutionalEmail"
-                            type="email"
-                            placeholder="nombre.apellido@itson.edu.mx"
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="userAltEmail">Correo alterno</label>
-                          <input
-                            id="userAltEmail"
-                            name="email"
-                            type="email"
-                            placeholder="correo.personal@dominio.com"
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="userPhone">Teléfono</label>
-                          <input
-                            id="userPhone"
-                            name="phone"
-                            type="tel"
-                            placeholder="Ej. (644) 123 4567"
-                          />
-                        </div>
-                      </div>
-                      <label class="form-checkbox">
-                        <input
-                          type="checkbox"
-                          id="userAllowExternalAuth"
-                          name="allowExternalAuth"
-                        />
-                        <span>Permitir inicio de sesión con correo externo</span>
-                      </label>
-                      <p class="form-hint">
-                        Solo el administrador principal puede agregar, editar o
-                        eliminar usuarios.
-                      </p>
-                      <div class="form-actions">
-                        <button type="submit" class="primary" id="userFormSubmit">
-                          Guardar usuario
-                        </button>
-                        <button type="button" class="ghost" id="cancelUserFormBtn">
-                          Cancelar
-                        </button>
-                      </div>
-                    </form>
-                    <div id="userFormAlert"></div>
-                    <div id="inviteAlert"></div>
-                    <div class="user-management-toolbar" id="userManagementToolbar">
-                      <div id="userSyncStatus" class="user-sync-status"></div>
-                      <div id="userSummaryGrid" class="user-summary-grid"></div>
-                      <div class="user-management-filters">
-                        <div class="user-search">
-                          <i data-lucide="search"></i>
-                          <input
-                            type="search"
-                            id="userSearchInput"
-                            placeholder="Buscar por nombre, correo o número"
-                            autocomplete="off"
-                            aria-label="Buscar usuarios"
-                          />
-                        </div>
-                        <select id="userRoleFilter" aria-label="Filtrar por rol">
-                          <option value="all" selected>Todos los roles</option>
-                          <option value="administrador">Administradores</option>
-                          <option value="docente">Docentes</option>
-                          <option value="auxiliar">Auxiliares</option>
-                        </select>
-                        <select id="userCareerFilter" aria-label="Filtrar por carrera">
-                          <option value="all" selected>Todas las carreras</option>
-                          <option value="software">Ing. en Software</option>
-                          <option value="manufactura">Ing. en Manufactura</option>
-                          <option value="mecatronica">Ing. en Mecatrónica</option>
-                          <option value="global">General</option>
-                        </select>
-                        <select id="userAuthFilter" aria-label="Filtrar por tipo de acceso">
-                          <option value="all" selected>Todos los accesos</option>
-                          <option value="allowed">Acceso externo habilitado</option>
-                          <option value="restricted">Solo institucional</option>
-                        </select>
-                        <button type="button" class="ghost small" id="clearUserFiltersBtn">
-                          <i data-lucide="x-circle"></i>
-                          <span>Limpiar filtros</span>
-                        </button>
-                      </div>
-                      <div id="userTableMeta" class="table-meta"></div>
-                    </div>
-                    <div id="userTableContainer" class="table-responsive"></div>
-                  </div>
-                </div>
-              </details>
-
-              <details
-                class="dashboard-section"
-                id="activityManagementCard"
-                data-nav-label="Gestión de actividades"
-                data-nav-roles="administrador"
-                open
-              >
-                <summary class="dashboard-section__summary">
-                  <div class="dashboard-section__text">
-                    <h2>Gestión de Actividades</h2>
-                    <p class="card-subtitle">
-                      Registra tareas clave y da seguimiento al avance del
-                      equipo.
-                    </p>
-                  </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                </summary>
-                <div class="dashboard-section__body">
-                  <form id="adminActivityForm">
-                    <div class="grid activity-form-grid">
-                      <div class="form-field">
-                        <label for="activityTitle">Título de la actividad</label>
-                        <input
-                          id="activityTitle"
-                          name="title"
-                          type="text"
-                          required
-                          placeholder="Ej. Seguimiento de planeaciones"
-                        />
-                      </div>
-                      <div class="form-field">
-                        <label for="activityDueDate">Fecha límite</label>
-                        <input
-                          id="activityDueDate"
-                          name="dueDate"
-                          type="date"
-                          required
-                        />
-                      </div>
-                      <div class="form-field" style="grid-column: 1 / -1">
-                        <label for="activityDescription">Descripción</label>
-                        <textarea
-                          id="activityDescription"
-                          name="description"
-                          rows="3"
-                          placeholder="Describe el objetivo y entregables de la actividad"
-                        ></textarea>
-                      </div>
-                      <div class="form-field">
-                        <label for="activityCareer">Carrera</label>
-                        <select id="activityCareer" name="career" required>
-                          <option value="global" selected>
-                            General (todas las carreras)
-                          </option>
-                          <option value="software">Ing. en Software</option>
-                          <option value="manufactura">Ing. en Manufactura</option>
-                          <option value="mecatronica">Ing. en Mecatrónica</option>
-                        </select>
-                      </div>
-                      <div class="form-field">
-                        <label for="activityRole">Responsable</label>
-                        <select id="activityRole" name="responsibleRole" required>
-                          <option value="docente">Docente</option>
-                          <option value="auxiliar">Profesor auxiliar</option>
-                          <option value="administrador">Administrador</option>
-                        </select>
-                      </div>
-                      <div class="form-field">
-                        <label for="activityEmail">Correo del responsable (opcional)</label>
-                        <input
-                          id="activityEmail"
-                          name="responsibleEmail"
-                          type="email"
-                          placeholder="persona@potros.itson.edu.mx"
-                        />
-                      </div>
-                    </div>
-                    <button class="primary" type="submit">
-                      <i data-lucide="plus"></i>
-                      <span>Registrar actividad</span>
-                    </button>
-                  </form>
-                  <div id="adminActivityAlert"></div>
-                  <div id="adminActivityList" class="activity-table"></div>
-                </div>
-              </details>
-            </div>
-
-            <!-- Vistas de Docente -->
-            <div id="docenteView" class="hidden">
-              <div class="teacher-dashboard">
-                <details
-                  class="dashboard-section"
-                  id="teacherActivitiesCard"
-                  data-nav-label="Actividades por realizar"
-                  data-nav-roles="docente"
-                  open
-                >
-                  <summary class="dashboard-section__summary">
-                    <div class="dashboard-section__text">
-                      <h2>Actividades por realizar</h2>
-                      <p class="card-subtitle">
-                        Visualiza las tareas pendientes y en progreso asignadas
-                        a tu cuenta.
-                      </p>
-                    </div>
-                    <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                  </summary>
-                  <div class="dashboard-section__body">
-                    <div id="teacherPendingActivities" class="activity-cards"></div>
-                  </div>
-                </details>
-
-                <details
-                  class="dashboard-section"
-                  id="teacherProgressCard"
-                  data-nav-label="Mi progreso"
-                  data-nav-roles="docente"
-                  open
-                >
-                  <summary class="dashboard-section__summary">
-                    <div class="dashboard-section__text">
-                      <h2>Mi progreso</h2>
-                      <p class="card-subtitle">
-                        Consulta el avance general y el estado de tus
-                        actividades asignadas.
-                      </p>
-                    </div>
-                    <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                  </summary>
-                  <div class="dashboard-section__body">
-                    <div id="teacherProgressSummary" class="teacher-progress"></div>
-                  </div>
-                </details>
-              </div>
-            </div>
-
-            <!-- Vistas de Auxiliar -->
-            <div id="auxiliarView" class="hidden">
-              <details
-                class="dashboard-section"
-                id="auxiliarActivitiesCard"
-                data-nav-label="Actividades de apoyo"
-                data-nav-roles="auxiliar"
-                open
-              >
-                <summary class="dashboard-section__summary">
-                  <div class="dashboard-section__text">
-                    <h2>Actividades de Apoyo</h2>
-                    <p class="card-subtitle">
-                      Actualiza el estado para mantener informado al equipo.
-                    </p>
-                  </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                </summary>
-                <div class="dashboard-section__body">
-                  <div class="activity-legend">
-                    <span class="status-badge status-pendiente">Pendiente</span>
-                    <span class="status-badge status-en_progreso">En progreso</span>
-                    <span class="status-badge status-completada">Completada</span>
-                  </div>
-                  <div id="auxiliarActivityAlert"></div>
-                  <div id="auxiliarActivityList" class="activity-cards"></div>
-                </div>
-              </t> </details>
-            </div>
-          </section>
+            </header>
+            <section class="view-content">
+                <table id="students-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all-students"></th>
+                            <th>Nombre</th>
+                            <th>Curso</th>
+                            <th>Progreso</th>
+                            <th>Última Actividad</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Filas de alumnos se insertarán aquí -->
+                    </tbody>
+                </table>
+            </section>
         </div>
-      </section>
-    </main>
-    <!-- Lógica de la Aplicación -->
-    <script src="script.js" type="module"></script>
-  </body>
+    </template>
+
+    <template id="student-row-template">
+        <tr>
+            <td><input type="checkbox" class="student-select"></td>
+            <td class="student-name"></td>
+            <td class="student-course"></td>
+            <td>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-small">
+                        <div class="progress"></div>
+                    </div>
+                    <span class="progress-label"></span>
+                </div>
+            </td>
+            <td class="student-last-activity"></td>
+            <td class="student-actions">
+                <button class="action-btn" title="Enviar Mensaje"><i data-lucide="message-square"></i></button>
+                <button class="action-btn" title="Ver Perfil"><i data-lucide="eye"></i></button>
+                <button class="action-btn" title="Eliminar"><i data-lucide="trash-2"></i></button>
+            </td>
+        </tr>
+    </template>
+
+    <template id="reports-template">
+         <div id="reports-view">
+            <header class="view-header">
+                <h2>Generador de Reportes</h2>
+            </header>
+            <section class="view-content">
+                <form id="report-generator-form">
+                    <div class="form-group">
+                        <label for="report-type">Tipo de Reporte:</label>
+                        <select id="report-type" name="report-type">
+                            <option value="student_performance">Rendimiento de Alumnos</option>
+                            <option value="course_completion">Finalización de Cursos</option>
+                            <option value="activity_log">Registro de Actividad</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="report-course">Curso:</label>
+                        <select id="report-course" name="report-course">
+                            <option value="all">Todos los cursos</option>
+                            <!-- Opciones de cursos se cargarán aquí -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="report-daterange">Rango de Fechas:</label>
+                        <input type="date" id="report-start-date" name="start-date">
+                        <span>-</span>
+                        <input type="date" id="report-end-date" name="end-date">
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="button-primary"><i data-lucide="file-output"></i> Generar Reporte</button>
+                    </div>
+                </form>
+                <div id="report-output">
+                    <!-- El reporte generado se mostrará aquí -->
+                </div>
+            </section>
+        </div>
+    </template>
+    
+    <!-- Modal para agregar/editar curso -->
+    <div id="course-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h3 id="modal-title">Nuevo Curso</h3>
+                <button class="close-modal-btn"><i data-lucide="x"></i></button>
+            </header>
+            <form id="course-form">
+                <input type="hidden" id="course-id">
+                <div class="form-group">
+                    <label for="course-title-input">Título del Curso</label>
+                    <input type="text" id="course-title-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="course-code-input">Código del Curso</label>
+                    <input type="text" id="course-code-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="course-description-input">Descripción</label>
+                    <textarea id="course-description-input" rows="4"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="button-secondary close-modal-btn">Cancelar</button>
+                    <button type="submit" class="button-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+</body>
 </html>
