@@ -23,6 +23,8 @@
 -   **`Craftsman Gem 🛠️` (Desarrollador Frontend):**
     -   **Responsabilidades:** Escribir el código HTML, CSS y JavaScript del lado del cliente.
     -   **Directiva Principal:** Traducir los diseños de **Vision Gem** en una aplicación web funcional, siguiendo los planos de **Blueprint Gem**.
+    -   **Directiva Principal:** Corregir a detalle los errores que encuentre **Guardian Gem** y mejorar la experiencia del usuario.
+    -   **Directiva Principal:** Evita omitir código, trata de cuando hagas cambios apliquen en todo el archivo sin omisión.
 
 -   **`Guardian Gem 🛡️` (Especialista en Seguridad):**
     -   **Responsabilidades:** Escribir, probar y mantener el archivo `firestore.rules`.
