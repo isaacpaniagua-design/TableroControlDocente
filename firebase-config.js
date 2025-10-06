@@ -1,12 +1,6 @@
-
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-// 🔥 **INICIO DE LA CORRECCIÓN** 🔥
-// Se elimina el objeto FALLBACK_CONFIG. ¡No más credenciales en el código fuente!
-// La configuración se obtendrá únicamente de Firebase Hosting.
-// const FALLBACK_CONFIG = { ... }; // ELIMINADO
 
 let firebaseApp = null;
 let firestoreDb = null;
@@ -15,11 +9,9 @@ function resolveConfig() {
   if (typeof window !== "undefined" && window.firebaseConfig) {
     return window.firebaseConfig;
   }
-  // No hay fallback. Si la configuración no está, es un error de despliegue.
   console.error("La configuración de Firebase no fue encontrada. Asegúrate de que Firebase Hosting la esté proveyendo.");
   return null;
 }
-// 🔥 **FIN DE LA CORRECCIÓN** 🔥
 
 export function getFirebaseConfig() {
   return resolveConfig();
