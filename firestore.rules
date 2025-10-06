@@ -14,40 +14,48 @@ service cloud.firestore {
     }
 
     // Obtiene el documento del usuario que realiza la petición.
-    // El ID del documento DEBE ser el email normalizado para que esto funcione.
     function getRequestingUserDoc() {
       return get(/databases/$(database)/documents/users/$(request.auth.token.email.lower()));
     }
 
-    // Verifica si el usuario autenticado tiene el rol de 'administrador' en la DB.
-    // 🔥 CORRECCIÓN: Se elimina la dependencia del 'Primary Admin' hardcodeado.
+    // Verifica si el usuario autenticado tiene el rol de 'administrador'.
     function isRegisteredAdmin() {
       return isSignedIn() && getRequestingUserDoc().data.role == 'administrador';
     }
 
+    // 🔥 **INICIO DE LA CORRECCIÓN: Validación de Esquema** 🔥
+    function isValidUserData(data) {
+      // Verifica que solo los campos permitidos estén presentes.
+      let allowedKeys = ['name', 'role', 'career', 'controlNumber', 'potroEmail', 'institutionalEmail', 'email', 'phone', 'allowExternalAuth', 'firebaseUid', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'];
+      return data.keys().hasOnly(allowedKeys) &&
+             // Valida el tipo y formato de cada campo.
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.role is string && data.role in ['administrador', 'docente', 'auxiliar'] &&
+             data.career is string && data.career in ['software', 'manufactura', 'mecatronica', 'global'] &&
+             (data.potroEmail == null || (data.potroEmail is string && data.potroEmail.matches('.+@potros\\.itson\\.edu\\.mx$'))) &&
+             (data.phone == null || (data.phone is string && data.phone.size() < 20));
+    }
+    // 🔥 **FIN DE LA CORRECCIÓN** 🔥
+
     // --- REGLAS PARA LA COLECCIÓN DE USUARIOS (`users`) ---
     match /users/{userEmail} {
-      // 🔥 REGLA CORREGIDA: Un usuario solo puede leer su propio perfil.
-      // Un administrador puede leer cualquier perfil.
+      // Un usuario solo puede leer su propio perfil. Un administrador puede leer cualquier perfil.
       allow read: if isSignedIn() && (request.auth.token.email.lower() == userEmail || isRegisteredAdmin());
 
-      // Solo un administrador puede crear usuarios.
-      allow create: if isRegisteredAdmin();
+      // Aplicamos la nueva validación en la creación.
+      allow create: if isRegisteredAdmin() && isValidUserData(request.resource.data);
 
-      // 🔥 REGLA CORREGIDA Y SEGURA:
-      // Un admin puede actualizar cualquier campo.
-      // Un usuario puede actualizar su propio perfil, PERO no puede cambiar su rol
-      // ni sobrescribir un UID existente. Puede escribir su UID solo una vez.
-      allow update: if isSignedIn() && (
-        isRegisteredAdmin() || (
-          request.auth.token.email.lower() == userEmail &&
-          request.resource.data.role == resource.data.role && // El rol no puede cambiar
-          (
-            request.resource.data.firebaseUid == request.auth.uid &&
-            resource.data.firebaseUid == null // Solo se puede escribir el UID si no existe
-          )
-        )
-      );
+      // Aplicamos la nueva validación en la actualización.
+      allow update: if (isRegisteredAdmin() && isValidUserData(request.resource.data)) ||
+                     (
+                       isSignedIn() &&
+                       request.auth.token.email.lower() == userEmail &&
+                       request.resource.data.role == resource.data.role && // El rol no puede cambiar
+                       (
+                         request.resource.data.firebaseUid == request.auth.uid &&
+                         resource.data.firebaseUid == null // Solo se puede escribir el UID si no existe
+                       )
+                     );
 
       // Solo un administrador puede eliminar usuarios.
       allow delete: if isRegisteredAdmin();
@@ -55,8 +63,7 @@ service cloud.firestore {
 
     // --- REGLAS PARA LA COLECCIÓN DE ACTIVIDADES (`activities`) ---
     match /activities/{activityId} {
-      // 🔥 REGLA CORREGIDA: Un usuario puede leer una actividad si es admin o si está asignado a ella.
-      // (Se asume que la actividad tiene un campo como `responsibleEmail` o `assignedTo`).
+      // Un usuario puede leer una actividad si es admin o si está asignado a ella.
       allow read: if isSignedIn() &&
         (isRegisteredAdmin() || resource.data.responsibleEmail.lower() == request.auth.token.email.lower());
 
