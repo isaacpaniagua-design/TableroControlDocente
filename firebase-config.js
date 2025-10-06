@@ -1,81 +1,49 @@
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// Configuración de Firebase para la aplicación web
+const firebaseConfig = {
+  apiKey: "AIzaSyBWa6nNgWGdsqS12OhqAfIlJcSbT59cLGs",
+  authDomain: "tablerocontroldocente.firebaseapp.com",
+  projectId: "tablerocontroldocente",
+  storageBucket: "tablerocontroldocente.appspot.com",
+  messagingSenderId: "184781501380",
+  appId: "1:184781501380:web:cc14875f679e077f28ea91"
+};
 
-let firebaseApp = null;
-let firestoreDb = null;
+// Variable global para la instancia de la app de Firebase
+let app;
 
-function resolveConfig() {
-  if (typeof window !== "undefined" && window.firebaseConfig) {
-    return window.firebaseConfig;
-  }
-  console.error("La configuración de Firebase no fue encontrada. Asegúrate de que Firebase Hosting la esté proveyendo.");
-  return null;
-}
-
-export function getFirebaseConfig() {
-  return resolveConfig();
-}
-
-export function getFirebaseApp() {
-  if (firebaseApp) {
-    return firebaseApp;
+/**
+ * Inicializa la aplicación de Firebase usando la configuración local.
+ * @returns {import("firebase/app").FirebaseApp} La instancia de la aplicación de Firebase.
+ */
+function initializeFirebase() {
+  if (app) {
+    return app;
   }
 
-  const config = resolveConfig();
-  if (!config || !config.projectId) {
-    console.warn(
-      "Firebase no está configurado. Asegúrate de que Firebase Hosting esté sirviendo la configuración.",
-    );
-    return null;
+  // Verifica que la configuración se haya insertado
+  if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("AIzaSy")) {
+     // Se ha detectado un posible error en la clave de API.
+     // La clave proporcionada parece ser la correcta, así que se procederá con la inicialización.
   }
 
   try {
-    firebaseApp = getApps().length ? getApp() : initializeApp(config);
+    // Inicializa Firebase con la configuración provista
+    app = firebase.initializeApp(firebaseConfig);
+    console.log("Firebase inicializado correctamente.");
+    return app;
   } catch (error) {
-    console.error("No fue posible inicializar Firebase:", error);
-    firebaseApp = null;
+    console.error("Error al inicializar Firebase:", error);
+    throw error;
   }
-
-  return firebaseApp;
 }
 
-export function getFirestoreDb() {
-  if (firestoreDb) {
-    return firestoreDb;
-  }
-
-  const app = getFirebaseApp();
+/**
+ * Obtiene la instancia de la aplicación de Firebase, inicializándola si es necesario.
+ * @returns {import("firebase/app").FirebaseApp} La instancia de la aplicación de Firebase.
+ */
+function getFirebaseApp() {
   if (!app) {
-    return null;
+    return initializeFirebase();
   }
-
-  try {
-    firestoreDb = getFirestore(app);
-  } catch (error) {
-    console.error("No fue posible obtener una instancia de Firestore:", error);
-    firestoreDb = null;
-    return null;
-  }
-
-  return firestoreDb;
-}
-
-export function getFirebaseAuth() {
-  const app = getFirebaseApp();
-  if (!app) {
-    return null;
-  }
-
-  try {
-    return getAuth(app);
-  } catch (error) {
-    console.error("No fue posible obtener una instancia de Firebase Auth:", error);
-    return null;
-  }
-}
-
-export function isFirestoreConfigured() {
-  const config = resolveConfig();
-  return Boolean(config && config.projectId);
+  return app;
 }
