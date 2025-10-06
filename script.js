@@ -204,22 +204,17 @@ function processLogin(firebaseUser) {
         return handleLogout();
     }
 
-    // 🔥 **INICIO DE LA CORRECCIÓN** 🔥
-    // Si es el primer login del usuario (no tiene UID), se lo asignamos y actualizamos.
+    // 🔥 **INICIO DEL REFINAMIENTO** 🔥
+    // La lógica de asignación de UID desde el cliente se elimina por completo.
+    // Nuestras reglas de Firestore ya manejan esta operación de forma segura.
+    // El cliente ya no tiene esta responsabilidad crítica.
     if (!userRecord.firebaseUid) {
-        const updatedRecord = {
-            ...userRecord,
-            firebaseUid: userToProcess.uid,
-            // Aseguramos que 'updatedBy' tenga un valor válido.
-            updatedBy: (userToProcess.email || "").toLowerCase()
-        };
-        persistUserChange(updatedRecord); // Actualiza en segundo plano
+        console.log(`Primer inicio de sesión detectado para ${userToProcess.email}. El perfil se vinculará de forma segura en la primera actualización.`);
     }
-    // 🔥 **FIN DE LA CORRECCIÓN** 🔥
+    // 🔥 **FIN DEL REFINAMIENTO** 🔥
 
     currentUser = { ...userRecord, name: userRecord.name || userToProcess.displayName, firebaseUid: userToProcess.uid };
-    if (normalizedEmail === PRIMARY_ADMIN_EMAIL_NORMALIZED) currentUser.role = 'administrador';
-
+    
     loginUser(currentUser);
 }
 
