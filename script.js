@@ -607,7 +607,9 @@ async function renderChangelog() {
   if (!elements.changelogBody) return;
 
   try {
-    const response = await fetch('CHANGELOG.md');
+    // 🔥 CAMBIO CLAVE: Se añade un parámetro único para evitar el caché del navegador
+    const cacheBuster = `?v=${new Date().getTime()}`;
+    const response = await fetch(`CHANGELOG.md${cacheBuster}`);
     if (!response.ok) {
         throw new Error('No se pudo cargar el archivo de actualizaciones.');
     }
