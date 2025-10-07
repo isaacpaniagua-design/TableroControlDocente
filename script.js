@@ -135,8 +135,9 @@ function attachEventListeners() {
     elements.modalBackdrop?.addEventListener("click", () => toggleChangelogModal(false));
 }
 
-
 // --- LÓGICA DE AUTENTICACIÓN ---
+// ... (Sin cambios aquí, se mantiene igual)
+
 function initializeAuthentication() {
   try {
     if (!auth) throw new Error("Firebase Auth no se pudo inicializar.");
@@ -208,7 +209,9 @@ async function handleAuthStateChange(firebaseUser) {
   }
 }
 
+
 // --- GESTIÓN DE USUARIOS ---
+// ... (Sin cambios aquí, se mantiene igual)
 
 function openUserForm(mode, user = null) {
   hideMessage(elements.userFormAlert);
@@ -360,7 +363,10 @@ async function requestUserDeletion(user) {
     }
 }
 
+
 // --- SINCRONIZACIÓN Y RENDERIZADO ---
+// ... (Sin cambios aquí, se mantiene igual)
+
 function subscribeToFirestoreUsers() {
   if (!db || unsubscribeUsersListener) return;
 
@@ -520,7 +526,25 @@ function updateUserManagementControls() {
     }
 }
 
+
 // --- FUNCIONES UTILITARIAS Y DE UI ---
+
+// 🔥🔥 INICIO DE LA CORRECCIÓN 🔥🔥
+function toggleChangelogModal(show) {
+  // Busca los elementos del DOM en el momento del clic, en lugar de al inicio.
+  const modal = document.getElementById('changelogModal');
+  const backdrop = document.getElementById('modal-backdrop');
+
+  if (!modal || !backdrop) {
+    console.error("CRÍTICO: Los elementos del modal no existen en el HTML.");
+    return;
+  }
+
+  modal.classList.toggle("hidden", !show);
+  backdrop.classList.toggle("hidden", !show);
+}
+// 🔥🔥 FIN DE LA CORRECCIÓN 🔥🔥
+
 function isPrimaryAdmin(user) {
   return user && (user.potroEmail || "").toLowerCase() === PRIMARY_ADMIN_EMAIL_NORMALIZED;
 }
@@ -619,30 +643,6 @@ function updateCharts() {
     charts.users.data.labels = Object.keys(careerCounts).map(key => CAREER_LABELS[key] || key);
     charts.users.data.datasets[0].data = Object.values(careerCounts);
     charts.users.update();
-  }
-}
-
-function toggleChangelogModal(show) {
-  if (!elements.changelogModal || !elements.modalBackdrop) {
-    // Si esto aparece, hay un error al cargar los elementos del DOM.
-    console.error("Error: No se encontraron los elementos del modal.");
-    return;
-  }
-
-  // Este mensaje DEBE aparecer en tu consola (F12) cada vez que hagas clic.
-  console.log(`Cambiando visibilidad del modal. Mostrar: ${show}`);
-
-  if (show) {
-    // Forzamos la visualización usando estilos directos
-    elements.modalBackdrop.style.display = 'block';
-    elements.changelogModal.style.display = 'flex';
-    // Forzamos la opacidad para asegurar que sea visible
-    elements.changelogModal.style.opacity = '1';
-    elements.modalBackdrop.style.opacity = '1';
-  } else {
-    // Ocultamos con estilos directos
-    elements.modalBackdrop.style.display = 'none';
-    elements.changelogModal.style.display = 'none';
   }
 }
 
