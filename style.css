@@ -2239,6 +2239,9 @@ button.small i {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  /* 🔥 ESTILOS DEL FONDO AÑADIDOS DIRECTAMENTE AQUÍ 🔥 */
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(6px);
 }
 
 .modal-content {
