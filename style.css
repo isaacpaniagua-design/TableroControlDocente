@@ -2224,3 +2224,8 @@ button.small i {
     color: black;
   }
 }
+.chart-card canvas {
+  min-height: 280px;
+  max-height: 320px;
+  width: 100% !important;
+}
