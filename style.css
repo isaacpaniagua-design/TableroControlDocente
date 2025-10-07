@@ -750,6 +750,22 @@ button.primary:hover {
   flex-shrink: 0;
 }
 
+/* style.css */
+
+/* 🔥 ESTILO FINAL Y DE ALTO CONTRASTE PARA EL BOTÓN 'X' DEL MODAL 🔥 */
+#closeChangelogBtn {
+  background: transparent;
+  color: var(--muted); /* Color gris oscuro para la 'X' */
+  opacity: 0.7;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#closeChangelogBtn:hover {
+  opacity: 1;
+  transform: scale(1.1); /* Agranda ligeramente el botón al pasar el mouse */
+  background: var(--surface-alt); /* Fondo sutil para indicar interacción */
+}
+
 #loginCard {
   display: flex;
   flex-direction: column;
