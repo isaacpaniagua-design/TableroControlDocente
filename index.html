@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tablero de Control Docente</title>
-    <!-- Fuentes y Librerías -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -21,28 +20,26 @@
       integrity="sha384-s2Bf99fCTzOxWHpWEoXVtGJrqy0Ba0dc9EPd71KJR1gNx1kGozhYXtgSmVtprhVf"
       crossorigin="anonymous"
     ></script>
-    <!-- Hoja de Estilos Propia -->
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Elementos para loader y modal -->
     <div id="loader">
       <div class="spinner"></div>
     </div>
     <div id="modal-backdrop" class="hidden"></div>
 
     <div id="changelogModal" class="modal hidden">
-  <div class="modal-content">
-    <header class="modal-header">
-      <h3>Actualizaciones del Software</h3>
-      <button type="button" class="icon-button" id="closeChangelogBtn" aria-label="Cerrar ventana">
-        <i data-lucide="x"></i>
-      </button>
-    </header>
-    <div id="changelogBody" class="modal-body">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h3>Actualizaciones del Software</h3>
+          <button type="button" class="icon-button" id="closeChangelogBtn" aria-label="Cerrar ventana">
+            <i data-lucide="x"></i>
+          </button>
+        </header>
+        <div id="changelogBody" class="modal-body">
+          </div>
       </div>
-  </div>
-</div>
+    </div>
 
     <header class="app-header">
       <div class="app-header__inner">
@@ -71,7 +68,6 @@
     </header>
 
     <main>
-      <!-- Sección de Autenticación -->
       <section id="authSection">
         <div class="auth-layout">
           <div class="auth-hero">
@@ -178,7 +174,6 @@
         </div>
       </section>
 
-      <!-- Dashboard Principal -->
       <section id="dashboard" class="hidden">
         <div class="dashboard-shell" id="dashboardShell">
           <aside class="sidebar">
@@ -197,15 +192,15 @@
               <ul id="quickAccessList" class="quick-access__list"></ul>
             </div>
             <div class="sidebar-footer">
-  <p>
-    Mantente al día con tus actividades y comparte avances con tu
-    coordinación.
-  </p>
-  <button type="button" class="button-link" id="openChangelogBtn">
-    <i data-lucide="history"></i>
-    <span>Ver actualizaciones</span>
-  </button>
-</div>
+              <p>
+                Mantente al día con tus actividades y comparte avances con tu
+                coordinación.
+              </p>
+              <button type="button" class="button-link" id="openChangelogBtn">
+                <i data-lucide="history"></i>
+                <span>Ver actualizaciones</span>
+              </button>
+            </div>
           </aside>
           <section class="content-area">
             <button
@@ -236,7 +231,6 @@
               </button>
             </div>
 
-            <!-- Vistas de Admin -->
             <div id="adminView" class="hidden">
               <div
                 class="overview-grid"
@@ -596,7 +590,6 @@
               </details>
             </div>
 
-            <!-- Vistas de Docente -->
             <div id="docenteView" class="hidden">
               <div class="teacher-dashboard">
                 <details
@@ -645,7 +638,6 @@
               </div>
             </div>
 
-            <!-- Vistas de Auxiliar -->
             <div id="auxiliarView" class="hidden">
               <details
                 class="dashboard-section"
@@ -678,7 +670,7 @@
         </div>
       </section>
     </main>
-    <!-- Lógica de la Aplicación -->
+
     <script src="script.js" type="module"></script>
   </body>
 </html>
