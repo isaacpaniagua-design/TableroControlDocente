@@ -1,8 +1,8 @@
-Claro, he integrado las directrices de colaboración y la estructura de roles del archivo `agents (1).md` en el documento principal.
+Claro, he revisado y editado el archivo `agents.md` para incluir la indicación de que todo el trabajo debe realizarse en un único repositorio.
 
-La sección de **Colaboración y Comunicación** ha sido enriquecida para reflejar la importancia de respetar las "fuentes de verdad" y colaborar con los roles especializados cuando surgen problemas.
+La nueva regla se ha añadido en la sección **1. Control de Versiones (Git Workflow) 🌳**, ya que es el lugar más lógico para definir el repositorio central.
 
-Aquí está la versión final y consolidada del `agents.md`:
+Aquí está el archivo completo y actualizado.
 
 ***
 
@@ -24,6 +24,7 @@ Este documento establece las directrices y buenas prácticas que todo desarrolla
 
 La integridad de nuestro código base es primordial. Un flujo de trabajo ordenado previene errores y facilita la colaboración.
 
+* **Repositorio Central y Único:** Todo el desarrollo, commits y gestión de versiones se deben realizar **única y exclusivamente** en el siguiente repositorio oficial de GitHub: `https://github.com/isaacpaniagua-design/TableroControlDocente`. No se permite el trabajo en repositorios duplicados o forks personales no autorizados.
 * **Nunca hagas push directo a `main` o `develop`:** Todo cambio, sin importar cuán pequeño sea, debe realizarse en una *feature branch*.
 * **Flujo de Trabajo Basado en Pull Requests (PRs):**
     1.  Crea una rama descriptiva desde `develop` (ej. `feature/TICKET-123-nueva-autenticacion`).
