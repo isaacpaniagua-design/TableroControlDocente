@@ -2414,14 +2414,19 @@ button.small i {
   color: var(--primary); /* Azul primario de la aplicación */
 }
 
-/* Corrección de alta especificidad para el botón de cerrar modal */
-.modal-header button#closeChangelogBtn {
-  color: #1f2937 !important; /* Forza el color oscuro */
-  background-color: transparent !important; /* Asegura fondo transparente */
+/*
+  SOLUCIÓN DEFINITIVA PARA EL ÍCONO DEL BOTÓN DE CIERRE
+  Apunta directamente al SVG para garantizar el cambio de color.
+*/
+#closeChangelogBtn svg {
+  stroke: #1f2937; /* Asigna un color oscuro directamente al trazo del ícono */
+  transition: transform 0.2s ease;
 }
 
-/* Estilo hover de alta especificidad */
-.modal-header button#closeChangelogBtn:hover {
-  color: #1f2937 !important;
-  background-color: #edf2ff !important; /* Fondo sutil al pasar el mouse */
+#closeChangelogBtn:hover svg {
+  transform: scale(1.1); /* Efecto sutil en el ícono al pasar el mouse */
+}
+
+#closeChangelogBtn:hover {
+    background-color: #edf2ff; /* Fondo sutil en el botón al pasar el mouse */
 }
