@@ -1,5 +1,9 @@
 name: Generate Changelog
 
+# 1. Permisos: Dale permiso a la acción para escribir en el repositorio.
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -12,7 +16,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          # Necesitamos el historial completo para generar el changelog
           fetch-depth: 0
 
       - name: Generate Changelog
@@ -26,7 +29,6 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add CHANGELOG.md
-          # Solo hace commit si hay cambios en el archivo
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
