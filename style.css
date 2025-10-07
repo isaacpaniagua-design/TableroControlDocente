@@ -2406,6 +2406,8 @@ button.small i {
   color: var(--text); /* Color de texto principal al pasar el mouse */
 }
 /* Ajuste para el color del botón de cerrar sesión */
+/* Corrección de contraste para el botón Cerrar Sesión */
 #logoutBtn {
-  color: #ffffff; /* Blanco sólido */
+  background-color: white;
+  color: var(--primary); /* Azul primario de la aplicación */
 }
