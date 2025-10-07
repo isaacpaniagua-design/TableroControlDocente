@@ -2229,3 +2229,135 @@ button.small i {
   max-height: 320px;
   width: 100% !important;
 }
+
+/* --- Estilos para Modal de Actualizaciones --- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 1.5rem 2rem;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(37, 99, 235, 0.1);
+  transform: scale(0.95);
+  opacity: 0;
+  animation: modal-in 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+@keyframes modal-in {
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(37, 99, 235, 0.1);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.modal-body {
+  overflow-y: auto;
+  padding-right: 0.5rem; /* Espacio para la barra de scroll */
+}
+
+.changelog-entry {
+  padding: 1rem 0;
+}
+
+.changelog-entry + .changelog-entry {
+  border-top: 1px solid rgba(37, 99, 235, 0.08);
+}
+
+.changelog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.changelog-version {
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--primary);
+}
+
+.changelog-date {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.changelog-list {
+  list-style-type: none;
+  padding-left: 1rem;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.changelog-list li {
+  position: relative;
+  padding-left: 1.25rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.changelog-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  color: var(--success);
+  font-weight: 700;
+}
+
+.button-link {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.button-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
