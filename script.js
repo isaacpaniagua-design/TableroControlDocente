@@ -2,13 +2,12 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDocs,
+  getDoc, // Importar getDoc para leer un solo documento
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
-  writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   GoogleAuthProvider,
@@ -42,45 +41,16 @@ const ROLE_BADGE_CLASS = {
   auxiliar: "badge auxiliar",
 };
 
-const STATUS_LABELS = {
-  pendiente: "Pendiente",
-  en_progreso: "En progreso",
-  completada: "Completada",
-};
-
-const STATUS_ORDER = ["pendiente", "en_progreso", "completada"];
-
-const STATUS_COLORS = {
-  pendiente: "#facc15",
-  en_progreso: "#2563eb",
-  completada: "#10b981",
-};
-
-const QUICK_ACCESS_ITEMS = [
-  { id: "quick-dashboard", icon: "layout-dashboard", label: "Panel de control", description: "Vuelve al resumen general.", targetId: "dashboardIntro" },
-  { id: "quick-report", icon: "bar-chart-3", label: "Reporte general", description: "Revisa indicadores clave.", targetId: "generalReportCard", roles: ["administrador"] },
-  { id: "quick-users", icon: "users", label: "Gestión de usuarios", description: "Administra accesos y registros.", targetId: "userManagementCard", roles: ["administrador"] },
-  { id: "quick-print", icon: "printer", label: "Imprimir reporte", description: "Genera una versión para compartir.", roles: ["administrador", "docente", "auxiliar"], action: () => window.print() },
-  { id: "quick-teacher", icon: "check-square", label: "Actividades por realizar", description: "Consulta tus pendientes y avances.", targetId: "teacherActivitiesCard", roles: ["docente"] },
-];
-
-
 // --- ESTADO GLOBAL DE LA APLICACIÓN ---
 let users = [];
-let activities = [];
 let currentUser = null;
-let firestoreUsersLoaded = false;
 let unsubscribeUsersListener = null;
-let firestoreUsersError = null;
-let firestoreUsersLastUpdated = null;
 const userFilters = { search: "", role: "all", career: "all", auth: "all" };
-let pendingFirebaseUser = null;
 
 const elements = {};
 const charts = { users: null, activities: null };
 
 let googleProvider = null;
-
 
 // --- CICLO DE VIDA DE LA APLICACIÓN ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -90,10 +60,8 @@ document.addEventListener("DOMContentLoaded", () => {
   attachEventListeners();
   initCharts();
   initializeAuthentication();
-  subscribeToFirestoreUsers();
   window.addEventListener("resize", syncHeaderHeight);
 });
-
 
 // --- INICIALIZACIÓN Y MANEJO DEL DOM ---
 function cacheDomElements() {
@@ -166,56 +134,46 @@ async function handleGoogleSignIn() {
 }
 
 function handleLogout() {
-  if (auth) signOut(auth).catch(error => console.error("Error al cerrar sesión:", error));
+  if (unsubscribeUsersListener) {
+    unsubscribeUsersListener(); // Detener la escucha de usuarios al cerrar sesión
+    unsubscribeUsersListener = null;
+  }
+  signOut(auth).catch(error => console.error("Error al cerrar sesión:", error));
 }
 
-function handleAuthStateChange(firebaseUser) {
+async function handleAuthStateChange(firebaseUser) {
   if (firebaseUser) {
-    pendingFirebaseUser = firebaseUser;
-    if (firestoreUsersLoaded) processLogin(firebaseUser);
+    const userEmail = firebaseUser.email.toLowerCase();
+    const userDocRef = doc(db, "users", userEmail);
+
+    try {
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const userRecord = { ...userDoc.data(), id: userDoc.id };
+
+        // Validar si es un dominio permitido o si tiene acceso externo
+        const isAllowedDomain = userEmail.endsWith(`@${ALLOWED_DOMAIN}`);
+        if (!isAllowedDomain && !userRecord.allowExternalAuth) {
+            showMessage(elements.loginError, `Debes usar una cuenta @${ALLOWED_DOMAIN} o solicitar acceso externo.`, "error", null);
+            return handleLogout();
+        }
+
+        currentUser = { ...userRecord, name: userRecord.name || firebaseUser.displayName, firebaseUid: firebaseUser.uid };
+        loginUser(currentUser);
+
+      } else {
+        showMessage(elements.loginError, "Tu cuenta no tiene permisos para acceder.", "error", null);
+        handleLogout();
+      }
+    } catch (error) {
+      console.error("Error al verificar el perfil de usuario:", error);
+      showMessage(elements.loginError, "No se pudo verificar tu perfil. Intenta de nuevo.", "error", null);
+      handleLogout();
+    }
   } else {
     applyLoggedOutState();
   }
 }
-
-function processLogin(firebaseUser) {
-    if (!pendingFirebaseUser) return;
-    const userToProcess = pendingFirebaseUser;
-    pendingFirebaseUser = null;
-
-    const normalizedEmail = (userToProcess.email || "").toLowerCase();
-    const isAllowedDomain = normalizedEmail.endsWith(`@${ALLOWED_DOMAIN}`);
-    
-    const userRecord = users.find(u => 
-        (u.potroEmail?.toLowerCase() === normalizedEmail) ||
-        (u.institutionalEmail?.toLowerCase() === normalizedEmail) ||
-        (u.email?.toLowerCase() === normalizedEmail) ||
-        (u.firebaseUid === userToProcess.uid)
-    );
-
-    if (!isAllowedDomain && !(userRecord && userRecord.allowExternalAuth)) {
-        showMessage(elements.loginError, `Debes usar una cuenta @${ALLOWED_DOMAIN}.`, "error", null);
-        return handleLogout();
-    }
-    if (!userRecord) {
-        showMessage(elements.loginError, "Tu cuenta no tiene permisos para acceder.", "error", null);
-        return handleLogout();
-    }
-
-    // 🔥 **INICIO DEL REFINAMIENTO** 🔥
-    // La lógica de asignación de UID desde el cliente se elimina por completo.
-    // Nuestras reglas de Firestore ya manejan esta operación de forma segura.
-    // El cliente ya no tiene esta responsabilidad crítica.
-    if (!userRecord.firebaseUid) {
-        console.log(`Primer inicio de sesión detectado para ${userToProcess.email}. El perfil se vinculará de forma segura en la primera actualización.`);
-    }
-    // 🔥 **FIN DEL REFINAMIENTO** 🔥
-
-    currentUser = { ...userRecord, name: userRecord.name || userToProcess.displayName, firebaseUid: userToProcess.uid };
-    
-    loginUser(currentUser);
-}
-
 
 // --- GESTIÓN DE USUARIOS ---
 function openUserForm(mode, user = null) {
@@ -270,20 +228,17 @@ async function handleUserFormSubmit(event) {
   };
 
   if (!userData.name) return showMessage(elements.userFormAlert, "El nombre completo es obligatorio.");
-  // 🔥 CORRECCIÓN: El Correo Potro ahora es obligatorio para crear nuevos usuarios, ya que funciona como ID.
   if (!editingUserId && !userData.potroEmail) {
     return showMessage(elements.userFormAlert, "El Correo Potro es obligatorio para registrar un nuevo usuario.");
   }
 
   const isDuplicate = users.some(user => {
-    // La lógica de duplicados ahora se basa en el ID (que será el email).
     if (user.id === editingUserId) return false;
     const hasSamePotro = userData.potroEmail && user.id === userData.potroEmail;
-    const hasSameControl = userData.controlNumber && user.controlNumber === userData.controlNumber;
-    return hasSamePotro || hasSameControl;
+    return hasSamePotro;
   });
 
-  if (isDuplicate) return showMessage(elements.userFormAlert, "Ya existe un usuario con ese Correo Potro o número de control.");
+  if (isDuplicate) return showMessage(elements.userFormAlert, "Ya existe un usuario con ese Correo Potro.");
 
   const recordToPersist = { ...userData, id: editingUserId, updatedBy: currentUser.email };
   const result = await persistUserChange(recordToPersist);
@@ -301,8 +256,6 @@ async function persistUserChange(record) {
 
   try {
     const isEdit = !!record.id;
-    // 🔥 CORRECCIÓN: Usamos el Correo Potro como ID para nuevos usuarios.
-    // Si estamos editando, usamos el ID existente (que ya debería ser el correo).
     const docId = isEdit ? record.id : record.potroEmail;
 
     if (!docId) {
@@ -312,8 +265,6 @@ async function persistUserChange(record) {
     const docRef = doc(db, "users", docId);
 
     const payload = {
-      // Ya no guardamos el 'id' dentro del documento, pues el nombre del documento es el ID.
-      userId: docRef.id,
       name: record.name,
       controlNumber: record.controlNumber || null,
       potroEmail: record.potroEmail || null,
@@ -375,60 +326,48 @@ async function requestUserDeletion(user) {
     }
 }
 
-
 // --- SINCRONIZACIÓN CON FIRESTORE ---
 function subscribeToFirestoreUsers() {
-  if (!db) {
-    firestoreUsersError = "Configura Firebase para sincronizar usuarios.";
-    renderAllSections();
-    return;
-  }
+  if (!db || unsubscribeUsersListener) return; // Evitar suscripciones múltiples
+
   let firestoreUsersLoading = true;
+  let firestoreUsersError = null;
+  let firestoreUsersLastUpdated = null;
+  renderUserSyncStatus(firestoreUsersLoading, firestoreUsersError, firestoreUsersLastUpdated);
+
   const q = query(collection(db, "users"), orderBy("name"));
 
   unsubscribeUsersListener = onSnapshot(q, 
     (snapshot) => {
       users = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-      firestoreUsersLoaded = true;
       firestoreUsersLoading = false;
       firestoreUsersError = null;
       firestoreUsersLastUpdated = new Date();
       renderAllSections();
-      if (pendingFirebaseUser) processLogin(pendingFirebaseUser);
     },
     (error) => {
       console.error("Error al suscribirse a los usuarios:", error);
       firestoreUsersLoading = false;
-      firestoreUsersLoaded = true;
       firestoreUsersError = "No se pudieron cargar los usuarios.";
       renderAllSections();
-      if (pendingFirebaseUser) processLogin(pendingFirebaseUser);
     }
   );
 }
-
-async function attemptLoadActivitiesFromFirestore() {
-    // Lógica para cargar actividades si es necesario en el futuro.
-}
-
 
 // --- RENDERIZADO Y LÓGICA DE UI ---
 function renderAllSections() {
     updateLayoutMode();
     syncHeaderHeight();
     if (currentUser) {
-        buildNavigation(currentUser.role);
-        buildQuickAccess(currentUser.role);
         renderSidebarUserCard(currentUser);
         configureRoleViews(currentUser.role);
         if (currentUser.role === 'administrador') {
             updateUserManagementControls();
             renderUserSummary();
             renderUserTable();
-            renderUserSyncStatus();
         }
     } else {
-        configureRoleViews(null); // Oculta todas las vistas específicas de rol
+        configureRoleViews(null);
     }
     updateCharts();
     refreshIcons();
@@ -449,15 +388,21 @@ function loginUser(user) {
     elements.headerUserRole.textContent = ROLE_LABELS[user.role] || 'Usuario';
     elements.headerUserRole.className = ROLE_BADGE_CLASS[user.role] || "badge";
   }
+  
+  // 🔥 LÓGICA CORREGIDA: Suscribirse a la lista de usuarios SÓLO si es admin
+  if (user.role === 'administrador') {
+    subscribeToFirestoreUsers();
+  }
+  
   renderAllSections();
 }
 
 function applyLoggedOutState() {
   currentUser = null;
-  pendingFirebaseUser = null;
+  users = []; // Limpiar la lista de usuarios
   elements.headerUserMeta?.classList.add("hidden");
   updateLayoutMode();
-  renderAllSections(); // Llama a renderAll para limpiar las vistas
+  renderAllSections();
 }
 
 function renderUserTable() {
@@ -553,7 +498,6 @@ function updateUserManagementControls() {
     }
 }
 
-
 // --- FUNCIONES UTILITARIAS Y DE UI ---
 function isPrimaryAdmin(user) {
   return user && (user.potroEmail || "").toLowerCase() === PRIMARY_ADMIN_EMAIL_NORMALIZED;
@@ -604,14 +548,6 @@ function configureRoleViews(role) {
     elements.auxiliarView?.classList.toggle("hidden", role !== 'auxiliar');
 }
 
-function buildNavigation(role) {
-    // Implementación futura si se necesita navegación dinámica
-}
-
-function buildQuickAccess(role) {
-    // Implementación futura
-}
-
 function renderSidebarUserCard(user) {
     if (elements.sidebarName) elements.sidebarName.textContent = user.name;
     if (elements.sidebarEmail) elements.sidebarEmail.textContent = user.potroEmail || user.email;
@@ -630,13 +566,12 @@ function renderUserSummary() {
     refreshIcons();
 }
 
-function renderUserSyncStatus() {
+function renderUserSyncStatus(loading, error, lastUpdate) {
     if (!elements.userSyncStatus) return;
     let cn = "user-sync-status", text = "";
-    let firestoreUsersLoading;
-    if (firestoreUsersLoading) { cn += " loading"; text = "Sincronizando..."; } 
-    else if (firestoreUsersError) { cn += " error"; text = firestoreUsersError; } 
-    else if (firestoreUsersLoaded) { cn += " success"; text = `Sincronizado. Última actualización: ${new Date(firestoreUsersLastUpdated).toLocaleTimeString()}`; }
+    if (loading) { cn += " loading"; text = "Sincronizando..."; }
+    else if (error) { cn += " error"; text = error; }
+    else if (lastUpdate) { cn += " success"; text = `Sincronizado. Última actualización: ${new Date(lastUpdate).toLocaleTimeString()}`; }
     elements.userSyncStatus.className = cn;
     elements.userSyncStatus.textContent = text;
 }
@@ -652,19 +587,10 @@ function initCharts() {
 }
 
 function updateCharts() {
-  if (charts.users) {
+  if (charts.users && users.length > 0) {
     const careerCounts = users.reduce((acc, user) => { acc[user.career] = (acc[user.career] || 0) + 1; return acc; }, {});
     charts.users.data.labels = Object.keys(careerCounts).map(key => CAREER_LABELS[key] || key);
     charts.users.data.datasets[0].data = Object.values(careerCounts);
     charts.users.update();
   }
-}
-
-// --- FUNCIONES PENDIENTES DE IMPLEMENTAR ---
-async function importSoftwareTeachers() {
-    showMessage(elements.importTeachersAlert, "Función de importación no implementada.", "info");
-}
-async function handleActivityFormSubmit(event) {
-    event.preventDefault();
-    showMessage(elements.adminActivityAlert, "Gestión de actividades no implementada.", "info");
 }
