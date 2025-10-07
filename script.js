@@ -141,7 +141,13 @@ function attachEventListeners() {
     // Listeners del Modal (versión limpia y final)
     elements.openChangelogBtn?.addEventListener("click", () => toggleChangelogModal(true));
     elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
-    elements.modalBackdrop?.addEventListener("click", () => toggleChangelogModal(false));
+    // 🔥 LÓGICA MEJORADA PARA "CLIC AFUERA" 🔥
+    elements.changelogModal?.addEventListener('click', (event) => {
+        // Cierra el modal solo si el clic es directamente sobre el fondo (el elemento modal)
+        if (event.target === elements.changelogModal) {
+            toggleChangelogModal(false);
+        }
+       });
 }
 
 
@@ -582,13 +588,13 @@ function renderChangelog() {
 }
 
 // 🔥🔥 LA FUNCIÓN MÁS IMPORTANTE PARA EL MODAL 🔥🔥
+// script.js
+
 function toggleChangelogModal(show) {
   const modal = document.getElementById('changelogModal');
-  const backdrop = document.getElementById('modal-backdrop');
-  if (!modal || !backdrop) {
-    console.error("CRÍTICO: Los elementos del modal no existen en el HTML.");
+  if (!modal) {
+    console.error("CRÍTICO: El elemento del modal no existe en el HTML.");
     return;
   }
   modal.classList.toggle("hidden", !show);
-  backdrop.classList.toggle("hidden", !show);
 }
