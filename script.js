@@ -133,6 +133,11 @@ function attachEventListeners() {
     elements.openChangelogBtn?.addEventListener("click", () => toggleChangelogModal(true));
     elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
     elements.modalBackdrop?.addEventListener("click", () => toggleChangelogModal(false));
+    // 🔥 2. AQUÍ ESTÁ LA LÓGICA PARA EL BOTÓN 'X' 🔥
+    elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
+
+    // 🔥 3. Y AQUÍ LA LÓGICA PARA CERRAR AL HACER CLIC FUERA 🔥
+    elements.modalBackdrop?.addEventListener("click", () => toggleChangelogModal(false));
 }
 
 // --- LÓGICA DE AUTENTICACIÓN ---
