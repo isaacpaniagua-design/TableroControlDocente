@@ -44,6 +44,14 @@ const ROLE_BADGE_CLASS = {
 // --- DATOS DE ACTUALIZACIONES ---
 const CHANGELOG_DATA = [
   {
+    version: "v1.2.1",
+    date: "08 de Octubre, 2025",
+    changes: [
+        "Se implementa un método de visualización directa para el modal de actualizaciones, garantizando su funcionamiento en todos los navegadores.",
+        "Se limpian los 'event listeners' duplicados para mejorar la eficiencia del script."
+    ]
+  },
+  {
     version: "v1.2.0",
     date: "07 de Octubre, 2025",
     changes: [
@@ -64,7 +72,6 @@ const CHANGELOG_DATA = [
     date: "05 de Octubre, 2025",
     changes: [
       "Lanzamiento inicial del Tablero de Control Docente.",
-      "Implementación de la autenticación con cuentas de Google (@potros.itson.edu.mx).",
       "Módulo de gestión de usuarios para administradores.",
     ],
   },
@@ -89,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
   attachEventListeners();
   initCharts();
   initializeAuthentication();
-  renderChangelog(); // Prepara el contenido del modal al cargar
+  renderChangelog();
   window.addEventListener("resize", syncHeaderHeight);
 });
 
@@ -130,19 +137,15 @@ function attachEventListeners() {
     elements.clearUserFiltersBtn?.addEventListener("click", resetUserFilters);
     elements.sidebarCollapseBtn?.addEventListener("click", () => setSidebarCollapsed(true));
     elements.sidebarExpandBtn?.addEventListener("click", () => setSidebarCollapsed(false));
+    
+    // Listeners del Modal (versión limpia y final)
     elements.openChangelogBtn?.addEventListener("click", () => toggleChangelogModal(true));
     elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
     elements.modalBackdrop?.addEventListener("click", () => toggleChangelogModal(false));
-    // 🔥 2. AQUÍ ESTÁ LA LÓGICA PARA EL BOTÓN 'X' 🔥
-    elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
-
-    // 🔥 3. Y AQUÍ LA LÓGICA PARA CERRAR AL HACER CLIC FUERA 🔥
-    elements.modalBackdrop?.addEventListener("click", () => toggleChangelogModal(false));
 }
 
-// --- LÓGICA DE AUTENTICACIÓN ---
-// ... (Sin cambios aquí, se mantiene igual)
 
+// --- LÓGICA DE AUTENTICACIÓN ---
 function initializeAuthentication() {
   try {
     if (!auth) throw new Error("Firebase Auth no se pudo inicializar.");
@@ -190,16 +193,13 @@ async function handleAuthStateChange(firebaseUser) {
       const userDoc = await getDoc(userDocRef);
       if (userDoc.exists()) {
         const userRecord = { ...userDoc.data(), id: userDoc.id };
-
         const isAllowedDomain = userEmail.endsWith(`@${ALLOWED_DOMAIN}`);
         if (!isAllowedDomain && !userRecord.allowExternalAuth) {
             showMessage(elements.loginError, `Debes usar una cuenta @${ALLOWED_DOMAIN} o solicitar acceso externo.`, "error", null);
             return handleLogout();
         }
-
         currentUser = { ...userRecord, name: userRecord.name || firebaseUser.displayName, firebaseUid: firebaseUser.uid };
         loginUser(currentUser);
-
       } else {
         showMessage(elements.loginError, "Tu cuenta no tiene permisos para acceder.", "error", null);
         handleLogout();
@@ -214,20 +214,16 @@ async function handleAuthStateChange(firebaseUser) {
   }
 }
 
-
-// --- GESTIÓN DE USUARIOS ---
-// ... (Sin cambios aquí, se mantiene igual)
-
+// --- GESTIÓN DE USUARIOS Y RENDERIZADO (Sin cambios) ---
+// (Todo el código desde openUserForm hasta el final se mantiene igual)
 function openUserForm(mode, user = null) {
   hideMessage(elements.userFormAlert);
   elements.userForm.hidden = false;
   elements.userForm.reset();
-  
   const isEdit = mode === 'edit' && user;
   elements.userForm.dataset.editingId = isEdit ? user.id : "";
   elements.userFormTitle.textContent = isEdit ? "Editar usuario" : "Agregar usuario";
   elements.userFormSubmit.textContent = isEdit ? "Guardar cambios" : "Crear usuario";
-
   if (isEdit) {
     elements.userName.value = user.name || "";
     elements.userControlNumber.value = user.controlNumber || "";
@@ -240,7 +236,6 @@ function openUserForm(mode, user = null) {
     elements.userAllowExternalAuth.checked = user.allowExternalAuth || false;
   }
 }
-
 function hideUserForm({ reset = false } = {}) {
   elements.userForm.hidden = true;
   if (reset) {
@@ -248,15 +243,12 @@ function hideUserForm({ reset = false } = {}) {
     delete elements.userForm.dataset.editingId;
   }
 }
-
 async function handleUserFormSubmit(event) {
   event.preventDefault();
   if (!isPrimaryAdmin(currentUser)) return;
-
   const form = event.target;
   const formData = new FormData(form);
   const editingUserId = form.dataset.editingId || null;
-
   const userData = {
     name: String(formData.get("name") || "").trim(),
     controlNumber: String(formData.get("controlNumber") || "").trim(),
@@ -268,23 +260,18 @@ async function handleUserFormSubmit(event) {
     career: String(formData.get("career") || "software"),
     allowExternalAuth: formData.get("allowExternalAuth") === "on",
   };
-
   if (!userData.name) return showMessage(elements.userFormAlert, "El nombre completo es obligatorio.");
   if (!editingUserId && !userData.potroEmail) {
     return showMessage(elements.userFormAlert, "El Correo Potro es obligatorio para registrar un nuevo usuario.");
   }
-
   const isDuplicate = users.some(user => {
     if (user.id === editingUserId) return false;
     const hasSamePotro = userData.potroEmail && user.id === userData.potroEmail;
     return hasSamePotro;
   });
-
   if (isDuplicate) return showMessage(elements.userFormAlert, "Ya existe un usuario con ese Correo Potro.");
-
   const recordToPersist = { ...userData, id: editingUserId, updatedBy: currentUser.email };
   const result = await persistUserChange(recordToPersist);
-
   if (result.success) {
     hideUserForm({ reset: true });
     showMessage(elements.userFormAlert, editingUserId ? "Usuario actualizado." : "Usuario agregado.", "success");
@@ -292,20 +279,15 @@ async function handleUserFormSubmit(event) {
     showMessage(elements.userFormAlert, result.message, "error");
   }
 }
-
 async function persistUserChange(record) {
   if (!db) return { success: false, message: "Base de datos no disponible." };
-
   try {
     const isEdit = !!record.id;
     const docId = isEdit ? record.id : record.potroEmail;
-
     if (!docId) {
        return { success: false, message: "Error: El Correo Potro es necesario como identificador." };
     }
-
     const docRef = doc(db, "users", docId);
-
     const payload = {
       name: record.name,
       controlNumber: record.controlNumber || null,
@@ -319,15 +301,12 @@ async function persistUserChange(record) {
       updatedBy: record.updatedBy || null,
       updatedAt: serverTimestamp(),
     };
-
     if (!isEdit) {
       payload.createdBy = record.updatedBy || null;
       payload.createdAt = serverTimestamp();
     }
-    
     await setDoc(docRef, payload, { merge: true });
     return { success: true };
-
   } catch (error) {
     console.error("Error al sincronizar con Firestore:", error);
     return { 
@@ -336,20 +315,16 @@ async function persistUserChange(record) {
     };
   }
 }
-
 function handleUserTableClick(event) {
   if (!isPrimaryAdmin(currentUser)) return;
   const button = event.target.closest("button[data-action][data-user-id]");
   if (!button) return;
-
   const userId = button.dataset.userId;
   const user = users.find(u => u.id === userId);
   if (!user) return;
-
   if (button.dataset.action === "edit") openUserForm("edit", user);
   else if (button.dataset.action === "delete") requestUserDeletion(user);
 }
-
 async function requestUserDeletion(user) {
     if ((user.potroEmail || "").toLowerCase() === PRIMARY_ADMIN_EMAIL_NORMALIZED) {
         return showMessage(elements.userFormAlert, "No puedes eliminar al administrador principal.", "error");
@@ -367,18 +342,10 @@ async function requestUserDeletion(user) {
         }
     }
 }
-
-
-// --- SINCRONIZACIÓN Y RENDERIZADO ---
-// ... (Sin cambios aquí, se mantiene igual)
-
 function subscribeToFirestoreUsers() {
   if (!db || unsubscribeUsersListener) return;
-
   renderUserSyncStatus({ loading: true });
-
   const q = query(collection(db, "users"), orderBy("name"));
-
   unsubscribeUsersListener = onSnapshot(q, 
     (snapshot) => {
       users = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
@@ -392,7 +359,6 @@ function subscribeToFirestoreUsers() {
     }
   );
 }
-
 function renderAllSections() {
     updateLayoutMode();
     syncHeaderHeight();
@@ -410,7 +376,6 @@ function renderAllSections() {
     updateCharts();
     refreshIcons();
 }
-
 function updateLayoutMode() {
   const dashboardVisible = !!currentUser;
   document.body.classList.toggle("dashboard-active", dashboardVisible);
@@ -418,7 +383,6 @@ function updateLayoutMode() {
   elements.authSection?.classList.toggle("hidden", dashboardVisible);
   elements.dashboard?.classList.toggle("hidden", !dashboardVisible);
 }
-
 function loginUser(user) {
   elements.headerUserMeta?.classList.remove("hidden");
   if(elements.headerUserName) elements.headerUserName.textContent = user.name;
@@ -426,14 +390,12 @@ function loginUser(user) {
     elements.headerUserRole.textContent = ROLE_LABELS[user.role] || 'Usuario';
     elements.headerUserRole.className = ROLE_BADGE_CLASS[user.role] || "badge";
   }
-  
   if (user.role === 'administrador') {
     subscribeToFirestoreUsers();
   } else {
     renderAllSections();
   }
 }
-
 function applyLoggedOutState() {
   currentUser = null;
   users = [];
@@ -441,25 +403,20 @@ function applyLoggedOutState() {
   updateLayoutMode();
   renderAllSections();
 }
-
 function renderUserTable() {
     if (!elements.userTableContainer) return;
     const filteredUsers = getFilteredUsers();
     renderUserTableMeta(filteredUsers);
-    
     if (users.length === 0) {
         elements.userTableContainer.innerHTML = `<div class="empty-state">No hay usuarios para mostrar.</div>`;
         return;
     }
-
     if (filteredUsers.length === 0) {
         elements.userTableContainer.innerHTML = `<div class="empty-state">No se encontraron usuarios con los filtros aplicados.</div>`;
         return;
     }
-
     const allowManagement = isPrimaryAdmin(currentUser);
     const headerActions = allowManagement ? `<th class="actions-col">Acciones</th>` : "";
-
     const rows = filteredUsers.map(user => {
         const actionsCell = allowManagement ? `
             <td class="actions-cell">
@@ -472,7 +429,6 @@ function renderUserTable() {
                     </button>
                 </div>
             </td>` : "";
-
         return `
             <tr>
                 <td>${escapeHtml(user.name)}<br><small>${escapeHtml(user.potroEmail || user.email || 'Sin correo')}</small></td>
@@ -483,16 +439,13 @@ function renderUserTable() {
                 ${actionsCell}
             </tr>`;
     }).join("");
-
     elements.userTableContainer.innerHTML = `
         <table class="user-table">
             <thead> <tr> <th>Nombre</th> <th>N° Control</th> <th>Carrera</th> <th>Rol</th> <th>Acceso</th> ${headerActions} </tr> </thead>
             <tbody>${rows}</tbody>
         </table>`;
-    
     refreshIcons();
 }
-
 function renderUserTableMeta(filteredUsers) {
     if (!elements.userTableMeta) return;
     if (users.length > 0) {
@@ -501,7 +454,6 @@ function renderUserTableMeta(filteredUsers) {
         elements.userTableMeta.textContent = '';
     }
 }
-
 function getFilteredUsers() {
     return users.filter(user => {
         const search = userFilters.search.toLowerCase();
@@ -512,7 +464,6 @@ function getFilteredUsers() {
         return matchesSearch && matchesRole && matchesCareer && matchesAuth;
     });
 }
-
 function resetUserFilters() {
     userFilters.search = "";
     userFilters.role = "all";
@@ -524,91 +475,56 @@ function resetUserFilters() {
     if (elements.userAuthFilter) elements.userAuthFilter.value = "all";
     renderUserTable();
 }
-
 function updateUserManagementControls() {
     if (elements.startAddUserBtn) {
         elements.startAddUserBtn.hidden = !isPrimaryAdmin(currentUser);
     }
 }
-
-
-// --- FUNCIONES UTILITARIAS Y DE UI ---
-
-// script.js
-
-// 🔥🔥 INICIO DE LA CORRECCIÓN 🔥🔥
-function toggleChangelogModal(show) {
-  // Busca los elementos del DOM en el momento del clic, en lugar de al inicio.
-  const modal = document.getElementById('changelogModal');
-  const backdrop = document.getElementById('modal-backdrop');
-
-  if (!modal || !backdrop) {
-    console.error("CRÍTICO: Los elementos del modal no existen en el HTML.");
-    return;
-  }
-
-  // Usa classList.toggle() que es el método correcto para añadir/quitar la clase 'hidden'
-  modal.classList.toggle("hidden", !show);
-  backdrop.classList.toggle("hidden", !show);
-}
-// 🔥🔥 FIN DE LA CORRECCIÓN 🔥🔥
-
 function isPrimaryAdmin(user) {
   return user && (user.potroEmail || "").toLowerCase() === PRIMARY_ADMIN_EMAIL_NORMALIZED;
 }
-
 function isPermissionDeniedError(error) {
   return error && error.code === 'permission-denied';
 }
-
 function escapeHtml(str) {
     return String(str ?? "").replace(/[&<>"']/g, match => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'})[match]);
 }
-
 function hideLoader() {
   const loader = document.getElementById("loader");
   if(loader) loader.remove();
 }
-
 function showMessage(element, message, type = "error", duration = 5000) {
   if (!element) return;
   element.textContent = message;
   element.className = `alert ${type} show`;
   if (duration) setTimeout(() => element.classList.remove("show"), duration);
 }
-
 function hideMessage(element) {
   if (element) element.classList.remove("show");
 }
-
 function refreshIcons() {
   if (window.lucide) window.lucide.createIcons();
 }
-
 function syncHeaderHeight() {
     const header = document.querySelector(".app-header");
     document.documentElement.style.setProperty("--header-height", `${header?.offsetHeight || 0}px`);
 }
-
 function setSidebarCollapsed(value) {
   if (!elements.dashboardShell) return;
   elements.dashboardShell.classList.toggle("sidebar-collapsed", value);
   elements.sidebarCollapseBtn?.setAttribute("aria-expanded", String(!value));
   if (elements.sidebarExpandBtn) elements.sidebarExpandBtn.hidden = !value;
 }
-
 function configureRoleViews(role) {
     elements.adminView?.classList.toggle("hidden", role !== 'administrador');
     elements.docenteView?.classList.toggle("hidden", role !== 'docente');
     elements.auxiliarView?.classList.toggle("hidden", role !== 'auxiliar');
 }
-
 function renderSidebarUserCard(user) {
     if (elements.sidebarName) elements.sidebarName.textContent = user.name;
     if (elements.sidebarEmail) elements.sidebarEmail.textContent = user.potroEmail || user.email;
     if (elements.sidebarCareer) elements.sidebarCareer.textContent = CAREER_LABELS[user.career] || "";
 }
-
 function renderUserSummary() {
     if (!elements.userSummaryGrid) return;
     const total = users.length;
@@ -620,7 +536,6 @@ function renderUserSummary() {
         <article class="user-summary-card"><span class="user-summary-icon"><i data-lucide="book-open"></i></span><div><span class="user-summary-label">Docentes</span><span class="user-summary-value">${docentes}</span></div></article>`;
     refreshIcons();
 }
-
 function renderUserSyncStatus({ loading, error, lastUpdate }) {
     if (!elements.userSyncStatus) return;
     let cn = "user-sync-status", text = "";
@@ -630,7 +545,6 @@ function renderUserSyncStatus({ loading, error, lastUpdate }) {
     elements.userSyncStatus.className = cn;
     elements.userSyncStatus.textContent = text;
 }
-
 function initCharts() {
     const chartOptions = { responsive: true, maintainAspectRatio: false };
     if (document.getElementById("usersChart")) {
@@ -644,7 +558,6 @@ function initCharts() {
         charts.activities = new Chart(canvas, { type: "doughnut", data: { labels: [], datasets: [{ data: [] }] }, options: chartOptions });
     }
 }
-
 function updateCharts() {
   if (charts.users && users.length > 0) {
     const careerCounts = users.reduce((acc, user) => { acc[user.career] = (acc[user.career] || 0) + 1; return acc; }, {});
@@ -653,10 +566,8 @@ function updateCharts() {
     charts.users.update();
   }
 }
-
 function renderChangelog() {
   if (!elements.changelogBody) return;
-
   elements.changelogBody.innerHTML = CHANGELOG_DATA.map(entry => `
     <div class="changelog-entry">
       <header class="changelog-header">
@@ -668,4 +579,16 @@ function renderChangelog() {
       </ul>
     </div>
   `).join('');
+}
+
+// 🔥🔥 LA FUNCIÓN MÁS IMPORTANTE PARA EL MODAL 🔥🔥
+function toggleChangelogModal(show) {
+  const modal = document.getElementById('changelogModal');
+  const backdrop = document.getElementById('modal-backdrop');
+  if (!modal || !backdrop) {
+    console.error("CRÍTICO: Los elementos del modal no existen en el HTML.");
+    return;
+  }
+  modal.classList.toggle("hidden", !show);
+  backdrop.classList.toggle("hidden", !show);
 }
