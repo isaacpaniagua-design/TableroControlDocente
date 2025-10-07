@@ -66,6 +66,7 @@ const charts = { users: null, activities: null };
 
 let googleProvider = null;
 
+let isInitialAuthCheckDone = false; // <--- AÑADE ESTA LÍNEA AQUÍ
 // --- CICLO DE VIDA DE LA APLICACIÓN ---
 document.addEventListener("DOMContentLoaded", () => {
   cacheDomElements();
