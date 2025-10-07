@@ -41,41 +41,30 @@ const ROLE_BADGE_CLASS = {
   auxiliar: "badge auxiliar",
 };
 
-// --- DATOS DE ACTUALIZACIONES ---
-const CHANGELOG_DATA = [
-  {
-    version: "v1.2.1",
-    date: "08 de Octubre, 2025",
-    changes: [
-        "Se implementa un método de visualización directa para el modal de actualizaciones, garantizando su funcionamiento en todos los navegadores.",
-        "Se limpian los 'event listeners' duplicados para mejorar la eficiencia del script."
-    ]
-  },
-  {
-    version: "v1.2.0",
-    date: "07 de Octubre, 2025",
-    changes: [
-      "Se añade el apartado de 'Actualizaciones del Software' para mantener informados a los usuarios.",
-      "Se corrige un error de rendimiento en los gráficos del dashboard que causaba un crecimiento infinito.",
-    ],
-  },
-  {
-    version: "v1.1.0",
-    date: "06 de Octubre, 2025",
-    changes: [
-      "Se refactoriza la lógica de autenticación para verificar el rol del usuario antes de solicitar datos de administrador, solucionando errores de permisos.",
-      "Se ajusta la creación de usuarios para utilizar el correo electrónico como ID único, alineando la base de datos con las reglas de seguridad.",
-    ],
-  },
-  {
-    version: "v1.0.0",
-    date: "05 de Octubre, 2025",
-    changes: [
-      "Lanzamiento inicial del Tablero de Control Docente.",
-      "Módulo de gestión de usuarios para administradores.",
-    ],
-  },
-];
+// REEMPLAZA la antigua función renderChangelog() con esta:
+
+// Usaremos una librería externa muy ligera para convertir Markdown a HTML
+import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
+
+async function renderChangelog() {
+  if (!elements.changelogBody) return;
+
+  try {
+    const response = await fetch('CHANGELOG.md');
+    if (!response.ok) {
+        throw new Error('No se pudo cargar el archivo de actualizaciones.');
+    }
+    const markdownText = await response.text();
+    
+    // Convierte el texto Markdown a HTML usando 'marked' y lo muestra
+    elements.changelogBody.innerHTML = marked(markdownText);
+
+  } catch (error) {
+    console.error("Error al cargar CHANGELOG.md:", error);
+    elements.changelogBody.innerHTML = `<p class="alert error">No se pudieron cargar las actualizaciones en este momento.</p>`;
+  }
+}
+
 
 // --- ESTADO GLOBAL DE LA APLICACIÓN ---
 let users = [];
