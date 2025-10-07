@@ -2418,15 +2418,31 @@ button.small i {
   SOLUCIÓN DEFINITIVA PARA EL ÍCONO DEL BOTÓN DE CIERRE
   Apunta directamente al SVG para garantizar el cambio de color.
 */
-#closeChangelogBtn svg {
-  stroke: #1f2937; /* Asigna un color oscuro directamente al trazo del ícono */
+/*
+  SOLUCIÓN DEFINITIVA: Ícono de Cierre Personalizado y Sin Dependencias
+  Estos estilos aplican directamente al nuevo SVG en línea.
+*/
+#closeChangelogBtn {
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.custom-close-icon {
+  width: 24px;
+  height: 24px;
+  stroke: #4b5563; /* Color de trazo gris oscuro para alto contraste */
   transition: transform 0.2s ease;
 }
 
-#closeChangelogBtn:hover svg {
-  transform: scale(1.1); /* Efecto sutil en el ícono al pasar el mouse */
+#closeChangelogBtn:hover {
+  background-color: #f3f4f6; /* Fondo gris muy claro al pasar el mouse */
 }
 
-#closeChangelogBtn:hover {
-    background-color: #edf2ff; /* Fondo sutil en el botón al pasar el mouse */
+#closeChangelogBtn:hover .custom-close-icon {
+  stroke: #1f2937; /* Color de trazo casi negro en hover */
+  transform: scale(1.1);
 }
