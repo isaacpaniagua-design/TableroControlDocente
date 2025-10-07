@@ -270,16 +270,20 @@ async function handleUserFormSubmit(event) {
   };
 
   if (!userData.name) return showMessage(elements.userFormAlert, "El nombre completo es obligatorio.");
-  if (!userData.potroEmail && !userData.controlNumber) return showMessage(elements.userFormAlert, "Proporciona un correo Potro o número de control.");
+  // 🔥 CORRECCIÓN: El Correo Potro ahora es obligatorio para crear nuevos usuarios, ya que funciona como ID.
+  if (!editingUserId && !userData.potroEmail) {
+    return showMessage(elements.userFormAlert, "El Correo Potro es obligatorio para registrar un nuevo usuario.");
+  }
 
   const isDuplicate = users.some(user => {
+    // La lógica de duplicados ahora se basa en el ID (que será el email).
     if (user.id === editingUserId) return false;
-    const hasSamePotro = userData.potroEmail && user.potroEmail === userData.potroEmail;
+    const hasSamePotro = userData.potroEmail && user.id === userData.potroEmail;
     const hasSameControl = userData.controlNumber && user.controlNumber === userData.controlNumber;
     return hasSamePotro || hasSameControl;
   });
 
-  if (isDuplicate) return showMessage(elements.userFormAlert, "Ya existe un usuario con ese correo Potro o número de control.");
+  if (isDuplicate) return showMessage(elements.userFormAlert, "Ya existe un usuario con ese Correo Potro o número de control.");
 
   const recordToPersist = { ...userData, id: editingUserId, updatedBy: currentUser.email };
   const result = await persistUserChange(recordToPersist);
@@ -297,10 +301,18 @@ async function persistUserChange(record) {
 
   try {
     const isEdit = !!record.id;
-    const docRef = isEdit ? doc(db, "users", record.id) : doc(collection(db, "users"));
+    // 🔥 CORRECCIÓN: Usamos el Correo Potro como ID para nuevos usuarios.
+    // Si estamos editando, usamos el ID existente (que ya debería ser el correo).
+    const docId = isEdit ? record.id : record.potroEmail;
+
+    if (!docId) {
+       return { success: false, message: "Error: El Correo Potro es necesario como identificador." };
+    }
+
+    const docRef = doc(db, "users", docId);
 
     const payload = {
-      id: docRef.id,
+      // Ya no guardamos el 'id' dentro del documento, pues el nombre del documento es el ID.
       userId: docRef.id,
       name: record.name,
       controlNumber: record.controlNumber || null,
@@ -311,12 +323,12 @@ async function persistUserChange(record) {
       role: record.role,
       career: record.career,
       allowExternalAuth: record.allowExternalAuth,
-      updatedBy: record.updatedBy || null, // Asegura que el valor sea null en lugar de undefined
+      updatedBy: record.updatedBy || null,
       updatedAt: serverTimestamp(),
     };
 
     if (!isEdit) {
-      payload.createdBy = record.updatedBy || null; // Asegura que el valor sea null en lugar de undefined
+      payload.createdBy = record.updatedBy || null;
       payload.createdAt = serverTimestamp();
     }
     
