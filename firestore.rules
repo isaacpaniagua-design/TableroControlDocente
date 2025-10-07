@@ -23,7 +23,7 @@ service cloud.firestore {
       return isSignedIn() && getRequestingUserDoc().data.role == 'administrador';
     }
 
-    // 🔥 **INICIO DE LA CORRECCIÓN: Validación de Esquema** 🔥
+    // 🔥 **CORRECCIÓN DE ESQUEMA: Se elimina 'userId' ya que el ID del documento es el email** 🔥
     function isValidUserData(data) {
       // Verifica que solo los campos permitidos estén presentes.
       let allowedKeys = ['name', 'role', 'career', 'controlNumber', 'potroEmail', 'institutionalEmail', 'email', 'phone', 'allowExternalAuth', 'firebaseUid', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'];
@@ -35,29 +35,31 @@ service cloud.firestore {
              (data.potroEmail == null || (data.potroEmail is string && data.potroEmail.matches('.+@potros\\.itson\\.edu\\.mx$'))) &&
              (data.phone == null || (data.phone is string && data.phone.size() < 20));
     }
-    // 🔥 **FIN DE LA CORRECCIÓN** 🔥
 
     // --- REGLAS PARA LA COLECCIÓN DE USUARIOS (`users`) ---
     match /users/{userEmail} {
-      // Un usuario solo puede leer su propio perfil. Un administrador puede leer cualquier perfil.
-      allow read: if isSignedIn() && (request.auth.token.email.lower() == userEmail || isRegisteredAdmin());
+      
+      // 🔥 **CORRECCIÓN DE REGLA DE LECTURA** 🔥
+      // Permiso para leer un ÚNICO documento (get).
+      // Un usuario puede leer su propio perfil, y un admin puede leer cualquiera.
+      allow get: if isSignedIn() && (request.auth.token.email.lower() == userEmail || isRegisteredAdmin());
 
-      // Aplicamos la nueva validación en la creación.
+      // Permiso para leer la COLECCIÓN COMPLETA (list).
+      // Solo los administradores pueden obtener la lista de todos los usuarios.
+      allow list: if isRegisteredAdmin();
+
+      // --- REGLAS DE ESCRITURA (SIN CAMBIOS) ---
       allow create: if isRegisteredAdmin() && isValidUserData(request.resource.data);
-
-      // Aplicamos la nueva validación en la actualización.
       allow update: if (isRegisteredAdmin() && isValidUserData(request.resource.data)) ||
-                     (
-                       isSignedIn() &&
-                       request.auth.token.email.lower() == userEmail &&
-                       request.resource.data.role == resource.data.role && // El rol no puede cambiar
                        (
-                         request.resource.data.firebaseUid == request.auth.uid &&
-                         resource.data.firebaseUid == null // Solo se puede escribir el UID si no existe
-                       )
-                     );
-
-      // Solo un administrador puede eliminar usuarios.
+                         isSignedIn() &&
+                         request.auth.token.email.lower() == userEmail &&
+                         request.resource.data.role == resource.data.role && // El rol no puede cambiar
+                         (
+                           request.resource.data.firebaseUid == request.auth.uid &&
+                           resource.data.firebaseUid == null // Solo se puede escribir el UID si no existe
+                         )
+                       );
       allow delete: if isRegisteredAdmin();
     }
 
@@ -66,7 +68,6 @@ service cloud.firestore {
       // Un usuario puede leer una actividad si es admin o si está asignado a ella.
       allow read: if isSignedIn() &&
         (isRegisteredAdmin() || resource.data.responsibleEmail.lower() == request.auth.token.email.lower());
-
       // Solo administradores pueden crear, actualizar o eliminar actividades.
       allow create, update, delete: if isRegisteredAdmin();
     }
