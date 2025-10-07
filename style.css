@@ -2355,6 +2355,7 @@ button.small i {
   transition: background 0.2s ease, color 0.2s ease;
   width: 100%;
   margin-top: 1rem;
+  text-align: left;
 }
 
 .button-link:hover {
