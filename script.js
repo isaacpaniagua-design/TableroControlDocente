@@ -1,3 +1,7 @@
+// Importa la librería para convertir Markdown
+import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
+
+// Importa las funciones de Firebase
 import {
   collection,
   deleteDoc,
@@ -41,30 +45,7 @@ const ROLE_BADGE_CLASS = {
   auxiliar: "badge auxiliar",
 };
 
-// REEMPLAZA la antigua función renderChangelog() con esta:
-
-// Usaremos una librería externa muy ligera para convertir Markdown a HTML
-import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
-
-async function renderChangelog() {
-  if (!elements.changelogBody) return;
-
-  try {
-    const response = await fetch('CHANGELOG.md');
-    if (!response.ok) {
-        throw new Error('No se pudo cargar el archivo de actualizaciones.');
-    }
-    const markdownText = await response.text();
-    
-    // Convierte el texto Markdown a HTML usando 'marked' y lo muestra
-    elements.changelogBody.innerHTML = marked(markdownText);
-
-  } catch (error) {
-    console.error("Error al cargar CHANGELOG.md:", error);
-    elements.changelogBody.innerHTML = `<p class="alert error">No se pudieron cargar las actualizaciones en este momento.</p>`;
-  }
-}
-
+// --- EL ARRAY CHANGELOG_DATA HA SIDO ELIMINADO ---
 
 // --- ESTADO GLOBAL DE LA APLICACIÓN ---
 let users = [];
@@ -85,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
   attachEventListeners();
   initCharts();
   initializeAuthentication();
-  renderChangelog();
+  renderChangelog(); // Ahora llamará a la nueva función
   window.addEventListener("resize", syncHeaderHeight);
 });
 
@@ -127,20 +108,17 @@ function attachEventListeners() {
     elements.sidebarCollapseBtn?.addEventListener("click", () => setSidebarCollapsed(true));
     elements.sidebarExpandBtn?.addEventListener("click", () => setSidebarCollapsed(false));
     
-    // Listeners del Modal (versión limpia y final)
     elements.openChangelogBtn?.addEventListener("click", () => toggleChangelogModal(true));
     elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
-    // 🔥 LÓGICA MEJORADA PARA "CLIC AFUERA" 🔥
     elements.changelogModal?.addEventListener('click', (event) => {
-        // Cierra el modal solo si el clic es directamente sobre el fondo (el elemento modal)
         if (event.target === elements.changelogModal) {
             toggleChangelogModal(false);
         }
        });
 }
 
-
 // --- LÓGICA DE AUTENTICACIÓN ---
+// (Esta sección no cambia)
 function initializeAuthentication() {
   try {
     if (!auth) throw new Error("Firebase Auth no se pudo inicializar.");
@@ -209,8 +187,8 @@ async function handleAuthStateChange(firebaseUser) {
   }
 }
 
-// --- GESTIÓN DE USUARIOS Y RENDERIZADO (Sin cambios) ---
-// (Todo el código desde openUserForm hasta el final se mantiene igual)
+// (El resto del archivo, desde GESTIÓN DE USUARIOS hasta el final, no cambia...)
+// --- GESTIÓN DE USUARIOS Y RENDERIZADO ---
 function openUserForm(mode, user = null) {
   hideMessage(elements.userFormAlert);
   elements.userForm.hidden = false;
@@ -561,23 +539,26 @@ function updateCharts() {
     charts.users.update();
   }
 }
-function renderChangelog() {
-  if (!elements.changelogBody) return;
-  elements.changelogBody.innerHTML = CHANGELOG_DATA.map(entry => `
-    <div class="changelog-entry">
-      <header class="changelog-header">
-        <span class="changelog-version">${escapeHtml(entry.version)}</span>
-        <span class="changelog-date">${escapeHtml(entry.date)}</span>
-      </header>
-      <ul class="changelog-list">
-        ${entry.changes.map(change => `<li>${escapeHtml(change)}</li>`).join('')}
-      </ul>
-    </div>
-  `).join('');
-}
 
-// 🔥🔥 LA FUNCIÓN MÁS IMPORTANTE PARA EL MODAL 🔥🔥
-// script.js
+// --- NUEVA FUNCIÓN ÚNICA PARA RENDERIZAR EL CHANGELOG ---
+async function renderChangelog() {
+  if (!elements.changelogBody) return;
+
+  try {
+    const response = await fetch('CHANGELOG.md');
+    if (!response.ok) {
+        throw new Error('No se pudo cargar el archivo de actualizaciones.');
+    }
+    const markdownText = await response.text();
+    
+    // Convierte el texto Markdown a HTML usando 'marked' y lo muestra
+    elements.changelogBody.innerHTML = marked(markdownText);
+
+  } catch (error) {
+    console.error("Error al cargar CHANGELOG.md:", error);
+    elements.changelogBody.innerHTML = `<p class="alert error show">No se pudieron cargar las actualizaciones en este momento.</p>`;
+  }
+}
 
 function toggleChangelogModal(show) {
   const modal = document.getElementById('changelogModal');
