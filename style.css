@@ -2413,3 +2413,15 @@ button.small i {
   background-color: white;
   color: var(--primary); /* Azul primario de la aplicación */
 }
+
+/* Corrección de alta especificidad para el botón de cerrar modal */
+.modal-header button#closeChangelogBtn {
+  color: #1f2937 !important; /* Forza el color oscuro */
+  background-color: transparent !important; /* Asegura fondo transparente */
+}
+
+/* Estilo hover de alta especificidad */
+.modal-header button#closeChangelogBtn:hover {
+  color: #1f2937 !important;
+  background-color: #edf2ff !important; /* Fondo sutil al pasar el mouse */
+}
