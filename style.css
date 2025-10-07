@@ -2405,3 +2405,7 @@ button.small i {
   background: rgba(15, 23, 42, 0.08); /* Un fondo sutil al pasar el mouse */
   color: var(--text); /* Color de texto principal al pasar el mouse */
 }
+/* Ajuste para el color del botón de cerrar sesión */
+#logoutBtn {
+  color: #ffffff; /* Blanco sólido */
+}
