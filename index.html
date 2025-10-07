@@ -31,6 +31,19 @@
     </div>
     <div id="modal-backdrop" class="hidden"></div>
 
+    <div id="changelogModal" class="modal hidden">
+  <div class="modal-content">
+    <header class="modal-header">
+      <h3>Actualizaciones del Software</h3>
+      <button type="button" class="icon-button" id="closeChangelogBtn" aria-label="Cerrar ventana">
+        <i data-lucide="x"></i>
+      </button>
+    </header>
+    <div id="changelogBody" class="modal-body">
+      </div>
+  </div>
+</div>
+
     <header class="app-header">
       <div class="app-header__inner">
         <div class="brand-area">
@@ -188,6 +201,10 @@
                 Mantente al día con tus actividades y comparte avances con tu
                 coordinación.
               </p>
+              <button type="button" class="button-link" id="openChangelogBtn">
+    <i data-lucide="history"></i>
+    <span>Ver actualizaciones</span>
+  </button>
             </div>
           </aside>
           <section class="content-area">
