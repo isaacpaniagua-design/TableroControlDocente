@@ -623,9 +623,27 @@ function updateCharts() {
 }
 
 function toggleChangelogModal(show) {
-  if (!elements.changelogModal || !elements.modalBackdrop) return;
-  elements.changelogModal.classList.toggle("hidden", !show);
-  elements.modalBackdrop.classList.toggle("hidden", !show);
+  if (!elements.changelogModal || !elements.modalBackdrop) {
+    // Si esto aparece, hay un error al cargar los elementos del DOM.
+    console.error("Error: No se encontraron los elementos del modal.");
+    return;
+  }
+
+  // Este mensaje DEBE aparecer en tu consola (F12) cada vez que hagas clic.
+  console.log(`Cambiando visibilidad del modal. Mostrar: ${show}`);
+
+  if (show) {
+    // Forzamos la visualización usando estilos directos
+    elements.modalBackdrop.style.display = 'block';
+    elements.changelogModal.style.display = 'flex';
+    // Forzamos la opacidad para asegurar que sea visible
+    elements.changelogModal.style.opacity = '1';
+    elements.modalBackdrop.style.opacity = '1';
+  } else {
+    // Ocultamos con estilos directos
+    elements.modalBackdrop.style.display = 'none';
+    elements.changelogModal.style.display = 'none';
+  }
 }
 
 function renderChangelog() {
