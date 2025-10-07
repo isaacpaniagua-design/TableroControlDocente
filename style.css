@@ -2052,6 +2052,18 @@ button.small i {
   cursor: pointer;
 }
 
+/* style.css */
+
+/* 🔥 MEJORA DE CONTRASTE PARA EL BOTÓN DE CERRAR MODAL 🔥 */
+.modal-header .icon-button {
+  background: transparent;
+  color: var(--muted); /* Un gris oscuro para mejor visibilidad */
+}
+
+.modal-header .icon-button:hover {
+  background: rgba(15, 23, 42, 0.08); /* Un fondo sutil al pasar el mouse */
+  color: var(--text); /* Color de texto principal al pasar el mouse */
+}
 /* Responsive */
 @media (max-width: 1280px) {
   .app-header__inner,
