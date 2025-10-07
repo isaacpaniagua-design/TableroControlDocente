@@ -534,6 +534,8 @@ function updateUserManagementControls() {
 
 // --- FUNCIONES UTILITARIAS Y DE UI ---
 
+// script.js
+
 // 🔥🔥 INICIO DE LA CORRECCIÓN 🔥🔥
 function toggleChangelogModal(show) {
   // Busca los elementos del DOM en el momento del clic, en lugar de al inicio.
@@ -545,6 +547,7 @@ function toggleChangelogModal(show) {
     return;
   }
 
+  // Usa classList.toggle() que es el método correcto para añadir/quitar la clase 'hidden'
   modal.classList.toggle("hidden", !show);
   backdrop.classList.toggle("hidden", !show);
 }
