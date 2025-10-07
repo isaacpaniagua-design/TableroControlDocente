@@ -2,7 +2,7 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc, // Importar getDoc para leer un solo documento
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -40,6 +40,7 @@ const ROLE_BADGE_CLASS = {
   docente: "badge docente",
   auxiliar: "badge auxiliar",
 };
+
 // --- DATOS DE ACTUALIZACIONES ---
 const CHANGELOG_DATA = [
   {
@@ -88,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
   attachEventListeners();
   initCharts();
   initializeAuthentication();
-  renderChangelog(); // 🔥 LLAMADA AÑADIDA 🔥
+  renderChangelog(); // Prepara el contenido del modal al cargar
   window.addEventListener("resize", syncHeaderHeight);
 });
 
@@ -108,7 +109,6 @@ function cacheDomElements() {
     "importTeachersBtn", "importTeachersAlert", "inviteAlert", "teacherPendingActivities",
     "teacherProgressSummary", "auxiliarActivityList", "auxiliarActivityAlert", "printReport",
     "refreshDashboard", "sidebarCollapseBtn", "sidebarExpandBtn",
-    // 🔥 IDs AÑADIDOS 🔥
     "changelogModal", "openChangelogBtn", "closeChangelogBtn", "changelogBody", "modal-backdrop"
   ];
   ids.forEach(id => { elements[id] = document.getElementById(id); });
@@ -169,7 +169,7 @@ async function handleGoogleSignIn() {
 
 function handleLogout() {
   if (unsubscribeUsersListener) {
-    unsubscribeUsersListener(); // Detener la escucha de usuarios al cerrar sesión
+    unsubscribeUsersListener();
     unsubscribeUsersListener = null;
   }
   signOut(auth).catch(error => console.error("Error al cerrar sesión:", error));
@@ -185,7 +185,6 @@ async function handleAuthStateChange(firebaseUser) {
       if (userDoc.exists()) {
         const userRecord = { ...userDoc.data(), id: userDoc.id };
 
-        // Validar si es un dominio permitido o si tiene acceso externo
         const isAllowedDomain = userEmail.endsWith(`@${ALLOWED_DOMAIN}`);
         if (!isAllowedDomain && !userRecord.allowExternalAuth) {
             showMessage(elements.loginError, `Debes usar una cuenta @${ALLOWED_DOMAIN} o solicitar acceso externo.`, "error", null);
@@ -210,6 +209,7 @@ async function handleAuthStateChange(firebaseUser) {
 }
 
 // --- GESTIÓN DE USUARIOS ---
+
 function openUserForm(mode, user = null) {
   hideMessage(elements.userFormAlert);
   elements.userForm.hidden = false;
@@ -360,35 +360,28 @@ async function requestUserDeletion(user) {
     }
 }
 
-// --- SINCRONIZACIÓN CON FIRESTORE ---
+// --- SINCRONIZACIÓN Y RENDERIZADO ---
 function subscribeToFirestoreUsers() {
-  if (!db || unsubscribeUsersListener) return; // Evitar suscripciones múltiples
+  if (!db || unsubscribeUsersListener) return;
 
-  let firestoreUsersLoading = true;
-  let firestoreUsersError = null;
-  let firestoreUsersLastUpdated = null;
-  renderUserSyncStatus(firestoreUsersLoading, firestoreUsersError, firestoreUsersLastUpdated);
+  renderUserSyncStatus({ loading: true });
 
   const q = query(collection(db, "users"), orderBy("name"));
 
   unsubscribeUsersListener = onSnapshot(q, 
     (snapshot) => {
       users = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-      firestoreUsersLoading = false;
-      firestoreUsersError = null;
-      firestoreUsersLastUpdated = new Date();
+      renderUserSyncStatus({ lastUpdate: new Date() });
       renderAllSections();
     },
     (error) => {
       console.error("Error al suscribirse a los usuarios:", error);
-      firestoreUsersLoading = false;
-      firestoreUsersError = "No se pudieron cargar los usuarios.";
+      renderUserSyncStatus({ error: "No se pudieron cargar los usuarios." });
       renderAllSections();
     }
   );
 }
 
-// --- RENDERIZADO Y LÓGICA DE UI ---
 function renderAllSections() {
     updateLayoutMode();
     syncHeaderHeight();
@@ -423,17 +416,16 @@ function loginUser(user) {
     elements.headerUserRole.className = ROLE_BADGE_CLASS[user.role] || "badge";
   }
   
-  // 🔥 LÓGICA CORREGIDA: Suscribirse a la lista de usuarios SÓLO si es admin
   if (user.role === 'administrador') {
     subscribeToFirestoreUsers();
+  } else {
+    renderAllSections();
   }
-  
-  renderAllSections();
 }
 
 function applyLoggedOutState() {
   currentUser = null;
-  users = []; // Limpiar la lista de usuarios
+  users = [];
   elements.headerUserMeta?.classList.add("hidden");
   updateLayoutMode();
   renderAllSections();
@@ -443,13 +435,14 @@ function renderUserTable() {
     if (!elements.userTableContainer) return;
     const filteredUsers = getFilteredUsers();
     renderUserTableMeta(filteredUsers);
-    let firestoreUsersLoading;
-    if (users.length === 0 && !firestoreUsersLoading) {
-        elements.userTableContainer.innerHTML = `<p class="empty-state">No hay usuarios registrados. Agrega el primero para comenzar.</p>`;
+    
+    if (users.length === 0) {
+        elements.userTableContainer.innerHTML = `<div class="empty-state">No hay usuarios para mostrar.</div>`;
         return;
     }
-    if (filteredUsers.length === 0 && users.length > 0) {
-        elements.userTableContainer.innerHTML = `<p class="empty-state">No se encontraron usuarios con los filtros aplicados.</p>`;
+
+    if (filteredUsers.length === 0) {
+        elements.userTableContainer.innerHTML = `<div class="empty-state">No se encontraron usuarios con los filtros aplicados.</div>`;
         return;
     }
 
@@ -491,16 +484,11 @@ function renderUserTable() {
 
 function renderUserTableMeta(filteredUsers) {
     if (!elements.userTableMeta) return;
-    let firestoreUsersLoading;
-    if (firestoreUsersLoading) {
-        elements.userTableMeta.textContent = 'Cargando usuarios...';
-        return;
+    if (users.length > 0) {
+        elements.userTableMeta.textContent = `Mostrando ${filteredUsers.length} de ${users.length} usuarios.`;
+    } else {
+        elements.userTableMeta.textContent = '';
     }
-    if (users.length === 0) {
-        elements.userTableMeta.textContent = 'No hay usuarios para mostrar.';
-        return;
-    }
-    elements.userTableMeta.textContent = `Mostrando ${filteredUsers.length} de ${users.length} usuarios.`;
 }
 
 function getFilteredUsers() {
@@ -546,7 +534,8 @@ function escapeHtml(str) {
 }
 
 function hideLoader() {
-  document.getElementById("loader")?.remove();
+  const loader = document.getElementById("loader");
+  if(loader) loader.remove();
 }
 
 function showMessage(element, message, type = "error", duration = 5000) {
@@ -600,7 +589,7 @@ function renderUserSummary() {
     refreshIcons();
 }
 
-function renderUserSyncStatus(loading, error, lastUpdate) {
+function renderUserSyncStatus({ loading, error, lastUpdate }) {
     if (!elements.userSyncStatus) return;
     let cn = "user-sync-status", text = "";
     if (loading) { cn += " loading"; text = "Sincronizando..."; }
@@ -613,10 +602,14 @@ function renderUserSyncStatus(loading, error, lastUpdate) {
 function initCharts() {
     const chartOptions = { responsive: true, maintainAspectRatio: false };
     if (document.getElementById("usersChart")) {
-        charts.users = new Chart(document.getElementById("usersChart"), { type: "bar", data: { labels: [], datasets: [{ label: 'Usuarios', data: [], backgroundColor: 'rgba(37, 99, 235, 0.85)' }] }, options: chartOptions });
+        const canvas = document.getElementById("usersChart");
+        canvas.parentElement.style.height = '320px';
+        charts.users = new Chart(canvas, { type: "bar", data: { labels: [], datasets: [{ label: 'Usuarios', data: [], backgroundColor: 'rgba(37, 99, 235, 0.85)' }] }, options: chartOptions });
     }
     if (document.getElementById("activitiesChart")) {
-        charts.activities = new Chart(document.getElementById("activitiesChart"), { type: "doughnut", data: { labels: [], datasets: [{ data: [] }] }, options: chartOptions });
+        const canvas = document.getElementById("activitiesChart");
+        canvas.parentElement.style.height = '320px';
+        charts.activities = new Chart(canvas, { type: "doughnut", data: { labels: [], datasets: [{ data: [] }] }, options: chartOptions });
     }
 }
 
