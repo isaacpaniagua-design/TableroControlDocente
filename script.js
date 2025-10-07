@@ -70,7 +70,6 @@ let googleProvider = null;
 document.addEventListener("DOMContentLoaded", () => {
   cacheDomElements();
   updateLayoutMode();
-  hideLoader();
   attachEventListeners();
   initCharts();
   initializeAuthentication();
@@ -193,6 +192,21 @@ async function handleAuthStateChange(firebaseUser) {
     }
   } else {
     applyLoggedOutState();
+  }
+
+  // 🔥 LÓGICA DE CARGA: Se ejecuta solo la primera vez para una transición suave
+  if (!isInitialAuthCheckDone) {
+    isInitialAuthCheckDone = true;
+
+    // 1. Quita la clase del body para hacer visible el contenido correcto
+    document.body.classList.remove('app-loading');
+
+    // 2. Elimina el loader con un efecto de desvanecimiento
+    const loader = document.getElementById('loader');
+    if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.remove(), 400); // 400ms = duración de la transición en CSS
+    }
   }
 }
 
