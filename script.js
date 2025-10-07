@@ -40,6 +40,34 @@ const ROLE_BADGE_CLASS = {
   docente: "badge docente",
   auxiliar: "badge auxiliar",
 };
+// --- DATOS DE ACTUALIZACIONES ---
+const CHANGELOG_DATA = [
+  {
+    version: "v1.2.0",
+    date: "07 de Octubre, 2025",
+    changes: [
+      "Se añade el apartado de 'Actualizaciones del Software' para mantener informados a los usuarios.",
+      "Se corrige un error de rendimiento en los gráficos del dashboard que causaba un crecimiento infinito.",
+    ],
+  },
+  {
+    version: "v1.1.0",
+    date: "06 de Octubre, 2025",
+    changes: [
+      "Se refactoriza la lógica de autenticación para verificar el rol del usuario antes de solicitar datos de administrador, solucionando errores de permisos.",
+      "Se ajusta la creación de usuarios para utilizar el correo electrónico como ID único, alineando la base de datos con las reglas de seguridad.",
+    ],
+  },
+  {
+    version: "v1.0.0",
+    date: "05 de Octubre, 2025",
+    changes: [
+      "Lanzamiento inicial del Tablero de Control Docente.",
+      "Implementación de la autenticación con cuentas de Google (@potros.itson.edu.mx).",
+      "Módulo de gestión de usuarios para administradores.",
+    ],
+  },
+];
 
 // --- ESTADO GLOBAL DE LA APLICACIÓN ---
 let users = [];
@@ -60,6 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
   attachEventListeners();
   initCharts();
   initializeAuthentication();
+  renderChangelog(); // 🔥 LLAMADA AÑADIDA 🔥
   window.addEventListener("resize", syncHeaderHeight);
 });
 
@@ -78,7 +107,9 @@ function cacheDomElements() {
     "userSyncStatus", "adminActivityList", "adminActivityForm", "adminActivityAlert",
     "importTeachersBtn", "importTeachersAlert", "inviteAlert", "teacherPendingActivities",
     "teacherProgressSummary", "auxiliarActivityList", "auxiliarActivityAlert", "printReport",
-    "refreshDashboard", "sidebarCollapseBtn", "sidebarExpandBtn"
+    "refreshDashboard", "sidebarCollapseBtn", "sidebarExpandBtn",
+    // 🔥 IDs AÑADIDOS 🔥
+    "changelogModal", "openChangelogBtn", "closeChangelogBtn", "changelogBody", "modal-backdrop"
   ];
   ids.forEach(id => { elements[id] = document.getElementById(id); });
 }
@@ -99,6 +130,9 @@ function attachEventListeners() {
     elements.clearUserFiltersBtn?.addEventListener("click", resetUserFilters);
     elements.sidebarCollapseBtn?.addEventListener("click", () => setSidebarCollapsed(true));
     elements.sidebarExpandBtn?.addEventListener("click", () => setSidebarCollapsed(false));
+    elements.openChangelogBtn?.addEventListener("click", () => toggleChangelogModal(true));
+    elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
+    elements.modalBackdrop?.addEventListener("click", () => toggleChangelogModal(false));
 }
 
 
@@ -593,4 +627,26 @@ function updateCharts() {
     charts.users.data.datasets[0].data = Object.values(careerCounts);
     charts.users.update();
   }
+}
+
+function toggleChangelogModal(show) {
+  if (!elements.changelogModal || !elements.modalBackdrop) return;
+  elements.changelogModal.classList.toggle("hidden", !show);
+  elements.modalBackdrop.classList.toggle("hidden", !show);
+}
+
+function renderChangelog() {
+  if (!elements.changelogBody) return;
+
+  elements.changelogBody.innerHTML = CHANGELOG_DATA.map(entry => `
+    <div class="changelog-entry">
+      <header class="changelog-header">
+        <span class="changelog-version">${escapeHtml(entry.version)}</span>
+        <span class="changelog-date">${escapeHtml(entry.date)}</span>
+      </header>
+      <ul class="changelog-list">
+        ${entry.changes.map(change => `<li>${escapeHtml(change)}</li>`).join('')}
+      </ul>
+    </div>
+  `).join('');
 }
