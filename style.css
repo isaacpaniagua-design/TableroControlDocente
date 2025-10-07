@@ -754,7 +754,7 @@ button.primary:hover {
 /* 🔥 ESTILO FINAL CON BOTÓN 'X' EN NEGRO DE ALTO CONTRASTE 🔥 */
 #closeChangelogBtn {
   background: transparent;
-  color: var(--text); /* Color de texto principal (negro) */
+  color: #1f2937; /* Color de texto principal (negro) */
   opacity: 0.6;
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
@@ -762,7 +762,7 @@ button.primary:hover {
 #closeChangelogBtn:hover {
   opacity: 1;
   transform: scale(1.1);
-  background: var(--surface-alt);
+  background: #edf2ff;
 }
 
 #loginCard {
