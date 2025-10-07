@@ -1,0 +1,35 @@
+name: Generate Changelog
+
+on:
+  push:
+    branches:
+      - main # O la rama principal que uses, ej. "master"
+
+jobs:
+  build_changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          # Necesitamos el historial completo para generar el changelog
+          fetch-depth: 0
+
+      - name: Generate Changelog
+        uses: TriPSs/conventional-changelog-action@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          output-file: "CHANGELOG.md"
+          
+      - name: Commit files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add CHANGELOG.md
+          # Solo hace commit si hay cambios en el archivo
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs(changelog): update CHANGELOG.md"
+            git push
+          fi
