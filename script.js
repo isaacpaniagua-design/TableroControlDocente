@@ -48,7 +48,7 @@ const ROLE_BADGE_CLASS = {
 
 const QUICK_ACCESS_LINKS = {
   administrador: [
-    { label: 'Usuarios por carrera', targetId: 'generalReportCard', icon: 'pie-chart' },
+    { label: 'Reporte por carrera', targetId: 'generalReportCard', icon: 'pie-chart' },
     { label: 'Gestión de usuarios', targetId: 'userManagementCard', icon: 'users' },
     { label: 'Gestión de actividades', targetId: 'activityManagementCard', icon: 'clipboard-list' }
   ]
