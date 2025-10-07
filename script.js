@@ -16,7 +16,7 @@ import {
   signInWithPopup,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirebaseAuth, getFirestoreDb } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 
 // --- CONSTANTES Y CONFIGURACIÓN ---
 const ALLOWED_DOMAIN = "potros.itson.edu.mx";
@@ -79,7 +79,6 @@ let pendingFirebaseUser = null;
 const elements = {};
 const charts = { users: null, activities: null };
 
-let auth = null;
 let googleProvider = null;
 
 
@@ -138,7 +137,6 @@ function attachEventListeners() {
 // --- LÓGICA DE AUTENTICACIÓN ---
 function initializeAuthentication() {
   try {
-    auth = getFirebaseAuth();
     if (!auth) throw new Error("Firebase Auth no se pudo inicializar.");
     googleProvider = new GoogleAuthProvider();
     googleProvider.setCustomParameters({ hd: ALLOWED_DOMAIN });
@@ -295,7 +293,6 @@ async function handleUserFormSubmit(event) {
 }
 
 async function persistUserChange(record) {
-  const db = getFirestoreDb();
   if (!db) return { success: false, message: "Base de datos no disponible." };
 
   try {
@@ -357,7 +354,7 @@ async function requestUserDeletion(user) {
     }
     if (confirm(`¿Estás seguro de que quieres eliminar a ${user.name}?`)) {
         try {
-            await deleteDoc(doc(getFirestoreDb(), "users", user.id));
+            await deleteDoc(doc(db, "users", user.id));
             showMessage(elements.userFormAlert, "Usuario eliminado.", "success");
         } catch (error) {
             showMessage(elements.userFormAlert, "No se pudo eliminar el usuario.", "error");
@@ -369,13 +366,12 @@ async function requestUserDeletion(user) {
 
 // --- SINCRONIZACIÓN CON FIRESTORE ---
 function subscribeToFirestoreUsers() {
-  const db = getFirestoreDb();
   if (!db) {
     firestoreUsersError = "Configura Firebase para sincronizar usuarios.";
     renderAllSections();
     return;
   }
-  firestoreUsersLoading = true;
+  let firestoreUsersLoading = true;
   const q = query(collection(db, "users"), orderBy("name"));
 
   unsubscribeUsersListener = onSnapshot(q, 
@@ -456,7 +452,7 @@ function renderUserTable() {
     if (!elements.userTableContainer) return;
     const filteredUsers = getFilteredUsers();
     renderUserTableMeta(filteredUsers);
-
+    let firestoreUsersLoading;
     if (users.length === 0 && !firestoreUsersLoading) {
         elements.userTableContainer.innerHTML = `<p class="empty-state">No hay usuarios registrados. Agrega el primero para comenzar.</p>`;
         return;
@@ -504,6 +500,7 @@ function renderUserTable() {
 
 function renderUserTableMeta(filteredUsers) {
     if (!elements.userTableMeta) return;
+    let firestoreUsersLoading;
     if (firestoreUsersLoading) {
         elements.userTableMeta.textContent = 'Cargando usuarios...';
         return;
@@ -624,6 +621,7 @@ function renderUserSummary() {
 function renderUserSyncStatus() {
     if (!elements.userSyncStatus) return;
     let cn = "user-sync-status", text = "";
+    let firestoreUsersLoading;
     if (firestoreUsersLoading) { cn += " loading"; text = "Sincronizando..."; } 
     else if (firestoreUsersError) { cn += " error"; text = firestoreUsersError; } 
     else if (firestoreUsersLoaded) { cn += " success"; text = `Sincronizado. Última actualización: ${new Date(firestoreUsersLastUpdated).toLocaleTimeString()}`; }
