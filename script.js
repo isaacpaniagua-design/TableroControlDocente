@@ -44,7 +44,15 @@ const ROLE_BADGE_CLASS = {
   docente: "badge docente",
   auxiliar: "badge auxiliar",
 };
+// Justo después de la constante ROLE_BADGE_CLASS
 
+const QUICK_ACCESS_LINKS = {
+  administrador: [
+    { label: 'Usuarios por carrera', targetId: 'generalReportCard', icon: 'pie-chart' },
+    { label: 'Gestión de usuarios', targetId: 'userManagementCard', icon: 'users' },
+    { label: 'Gestión de actividades', targetId: 'activityManagementCard', icon: 'clipboard-list' }
+  ]
+};
 // --- EL ARRAY CHANGELOG_DATA HA SIDO ELIMINADO ---
 
 // --- ESTADO GLOBAL DE LA APLICACIÓN ---
@@ -115,6 +123,7 @@ function attachEventListeners() {
             toggleChangelogModal(false);
         }
        });
+  elements.quickAccessList?.addEventListener('click', handleQuickAccessClick);
 }
 
 // --- LÓGICA DE AUTENTICACIÓN ---
@@ -298,6 +307,54 @@ function handleUserTableClick(event) {
   if (button.dataset.action === "edit") openUserForm("edit", user);
   else if (button.dataset.action === "delete") requestUserDeletion(user);
 }
+// Puedes añadir este bloque después de la función handleUserTableClick
+
+function renderQuickAccessMenu(role) {
+  if (!elements.quickAccess || !elements.quickAccessList) return;
+
+  const links = QUICK_ACCESS_LINKS[role];
+
+  if (links && links.length > 0) {
+    elements.quickAccess.hidden = false;
+    elements.quickAccessList.innerHTML = links.map(link => `
+      <li>
+        <button class="quick-access__button" data-target-id="${link.targetId}">
+          <span class="quick-access__icon"><i data-lucide="${link.icon}"></i></span>
+          <div class="quick-access__content">
+            <strong>${link.label}</strong>
+          </div>
+        </button>
+      </li>
+    `).join('');
+    refreshIcons(); // Esencial para que los nuevos íconos se rendericen
+  } else {
+    elements.quickAccess.hidden = true;
+    elements.quickAccessList.innerHTML = '';
+  }
+}
+
+function handleQuickAccessClick(event) {
+  const button = event.target.closest('.quick-access__button');
+  if (!button) return;
+
+  const targetId = button.dataset.targetId;
+  const targetElement = document.getElementById(targetId);
+
+  if (targetElement) {
+    // Aseguramos que el <details> esté abierto antes de navegar
+    if (targetElement.tagName === 'DETAILS' && !targetElement.open) {
+      targetElement.open = true;
+    }
+    
+    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Resaltamos la sección brevemente para dar feedback visual
+    targetElement.classList.add('is-targeted');
+    setTimeout(() => {
+      targetElement.classList.remove('is-targeted');
+    }, 1500);
+  }
+}
 async function requestUserDeletion(user) {
     if ((user.potroEmail || "").toLowerCase() === PRIMARY_ADMIN_EMAIL_NORMALIZED) {
         return showMessage(elements.userFormAlert, "No puedes eliminar al administrador principal.", "error");
@@ -358,6 +415,7 @@ function updateLayoutMode() {
 }
 function loginUser(user) {
   elements.headerUserMeta?.classList.remove("hidden");
+  
   if(elements.headerUserName) elements.headerUserName.textContent = user.name;
   if(elements.headerUserRole) {
     elements.headerUserRole.textContent = ROLE_LABELS[user.role] || 'Usuario';
@@ -368,6 +426,8 @@ function loginUser(user) {
   } else {
     renderAllSections();
   }
+  // Dentro de loginUser(user)
+renderQuickAccessMenu(user.role);
 }
 function applyLoggedOutState() {
   currentUser = null;
@@ -375,6 +435,8 @@ function applyLoggedOutState() {
   elements.headerUserMeta?.classList.add("hidden");
   updateLayoutMode();
   renderAllSections();
+  // Dentro de applyLoggedOutState()
+renderQuickAccessMenu(null);
 }
 function renderUserTable() {
     if (!elements.userTableContainer) return;
