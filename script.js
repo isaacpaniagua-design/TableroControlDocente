@@ -216,8 +216,8 @@ async function handleAuthStateChange(firebaseUser) {
     // la vista correcta (login o dashboard), pero sigue oculta (opacity: 0).
 
     // 1. Añadimos la clase para iniciar la transición y mostrar el contenido.
-   document.body.style.transition = 'opacity 0.3s ease-in';
-    document.body.style.opacity = '1'
+    document.body.classList.add('app-loaded');
+    document.body.classList.remove('app-loading');
 
 
     // 2. Desvanecemos y eliminamos el loader.
@@ -442,17 +442,10 @@ function renderAllSections() {
 }
 function updateLayoutMode() {
   const dashboardVisible = !!currentUser;
-  
-  // 🔥 Cambiamos cómo se muestran y ocultan las secciones
-  if (elements.authSection) {
-    elements.authSection.style.display = dashboardVisible ? 'none' : 'flex';
-  }
-  if (elements.dashboard) {
-    elements.dashboard.style.display = dashboardVisible ? 'block' : 'none';
-  }
-
   document.body.classList.toggle("dashboard-active", dashboardVisible);
   document.body.classList.toggle("auth-active", !dashboardVisible);
+  elements.authSection?.classList.toggle("hidden", dashboardVisible);
+  elements.dashboard?.classList.toggle("hidden", !dashboardVisible);
 }
 function loginUser(user) {
   elements.headerUserMeta?.classList.remove("hidden");
