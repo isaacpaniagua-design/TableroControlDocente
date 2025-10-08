@@ -495,15 +495,6 @@ body.auth-active main {
   isolation: isolate;
 }
 
-.dashboard-section::before {
-  content: "";
-  position: absolute;
-  inset: -30% 60% 40% -25%;
-  background: radial-gradient(circle at 80% 20%, rgba(14, 165, 233, 0.2), transparent 70%);
-  opacity: 0.85;
-  pointer-events: none;
-  z-index: 0;
-}
 
 .dashboard-section > * {
   position: relative;
