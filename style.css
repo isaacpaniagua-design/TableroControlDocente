@@ -49,19 +49,7 @@ body::before {
   opacity: 0.85;
   mix-blend-mode: screen;
 }
-/*
-  SOLUCIÓN ANTI-FLICKERING:
-  Oculta el contenido principal mientras el body tenga la clase 'app-loading'
-  y asegura que el loader sea visible.
-*/
-body.app-loading main {
-  visibility: hidden; /* Oculta el contenido sin afectar el layout */
-}
 
-/* Añade una transición suave para cuando el loader desaparezca */
-#loader {
-  transition: opacity 0.4s ease-out;
-}
 .hidden {
   display: none !important;
 }
@@ -2009,20 +1997,6 @@ button.small i {
   backdrop-filter: blur(6px);
 }
 
-.spinner {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 6px solid rgba(37, 99, 235, 0.2);
-  border-top-color: var(--primary);
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 #modal-backdrop {
   position: fixed;
