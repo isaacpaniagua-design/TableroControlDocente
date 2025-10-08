@@ -1084,7 +1084,13 @@ nav button.active {
   color: var(--muted);
   max-width: 520px;
 }
-
+/* AÑADE ESTA NUEVA REGLA */
+.content-actions {
+  display: flex;          /* 1. Activa el modo "caja flexible" */
+  align-items: flex-start;  /* 2. Alinea los botones verticalmente en la parte superior */
+  gap: 0.75rem;           /* 3. Crea un espacio consistente entre los botones */
+  flex-shrink: 0;         /* 4. Evita que los botones se deformen si no hay espacio */
+}
 button.ghost {
   background: rgba(37, 99, 235, 0.12);
   border-radius: 14px;
