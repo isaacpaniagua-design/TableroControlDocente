@@ -152,19 +152,19 @@ function setSidebarCollapsed(value) {
 
   const button = elements.sidebarCollapseBtn;
   if (button) {
-    const icon = button.querySelector('i');
-    const span = button.querySelector('span');
     if (value) {
-      icon.setAttribute('data-lucide', 'panel-left');
-      span.textContent = 'Mostrar menú';
+      // Estado colapsado: muestra el ícono para expandir
+      button.innerHTML = '<i data-lucide="panel-left"></i><span>Mostrar menú</span>';
       button.setAttribute('aria-expanded', 'false');
       button.setAttribute('aria-label', 'Mostrar menú lateral');
     } else {
-      icon.setAttribute('data-lucide', 'panel-left-close');
-      span.textContent = 'Ocultar menú';
+      // Estado expandido: muestra el ícono para colapsar
+      button.innerHTML = '<i data-lucide="panel-left-close"></i><span>Ocultar menú</span>';
       button.setAttribute('aria-expanded', 'true');
       button.setAttribute('aria-label', 'Ocultar menú lateral');
     }
+    
+    // Vuelve a renderizar los íconos de Lucide
     if (window.lucide) {
       window.lucide.createIcons();
     }
