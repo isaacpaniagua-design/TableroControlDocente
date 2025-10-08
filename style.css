@@ -750,6 +750,7 @@ button.primary:hover {
 #dashboard {
   position: relative;
   padding-block: clamp(0.75rem, 2vh, 1.6rem);
+  padding-inline: clamp(0rem, 1vw, 1.5rem); /* <-- AÑADE ESTA LÍNEA */
 }
 
 #dashboard::before {
