@@ -2497,3 +2497,26 @@ button.small i {
   color: var(--danger);
   font-style: italic;
 }
+
+/* 🔥 SOLUCIÓN PARA EL BUG DE ANIMACIÓN DE <DETAILS> 🔥 */
+
+.dashboard-section > .dashboard-section__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows 0.35s ease-in-out, 
+              padding-top 0.35s ease-in-out, 
+              padding-bottom 0.35s ease-in-out;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.dashboard-section[open] > .dashboard-section__body {
+  grid-template-rows: 1fr;
+  padding-top: clamp(1.25rem, 3vw, 2rem);
+  padding-bottom: clamp(1.4rem, 3vw, 2.25rem);
+}
+
+.dashboard-section__body > * {
+  min-height: 0;
+}
