@@ -110,7 +110,7 @@ function cacheDomElements() {
     "userRoleFilter", "userCareerFilter", "userAuthFilter", "clearUserFiltersBtn", "userTableMeta",
     "userSyncStatus", "adminActivityList", "adminActivityForm", "adminActivityAlert", "importTeachersBtn",
     "importTeachersAlert", "teacherPendingActivities", "teacherProgressSummary", "auxiliarActivityList",
-    "auxiliarActivityAlert", "printReport", "refreshDashboard", "sidebarCollapseBtn", "sidebarExpandBtn",
+    "auxiliarActivityAlert", "printReport", "refreshDashboard", "sidebarCollapseBtn",
     "changelogModal", "openChangelogBtn", "closeChangelogBtn", "changelogBody", "importModal",
     "closeImportModalBtn", "importModalBody", "importInstructions", "importFileInput", "importProgress",
     "importStatus", "importProgressBar", "importResults", "importResultsBody"
@@ -131,7 +131,12 @@ function attachEventListeners() {
     elements.userCareerFilter?.addEventListener("change", (e) => { userFilters.career = e.target.value; renderUserTable(); });
     elements.userAuthFilter?.addEventListener("change", (e) => { userFilters.auth = e.target.value; renderUserTable(); });
     elements.clearUserFiltersBtn?.addEventListener("click", resetUserFilters);
-    elements.sidebarCollapseBtn?.addEventListener("click", () => setSidebarCollapsed(true));
+    
+    elements.sidebarCollapseBtn?.addEventListener("click", () => {
+        const isCollapsed = elements.dashboardShell.classList.contains('sidebar-collapsed');
+        setSidebarCollapsed(!isCollapsed);
+    });
+
     elements.openChangelogBtn?.addEventListener("click", () => toggleChangelogModal(true));
     elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
     elements.changelogModal?.addEventListener('click', (event) => { if (event.target === elements.changelogModal) toggleChangelogModal(false); });
@@ -140,45 +145,31 @@ function attachEventListeners() {
     elements.importTeachersBtn?.addEventListener('click', () => toggleImportModal(true));
     elements.closeImportModalBtn?.addEventListener('click', () => toggleImportModal(false));
     elements.importFileInput?.addEventListener('change', handleFileSelect);
-   // 🔥 CORRECCIÓN: Ahora solo hay un botón que controla el sidebar.
-    elements.sidebarCollapseBtn?.addEventListener("click", () => {
-        // La nueva lógica es simple: alterna el estado actual.
-        const isCollapsed = elements.dashboardShell.classList.contains('sidebar-collapsed');
-        setSidebarCollapsed(!isCollapsed);
-    });
 }
 
-// 🔥 FUNCIÓN SIMPLIFICADA 🔥
 function setSidebarCollapsed(value) {
   elements.dashboardShell?.classList.toggle("sidebar-collapsed", value);
 
-  // Actualizamos el ícono y el texto del único botón que existe.
   const button = elements.sidebarCollapseBtn;
   if (button) {
     const icon = button.querySelector('i');
     const span = button.querySelector('span');
     if (value) {
-      // Si está colapsado, preparamos el botón para mostrar.
       icon.setAttribute('data-lucide', 'panel-left');
       span.textContent = 'Mostrar menú';
       button.setAttribute('aria-expanded', 'false');
       button.setAttribute('aria-label', 'Mostrar menú lateral');
     } else {
-      // Si está expandido, preparamos el botón para ocultar.
       icon.setAttribute('data-lucide', 'panel-left-close');
       span.textContent = 'Ocultar menú';
       button.setAttribute('aria-expanded', 'true');
       button.setAttribute('aria-label', 'Ocultar menú lateral');
     }
-    // Importante: Volvemos a renderizar el ícono de Lucide después de cambiarlo.
     if (window.lucide) {
       window.lucide.createIcons();
     }
   }
 }
-
-// ... (resto del código del script)
-Estos cambios unifican la lógica en un solo botón, haciendo el código más limpio y solucionando el problema.
 
 function openUserForm(mode, user = null) {
   hideMessage(elements.userFormAlert);
@@ -479,7 +470,7 @@ function isPrimaryAdmin(user) {
 }
 
 function escapeHtml(str) {
-    return String(str ?? "").replace(/[&<>"']/g, match => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'})[match]);
+    return String(str ?? "").replace(/[&<>"']/g, match => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;'})[match]);
 }
 
 function showMessage(element, message, type = "error", duration = 5000) {
