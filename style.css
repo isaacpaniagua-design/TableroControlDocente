@@ -240,14 +240,11 @@ body.dashboard-active main {
   padding-inline: var(--main-inline-padding);
 }
 
-body.dashboard-active .app-header__inner {
-  width: min(96vw, 1500px);
-}
-
+body.dashboard-active .app-header__inner,
 body.dashboard-active .dashboard-shell {
-  width: 100%;
-  max-width: none;
-  margin: 0;
+  max-width: none; /* Elimina el ancho máximo */
+  width: 100%;     /* Asegura que ocupe todo el espacio */
+  margin: 0;       /* Elimina los márgenes automáticos */
 }
 
 body.dashboard-active .content-area {
