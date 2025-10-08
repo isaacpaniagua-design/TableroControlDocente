@@ -10,23 +10,13 @@
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script
-      src="https://cdn.jsdelivr.net/npm/chart.js"
-      integrity="sha256-Lye89HGy1p3XhJT24hcvsoRw64Q4IOL5a7hdOflhjTA="
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://unpkg.com/lucide@latest"
-      integrity="sha384-s2Bf99fCTzOxWHpWEoXVtGJrqy0Ba0dc9EPd71KJR1gNx1kGozhYXtgSmVtprhVf"
-      crossorigin="anonymous"
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body class="app-loading">
-    <div id="loader">
-      <div class="spinner"></div>
-    </div>
+    <div id="loader"><div class="spinner"></div></div>
 
     <div id="changelogModal" class="modal hidden">
       <div class="modal-content">
@@ -43,43 +33,37 @@
     </div>
 
     <div id="importModal" class="modal hidden">
-      <div class="modal-content import-modal-content">
-        <header class="modal-header">
-          <h3>Importar Usuarios desde Excel</h3>
-          <button type="button" class="icon-button" id="closeImportModalBtn" aria-label="Cerrar ventana">
-            <svg class="custom-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        </header>
-        <div id="importModalBody" class="modal-body">
-          <div id="importInstructions">
-            <h4>Instrucciones</h4>
-            <p>Selecciona un archivo Excel (.xlsx o .xls) con las siguientes columnas:</p>
-            <ul class="instructions-list">
-              <li><strong>name</strong> (Nombre completo)</li>
-              <li><strong>potroEmail</strong> (Correo @potros.itson.edu.mx)</li>
-              <li><strong>role</strong> (Rol: <i>administrador, docente, auxiliar</i>)</li>
-              <li><strong>career</strong> (Carrera: <i>software, manufactura, mecatronica, global</i>)</li>
-              <li><i>Opcionales: controlNumber, institutionalEmail, email, phone</i></li>
-            </ul>
-            <label for="importFileInput" class="button primary upload-button">
-              <i data-lucide="upload"></i>
-              <span>Seleccionar Archivo</span>
-            </label>
-            <input type="file" id="importFileInput" class="hidden" accept=".xlsx, .xls, .csv">
-          </div>
-          <div id="importProgress" class="hidden">
-            <h4>Procesando archivo...</h4>
-            <p id="importStatus">Importando 0 de 0...</p>
-            <div class="progress-bar-container">
-              <div class="progress-bar" id="importProgressBar"></div>
+        <div class="modal-content import-modal-content">
+            <header class="modal-header">
+                <h3>Importar Usuarios desde Excel</h3>
+                <button type="button" class="icon-button" id="closeImportModalBtn" aria-label="Cerrar ventana">
+                    <svg class="custom-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </header>
+            <div id="importModalBody" class="modal-body">
+                <div id="importInstructions">
+                    <h4>Instrucciones</h4>
+                    <p>Selecciona un archivo Excel (.xlsx o .xls) con las siguientes columnas:</p>
+                    <ul class="instructions-list">
+                        <li><strong>name</strong>, <strong>potroEmail</strong>, <strong>role</strong>, <strong>career</strong></li>
+                        <li><i>Opcionales: controlNumber, institutionalEmail, email, phone</i></li>
+                    </ul>
+                    <label for="importFileInput" class="button primary upload-button">
+                        <i data-lucide="upload"></i> <span>Seleccionar Archivo</span>
+                    </label>
+                    <input type="file" id="importFileInput" class="hidden" accept=".xlsx, .xls, .csv">
+                </div>
+                <div id="importProgress" class="hidden">
+                    <h4>Procesando archivo...</h4>
+                    <p id="importStatus">Importando 0 de 0...</p>
+                    <div class="progress-bar-container"><div class="progress-bar" id="importProgressBar"></div></div>
+                </div>
+                <div id="importResults" class="hidden">
+                    <h4>Resultados de la Importación</h4>
+                    <div id="importResultsBody"></div>
+                </div>
             </div>
-          </div>
-          <div id="importResults" class="hidden">
-            <h4>Resultados de la Importación</h4>
-            <div id="importResultsBody"></div>
-          </div>
         </div>
-      </div>
     </div>
 
     <header class="app-header">
@@ -101,41 +85,33 @@
           </div>
         </div>
       </div>
+      <div class="app-header__meta" id="appMetaHeader">
+          <nav class="quick-access-nav" id="quickAccessNav"></nav>
+          <div class="meta-actions">
+              <button class="ghost" type="button" id="openChangelogBtn">
+                  <i data-lucide="history"></i>
+                  <span>Ver actualizaciones</span>
+              </button>
+          </div>
+      </div>
     </header>
 
     <main>
       <section id="dashboard">
         <div class="dashboard-shell" id="dashboardShell">
-          <aside class="sidebar">
-            <div class="quick-access" id="quickAccess" hidden>
-              <h4>Accesos rápidos</h4>
-              <ul id="quickAccessList" class="quick-access__list"></ul>
-            </div>
-            <div class="sidebar-footer">
-              <p>Mantente al día con tus actividades y comparte avances.</p>
-              <button type="button" class="button-link" id="openChangelogBtn">
-                <i data-lucide="history"></i>
-                <span>Ver actualizaciones</span>
-              </button>
-            </div>
-          </aside>
           <section class="content-area">
-       <div class="content-intro" id="dashboardIntro">
-  <div>
-    <h2>Panel de control</h2>
-    <p>Revisa tus indicadores, tareas y reportes de manera organizada.</p>
-  </div>
-  <div class="content-actions">
-    <button class="ghost" type="button" id="sidebarCollapseBtn" aria-label="Mostrar menú lateral" aria-expanded="false">
-        <i data-lucide="panel-left"></i>
-        <span>Mostrar menú</span>
-    </button>
-    <button class="ghost" type="button" id="printReport">
-        <i data-lucide="printer"></i>
-        <span>Imprimir reporte</span>
-    </button>
-  </div>
-</div>
+            <div class="content-intro" id="dashboardIntro">
+              <div>
+                <h2>Panel de control</h2>
+                <p>Revisa tus indicadores, tareas y reportes de manera organizada.</p>
+              </div>
+              <div class="content-actions">
+                <button class="ghost" type="button" id="printReport">
+                  <i data-lucide="printer"></i>
+                  <span>Imprimir reporte</span>
+                </button>
+              </div>
+            </div>
 
             <div id="adminView" class="hidden">
               <details class="dashboard-section" id="generalReportCard" open>
@@ -144,7 +120,7 @@
                     <h2>Reporte General</h2>
                     <p class="card-subtitle">Analiza la actividad del departamento.</p>
                   </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
+                  <span class="dashboard-section__chevron"></span>
                 </summary>
                 <div class="dashboard-section__body">
                   <div class="dashboard-section__actions">
@@ -153,14 +129,8 @@
                     </button>
                   </div>
                   <div class="chart-grid">
-                    <div class="chart-card">
-                      <header><h4>Usuarios por Carrera</h4></header>
-                      <canvas id="usersChart"></canvas>
-                    </div>
-                    <div class="chart-card">
-                      <header><h4>Estado de Actividades</h4></header>
-                      <canvas id="activitiesChart"></canvas>
-                    </div>
+                    <div class="chart-card"><header><h4>Usuarios por Carrera</h4></header><canvas id="usersChart"></canvas></div>
+                    <div class="chart-card"><header><h4>Estado de Actividades</h4></header><canvas id="activitiesChart"></canvas></div>
                   </div>
                 </div>
               </details>
@@ -171,22 +141,16 @@
                     <h2>Gestión de Usuarios</h2>
                     <p class="card-subtitle">Agrega, edita y elimina usuarios.</p>
                   </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
+                  <span class="dashboard-section__chevron"></span>
                 </summary>
                 <div class="dashboard-section__body">
                   <div id="admin-user-management">
                     <div class="import-toolbar">
-                      <button class="primary" type="button" id="importTeachersBtn">
-                        <i data-lucide="file-input"></i>
-                        <span>Importar Usuarios desde Excel</span>
-                      </button>
+                      <button class="primary" type="button" id="importTeachersBtn"><i data-lucide="file-input"></i><span>Importar Usuarios</span></button>
                       <div id="importTeachersAlert"></div>
                     </div>
                     <div class="user-management-actions">
-                      <button class="primary" type="button" id="startAddUserBtn" hidden>
-                        <i data-lucide="user-plus"></i>
-                        <span>Agregar usuario</span>
-                      </button>
+                      <button class="primary" type="button" id="startAddUserBtn" hidden><i data-lucide="user-plus"></i><span>Agregar usuario</span></button>
                     </div>
                     <form id="userForm" class="user-form" hidden>
                       <header class="user-form-header">
@@ -232,7 +196,7 @@
                     <h2>Gestión de Actividades</h2>
                     <p class="card-subtitle">Crea y asigna tareas al equipo.</p>
                   </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
+                  <span class="dashboard-section__chevron"></span>
                 </summary>
                 <div class="dashboard-section__body">
                   <form id="adminActivityForm"></form>
