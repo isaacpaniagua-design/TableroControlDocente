@@ -4,30 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tablero de Control Docente</title>
-    <style>
-      /* Solución anti-flickering crítica */
-       body {
-        /* Oculta el body por defecto y prepara una transición suave */
-        opacity: 0;
-        transition: opacity 0.3s ease-in;
-      }
-      body.app-loaded {
-        /* Esta clase la añadirá JS para mostrar el contenido suavemente */
-        opacity: 1;
-      }
-      #loader {
-        position: fixed; inset: 0; background: #f4f6fb;
-        display: flex; align-items: center; justify-content: center;
-        z-index: 9999; transition: opacity 0.5s ease-out;
-      }
-      .spinner {
-        width: 56px; height: 56px; border-radius: 50%;
-        border: 6px solid rgba(37, 99, 235, 0.2);
-        border-top-color: #2563eb;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -53,70 +29,66 @@
     </div>
 
     <div id="changelogModal" class="modal hidden">
-  <div class="modal-content">
-    <header class="modal-header">
-      <h3>Actualizaciones del Software</h3>
-      <button type="button" class="icon-button" id="closeChangelogBtn" aria-label="Cerrar ventana">
-  <svg class="custom-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M18 6L6 18M6 6L18 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-</button>
-    </header>
-    <div id="changelogBody" class="modal-body">
-      </div>
-  </div>
-</div>
-<div id="importModal" class="modal hidden">
-  <div class="modal-content import-modal-content">
-    <header class="modal-header">
-      <h3>Importar Usuarios desde Excel</h3>
-      <button type="button" class="icon-button" id="closeImportModalBtn" aria-label="Cerrar ventana">
-         <svg class="custom-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-    </header>
-    <div id="importModalBody" class="modal-body">
-      <div id="importInstructions">
-        <h4>Instrucciones</h4>
-        <p>Selecciona un archivo Excel (.xlsx o .xls) con las siguientes columnas:</p>
-        <ul class="instructions-list">
-          <li><strong>name</strong> (Nombre completo del docente)</li>
-          <li><strong>potroEmail</strong> (Correo institucional @potros.itson.edu.mx)</li>
-          <li><strong>role</strong> (Rol: <i>administrador, docente, auxiliar</i>)</li>
-          <li><strong>career</strong> (Carrera: <i>software, manufactura, mecatronica, global</i>)</li>
-          <li><i>Opcionales: controlNumber, institutionalEmail, email, phone</i></li>
-        </ul>
-        <label for="importFileInput" class="button primary upload-button">
-          <i data-lucide="upload"></i>
-          <span>Seleccionar Archivo</span>
-        </label>
-        <input type="file" id="importFileInput" class="hidden" accept=".xlsx, .xls, .csv">
-      </div>
-      <div id="importProgress" class="hidden">
-        <h4>Procesando archivo...</h4>
-        <p id="importStatus">Importando 0 de 0...</p>
-        <div class="progress-bar-container">
-          <div class="progress-bar" id="importProgressBar"></div>
-        </div>
-      </div>
-      <div id="importResults" class="hidden">
-        <h4>Resultados de la Importación</h4>
-        <div id="importResultsBody"></div>
+      <div class="modal-content">
+        <header class="modal-header">
+          <h3>Actualizaciones del Software</h3>
+          <button type="button" class="icon-button" id="closeChangelogBtn" aria-label="Cerrar ventana">
+            <svg class="custom-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </header>
+        <div id="changelogBody" class="modal-body"></div>
       </div>
     </div>
-  </div>
-</div>
+
+    <div id="importModal" class="modal hidden">
+      <div class="modal-content import-modal-content">
+        <header class="modal-header">
+          <h3>Importar Usuarios desde Excel</h3>
+          <button type="button" class="icon-button" id="closeImportModalBtn" aria-label="Cerrar ventana">
+            <svg class="custom-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </header>
+        <div id="importModalBody" class="modal-body">
+          <div id="importInstructions">
+            <h4>Instrucciones</h4>
+            <p>Selecciona un archivo Excel (.xlsx o .xls) con las siguientes columnas:</p>
+            <ul class="instructions-list">
+              <li><strong>name</strong> (Nombre completo)</li>
+              <li><strong>potroEmail</strong> (Correo @potros.itson.edu.mx)</li>
+              <li><strong>role</strong> (Rol: <i>administrador, docente, auxiliar</i>)</li>
+              <li><strong>career</strong> (Carrera: <i>software, manufactura, mecatronica, global</i>)</li>
+              <li><i>Opcionales: controlNumber, institutionalEmail, email, phone</i></li>
+            </ul>
+            <label for="importFileInput" class="button primary upload-button">
+              <i data-lucide="upload"></i>
+              <span>Seleccionar Archivo</span>
+            </label>
+            <input type="file" id="importFileInput" class="hidden" accept=".xlsx, .xls, .csv">
+          </div>
+          <div id="importProgress" class="hidden">
+            <h4>Procesando archivo...</h4>
+            <p id="importStatus">Importando 0 de 0...</p>
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="importProgressBar"></div>
+            </div>
+          </div>
+          <div id="importResults" class="hidden">
+            <h4>Resultados de la Importación</h4>
+            <div id="importResultsBody"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <header class="app-header">
       <div class="app-header__inner">
         <div class="brand-area">
           <span class="brand-pill">ITSon</span>
           <div>
-            <h1>
-              <i data-lucide="layout-dashboard"></i> Tablero de Control Docente
-            </h1>
-            <p class="brand-description">
-              Planifica, monitorea y comunica el trabajo académico en una
-              interfaz unificada.
-            </p>
+            <h1><i data-lucide="layout-dashboard"></i> Tablero de Control Docente</h1>
+            <p class="brand-description">Planifica, monitorea y comunica el trabajo académico.</p>
           </div>
         </div>
         <div class="header-tools">
@@ -132,122 +104,10 @@
     </header>
 
     <main>
-      <section id="authSection">
-        <div class="auth-layout">
-          <div class="auth-hero">
-            <span class="eyebrow">Gestión académica</span>
-            <h2>Organiza el trabajo docente con claridad</h2>
-            <p>
-              Centraliza indicadores, actividades y seguimientos en un solo
-              lugar.
-            </p>
-            <ul class="auth-highlights">
-              <li>Visualiza el avance de las actividades en tiempo real.</li>
-              <li>Coordina responsabilidades entre docentes y auxiliares.</li>
-              <li>Genera reportes claros para la toma de decisiones.</li>
-            </ul>
-            <div class="auth-metrics">
-              <div>
-                <span class="metric-value">+120</span>
-                <span class="metric-label">Actividades gestionadas</span>
-              </div>
-              <div>
-                <span class="metric-value">8</span>
-                <span class="metric-label">Programas académicos</span>
-              </div>
-              <div>
-                <span class="metric-value">24/7</span>
-                <span class="metric-label">Acceso disponible</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="auth-panel">
-            <div class="card" id="loginCard">
-              <div class="card-header">
-                <div>
-                  <span class="eyebrow">Bienvenido</span>
-                  <h2>Ingresa a tu panel</h2>
-                </div>
-                <i data-lucide="lock"></i>
-              </div>
-              <p>
-                Accede con tu correo institucional
-                <strong>@potros.itson.edu.mx</strong> y gestiona tus tareas sin
-                complicaciones. Inicia sesión con Google para validar tus
-                permisos en la plataforma.
-              </p>
-              <div class="form-actions">
-                <button class="primary" type="button" id="googleSignInBtn">
-                  <i data-lucide="log-in"></i>
-                  <span>Ingresar con Google</span>
-                </button>
-              </div>
-              <p class="form-help">
-                Solo se permiten cuentas de Google con dominio
-                <strong>@potros.itson.edu.mx</strong>. Si necesitas acceso,
-                contacta al administrador principal.
-              </p>
-              <div class="alert error" id="loginError"></div>
-            </div>
-            <div class="auth-support">
-              <div class="auth-support__intro">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path
-                    d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"
-                  ></path>
-                  <path d="M21 16v2a4 4 0 0 1-4 4h-5"></path>
-                </svg>
-                <div>
-                  <h3>¿Necesitas ayuda?</h3>
-                  <p>
-                    Nuestro equipo académico puede orientarte con la migración
-                    de datos o la incorporación de nuevos usuarios.
-                  </p>
-                </div>
-              </div>
-              <ul>
-                <li>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path
-                      d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"
-                    ></path>
-                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                  </svg>
-                  isaac.paniagua@potros.itson.edu.mx
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="dashboard" class="hidden">
+      <section id="dashboard">
         <div class="dashboard-shell" id="dashboardShell">
           <aside class="sidebar">
-            <button
-              type="button"
-              class="sidebar-toggle"
-              id="sidebarCollapseBtn"
-              aria-label="Ocultar menú lateral"
-              aria-expanded="true"
-            >
+            <button type="button" class="sidebar-toggle" id="sidebarCollapseBtn" aria-label="Ocultar menú lateral" aria-expanded="true">
               <i data-lucide="panel-left-close"></i>
               <span>Ocultar menú</span>
             </button>
@@ -256,10 +116,7 @@
               <ul id="quickAccessList" class="quick-access__list"></ul>
             </div>
             <div class="sidebar-footer">
-              <p>
-                Mantente al día con tus actividades y comparte avances con tu
-                coordinación.
-              </p>
+              <p>Mantente al día con tus actividades y comparte avances.</p>
               <button type="button" class="button-link" id="openChangelogBtn">
                 <i data-lucide="history"></i>
                 <span>Ver actualizaciones</span>
@@ -267,28 +124,14 @@
             </div>
           </aside>
           <section class="content-area">
-            <button
-              type="button"
-              class="sidebar-toggle sidebar-toggle--floating"
-              id="sidebarExpandBtn"
-              aria-label="Mostrar menú lateral"
-              hidden
-            >
+            <button type="button" class="sidebar-toggle sidebar-toggle--floating" id="sidebarExpandBtn" aria-label="Mostrar menú lateral" hidden>
               <i data-lucide="panel-left"></i>
               <span>Mostrar menú</span>
             </button>
-            <div
-              class="content-intro"
-              id="dashboardIntro"
-              data-nav-label="Panel de control"
-              data-nav-roles="administrador,docente,auxiliar"
-            >
+            <div class="content-intro" id="dashboardIntro">
               <div>
                 <h2>Panel de control</h2>
-                <p>
-                  Revisa tus indicadores, tareas y reportes de manera visual y
-                  organizada.
-                </p>
+                <p>Revisa tus indicadores, tareas y reportes de manera organizada.</p>
               </div>
               <button class="ghost" type="button" id="printReport">
                 <i data-lucide="printer"></i> Imprimir reporte
@@ -296,48 +139,11 @@
             </div>
 
             <div id="adminView" class="hidden">
-              <div
-                class="overview-grid"
-                id="dashboardHighlights"
-                data-nav-label="Resumen"
-                data-nav-roles="administrador"
-              >
-                <article class="summary-card">
-                  <i data-lucide="users"></i>
-                  <div>
-                    <h3>Usuarios por carrera</h3>
-                    <p>Identifica la distribución y crecimiento de docentes.</p>
-                  </div>
-                </article>
-                <article class="summary-card">
-                  <i data-lucide="check-circle"></i>
-                  <div>
-                    <h3>Estado de actividades</h3>
-                    <p>Evalúa el progreso y detecta tareas pendientes.</p>
-                  </div>
-                </article>
-                <article class="summary-card">
-                  <i data-lucide="upload-cloud"></i>
-                  <div>
-                    <h3>Importación inteligente</h3>
-                    <p>Integra nuevos docentes con plantillas precargadas.</p>
-                  </div>
-                </article>
-              </div>
-
-              <details
-                class="dashboard-section"
-                id="generalReportCard"
-                data-nav-label="Reporte general"
-                data-nav-roles="administrador"
-                open
-              >
+              <details class="dashboard-section" id="generalReportCard" open>
                 <summary class="dashboard-section__summary">
                   <div class="dashboard-section__text">
                     <h2>Reporte General</h2>
-                    <p class="card-subtitle">
-                      Analiza de forma visual la actividad del departamento.
-                    </p>
+                    <p class="card-subtitle">Analiza la actividad del departamento.</p>
                   </div>
                   <span class="dashboard-section__chevron" aria-hidden="true"></span>
                 </summary>
@@ -349,34 +155,22 @@
                   </div>
                   <div class="chart-grid">
                     <div class="chart-card">
-                      <header>
-                        <h4>Usuarios por Carrera</h4>
-                      </header>
+                      <header><h4>Usuarios por Carrera</h4></header>
                       <canvas id="usersChart"></canvas>
                     </div>
                     <div class="chart-card">
-                      <header>
-                        <h4>Estado de Actividades</h4>
-                      </header>
+                      <header><h4>Estado de Actividades</h4></header>
                       <canvas id="activitiesChart"></canvas>
                     </div>
                   </div>
                 </div>
               </details>
 
-              <details
-                class="dashboard-section"
-                id="userManagementCard"
-                data-nav-label="Gestión de usuarios"
-                data-nav-roles="administrador"
-                open
-              >
+              <details class="dashboard-section" id="userManagementCard" open>
                 <summary class="dashboard-section__summary">
                   <div class="dashboard-section__text">
-                    <h2 class="text-2xl font-bold">Gestión de Usuarios</h2>
-                    <p class="card-subtitle">
-                      Desde aquí puedes ver, agregar, editar y eliminar usuarios.
-                    </p>
+                    <h2>Gestión de Usuarios</h2>
+                    <p class="card-subtitle">Agrega, edita y elimina usuarios.</p>
                   </div>
                   <span class="dashboard-section__chevron" aria-hidden="true"></span>
                 </summary>
@@ -384,18 +178,13 @@
                   <div id="admin-user-management">
                     <div class="import-toolbar">
                       <button class="primary" type="button" id="importTeachersBtn">
-  <i data-lucide="file-input"></i>
-  <span>Importar Usuarios desde Excel</span>
-</button>
+                        <i data-lucide="file-input"></i>
+                        <span>Importar Usuarios desde Excel</span>
+                      </button>
                       <div id="importTeachersAlert"></div>
                     </div>
                     <div class="user-management-actions">
-                      <button
-                        class="primary"
-                        type="button"
-                        id="startAddUserBtn"
-                        hidden
-                      >
+                      <button class="primary" type="button" id="startAddUserBtn" hidden>
                         <i data-lucide="user-plus"></i>
                         <span>Agregar usuario</span>
                       </button>
@@ -403,161 +192,33 @@
                     <form id="userForm" class="user-form" hidden>
                       <header class="user-form-header">
                         <h3 id="userFormTitle">Agregar usuario</h3>
-                        <p id="userFormDescription">
-                          Registra un nuevo docente, administrador o auxiliar.
-                        </p>
+                        <p id="userFormDescription">Registra un nuevo miembro del equipo.</p>
                       </header>
                       <div class="form-grid">
-                        <div class="form-field">
-                          <label for="userName">Nombre completo</label>
-                          <input
-                            id="userName"
-                            name="name"
-                            type="text"
-                            placeholder="Ej. Juan Pérez"
-                            required
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="userRole">Rol</label>
-                          <select
-                            id="userRole"
-                            name="role"
-                            data-default="docente"
-                          >
-                            <option value="docente" selected>Docente</option>
-                            <option value="auxiliar">Auxiliar</option>
-                            <option value="administrador">Administrador</option>
-                          </select>
-                        </div>
-                        <div class="form-field">
-                          <label for="userCareer">Carrera</label>
-                          <select
-                            id="userCareer"
-                            name="career"
-                            data-default="software"
-                          >
-                            <option value="software" selected>
-                              Ing. en Software
-                            </option>
-                            <option value="manufactura">
-                              Ing. en Manufactura
-                            </option>
-                            <option value="mecatronica">
-                              Ing. en Mecatrónica
-                            </option>
-                            <option value="global">
-                              General (todas las carreras)
-                            </option>
-                          </select>
-                        </div>
-                        <div class="form-field">
-                          <label for="userControlNumber">Número de control</label>
-                          <input
-                            id="userControlNumber"
-                            name="controlNumber"
-                            type="text"
-                            placeholder="Ej. D230205"
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="userPotroEmail">Correo Potro</label>
-                          <input
-                            id="userPotroEmail"
-                            name="potroEmail"
-                            type="email"
-                            placeholder="nombre.apellido@potros.itson.edu.mx"
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="userInstitutionalEmail">
-                            Correo institucional
-                          </label>
-                          <input
-                            id="userInstitutionalEmail"
-                            name="institutionalEmail"
-                            type="email"
-                            placeholder="nombre.apellido@itson.edu.mx"
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="userAltEmail">Correo alterno</label>
-                          <input
-                            id="userAltEmail"
-                            name="email"
-                            type="email"
-                            placeholder="correo.personal@dominio.com"
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="userPhone">Teléfono</label>
-                          <input
-                            id="userPhone"
-                            name="phone"
-                            type="tel"
-                            placeholder="Ej. (644) 123 4567"
-                          />
-                        </div>
+                        <div class="form-field"><label for="userName">Nombre completo</label><input id="userName" name="name" type="text" required /></div>
+                        <div class="form-field"><label for="userRole">Rol</label><select id="userRole" name="role"><option value="docente" selected>Docente</option><option value="auxiliar">Auxiliar</option><option value="administrador">Administrador</option></select></div>
+                        <div class="form-field"><label for="userCareer">Carrera</label><select id="userCareer" name="career"><option value="software" selected>Ing. en Software</option><option value="manufactura">Ing. en Manufactura</option><option value="mecatronica">Ing. en Mecatrónica</option><option value="global">General</option></select></div>
+                        <div class="form-field"><label for="userControlNumber">N° de control</label><input id="userControlNumber" name="controlNumber" type="text" /></div>
+                        <div class="form-field"><label for="userPotroEmail">Correo Potro</label><input id="userPotroEmail" name="potroEmail" type="email" /></div>
+                        <div class="form-field"><label for="userInstitutionalEmail">Correo institucional</label><input id="userInstitutionalEmail" name="institutionalEmail" type="email" /></div>
+                        <div class="form-field"><label for="userAltEmail">Correo alterno</label><input id="userAltEmail" name="email" type="email" /></div>
+                        <div class="form-field"><label for="userPhone">Teléfono</label><input id="userPhone" name="phone" type="tel" /></div>
                       </div>
-                      <label class="form-checkbox">
-                        <input
-                          type="checkbox"
-                          id="userAllowExternalAuth"
-                          name="allowExternalAuth"
-                        />
-                        <span>Permitir inicio de sesión con correo externo</span>
-                      </label>
-                      <p class="form-hint">
-                        Solo el administrador principal puede agregar, editar o
-                        eliminar usuarios.
-                      </p>
+                      <label class="form-checkbox"><input type="checkbox" id="userAllowExternalAuth" name="allowExternalAuth" /><span>Permitir inicio de sesión con correo externo</span></label>
                       <div class="form-actions">
-                        <button type="submit" class="primary" id="userFormSubmit">
-                          Guardar usuario
-                        </button>
-                        <button type="button" class="ghost" id="cancelUserFormBtn">
-                          Cancelar
-                        </button>
+                        <button type="submit" class="primary" id="userFormSubmit">Guardar</button>
+                        <button type="button" class="ghost" id="cancelUserFormBtn">Cancelar</button>
                       </div>
                     </form>
                     <div id="userFormAlert"></div>
-                    <div id="inviteAlert"></div>
-                    <div class="user-management-toolbar" id="userManagementToolbar">
+                    <div class="user-management-toolbar">
                       <div id="userSyncStatus" class="user-sync-status"></div>
                       <div id="userSummaryGrid" class="user-summary-grid"></div>
                       <div class="user-management-filters">
-                        <div class="user-search">
-                          <i data-lucide="search"></i>
-                          <input
-                            type="search"
-                            id="userSearchInput"
-                            placeholder="Buscar por nombre, correo o número"
-                            autocomplete="off"
-                            aria-label="Buscar usuarios"
-                          />
-                        </div>
-                        <select id="userRoleFilter" aria-label="Filtrar por rol">
-                          <option value="all" selected>Todos los roles</option>
-                          <option value="administrador">Administradores</option>
-                          <option value="docente">Docentes</option>
-                          <option value="auxiliar">Auxiliares</option>
-                        </select>
-                        <select id="userCareerFilter" aria-label="Filtrar por carrera">
-                          <option value="all" selected>Todas las carreras</option>
-                          <option value="software">Ing. en Software</option>
-                          <option value="manufactura">Ing. en Manufactura</option>
-                          <option value="mecatronica">Ing. en Mecatrónica</option>
-                          <option value="global">General</option>
-                        </select>
-                        <select id="userAuthFilter" aria-label="Filtrar por tipo de acceso">
-                          <option value="all" selected>Todos los accesos</option>
-                          <option value="allowed">Acceso externo habilitado</option>
-                          <option value="restricted">Solo institucional</option>
-                        </select>
-                        <button type="button" class="ghost small" id="clearUserFiltersBtn">
-                          <i data-lucide="x-circle"></i>
-                          <span>Limpiar filtros</span>
-                        </button>
+                        <div class="user-search"><i data-lucide="search"></i><input type="search" id="userSearchInput" placeholder="Buscar..." /></div>
+                        <select id="userRoleFilter"><option value="all">Todos los roles</option><option value="administrador">Admins</option><option value="docente">Docentes</option><option value="auxiliar">Auxiliares</option></select>
+                        <select id="userCareerFilter"><option value="all">Todas las carreras</option><option value="software">Software</option><option value="manufactura">Manufactura</option><option value="mecatronica">Mecatrónica</option><option value="global">General</option></select>
+                        <button type="button" class="ghost small" id="clearUserFiltersBtn"><i data-lucide="x-circle"></i><span>Limpiar</span></button>
                       </div>
                       <div id="userTableMeta" class="table-meta"></div>
                     </div>
@@ -566,88 +227,17 @@
                 </div>
               </details>
 
-              <details
-                class="dashboard-section"
-                id="activityManagementCard"
-                data-nav-label="Gestión de actividades"
-                data-nav-roles="administrador"
-                open
-              >
+              <details class="dashboard-section" id="activityManagementCard" open>
                 <summary class="dashboard-section__summary">
                   <div class="dashboard-section__text">
                     <h2>Gestión de Actividades</h2>
-                    <p class="card-subtitle">
-                      Registra tareas clave y da seguimiento al avance del
-                      equipo.
-                    </p>
+                    <p class="card-subtitle">Crea y asigna tareas al equipo.</p>
                   </div>
                   <span class="dashboard-section__chevron" aria-hidden="true"></span>
                 </summary>
                 <div class="dashboard-section__body">
                   <form id="adminActivityForm">
-                    <div class="grid activity-form-grid">
-                      <div class="form-field">
-                        <label for="activityTitle">Título de la actividad</label>
-                        <input
-                          id="activityTitle"
-                          name="title"
-                          type="text"
-                          required
-                          placeholder="Ej. Seguimiento de planeaciones"
-                        />
-                      </div>
-                      <div class="form-field">
-                        <label for="activityDueDate">Fecha límite</label>
-                        <input
-                          id="activityDueDate"
-                          name="dueDate"
-                          type="date"
-                          required
-                        />
-                      </div>
-                      <div class="form-field" style="grid-column: 1 / -1">
-                        <label for="activityDescription">Descripción</label>
-                        <textarea
-                          id="activityDescription"
-                          name="description"
-                          rows="3"
-                          placeholder="Describe el objetivo y entregables de la actividad"
-                        ></textarea>
-                      </div>
-                      <div class="form-field">
-                        <label for="activityCareer">Carrera</label>
-                        <select id="activityCareer" name="career" required>
-                          <option value="global" selected>
-                            General (todas las carreras)
-                          </option>
-                          <option value="software">Ing. en Software</option>
-                          <option value="manufactura">Ing. en Manufactura</option>
-                          <option value="mecatronica">Ing. en Mecatrónica</option>
-                        </select>
-                      </div>
-                      <div class="form-field">
-                        <label for="activityRole">Responsable</label>
-                        <select id="activityRole" name="responsibleRole" required>
-                          <option value="docente">Docente</option>
-                          <option value="auxiliar">Profesor auxiliar</option>
-                          <option value="administrador">Administrador</option>
-                        </select>
-                      </div>
-                      <div class="form-field">
-                        <label for="activityEmail">Correo del responsable (opcional)</label>
-                        <input
-                          id="activityEmail"
-                          name="responsibleEmail"
-                          type="email"
-                          placeholder="persona@potros.itson.edu.mx"
-                        />
-                      </div>
-                    </div>
-                    <button class="primary" type="submit">
-                      <i data-lucide="plus"></i>
-                      <span>Registrar actividad</span>
-                    </button>
-                  </form>
+                    </form>
                   <div id="adminActivityAlert"></div>
                   <div id="adminActivityList" class="activity-table"></div>
                 </div>
@@ -655,86 +245,16 @@
             </div>
 
             <div id="docenteView" class="hidden">
-              <div class="teacher-dashboard">
-                <details
-                  class="dashboard-section"
-                  id="teacherActivitiesCard"
-                  data-nav-label="Actividades por realizar"
-                  data-nav-roles="docente"
-                  open
-                >
-                  <summary class="dashboard-section__summary">
-                    <div class="dashboard-section__text">
-                      <h2>Actividades por realizar</h2>
-                      <p class="card-subtitle">
-                        Visualiza las tareas pendientes y en progreso asignadas
-                        a tu cuenta.
-                      </p>
-                    </div>
-                    <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                  </summary>
-                  <div class="dashboard-section__body">
-                    <div id="teacherPendingActivities" class="activity-cards"></div>
-                  </div>
-                </details>
-
-                <details
-                  class="dashboard-section"
-                  id="teacherProgressCard"
-                  data-nav-label="Mi progreso"
-                  data-nav-roles="docente"
-                  open
-                >
-                  <summary class="dashboard-section__summary">
-                    <div class="dashboard-section__text">
-                      <h2>Mi progreso</h2>
-                      <p class="card-subtitle">
-                        Consulta el avance general y el estado de tus
-                        actividades asignadas.
-                      </p>
-                    </div>
-                    <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                  </summary>
-                  <div class="dashboard-section__body">
-                    <div id="teacherProgressSummary" class="teacher-progress"></div>
-                  </div>
-                </details>
               </div>
-            </div>
 
             <div id="auxiliarView" class="hidden">
-              <details
-                class="dashboard-section"
-                id="auxiliarActivitiesCard"
-                data-nav-label="Actividades de apoyo"
-                data-nav-roles="auxiliar"
-                open
-              >
-                <summary class="dashboard-section__summary">
-                  <div class="dashboard-section__text">
-                    <h2>Actividades de Apoyo</h2>
-                    <p class="card-subtitle">
-                      Actualiza el estado para mantener informado al equipo.
-                    </p>
-                  </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                </summary>
-                <div class="dashboard-section__body">
-                  <div class="activity-legend">
-                    <span class="status-badge status-pendiente">Pendiente</span>
-                    <span class="status-badge status-en_progreso">En progreso</span>
-                    <span class="status-badge status-completada">Completada</span>
-                  </div>
-                  <div id="auxiliarActivityAlert"></div>
-                  <div id="auxiliarActivityList" class="activity-cards"></div>
-                </div>
-              </details>
-            </div>
+              </div>
           </section>
         </div>
       </section>
     </main>
 
+    <script src="auth-guard.js" type="module"></script>
     <script src="script.js" type="module"></script>
   </body>
 </html>
