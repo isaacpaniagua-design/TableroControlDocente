@@ -107,10 +107,7 @@
       <section id="dashboard">
         <div class="dashboard-shell" id="dashboardShell">
           <aside class="sidebar">
-            <button type="button" class="sidebar-toggle" id="sidebarCollapseBtn" aria-label="Ocultar menú lateral" aria-expanded="true">
-              <i data-lucide="panel-left-close"></i>
-              <span>Ocultar menú</span>
-            </button>
+            
             <div class="quick-access" id="quickAccess" hidden>
               <h4>Accesos rápidos</h4>
               <ul id="quickAccessList" class="quick-access__list"></ul>
@@ -133,8 +130,15 @@
                 <h2>Panel de control</h2>
                 <p>Revisa tus indicadores, tareas y reportes de manera organizada.</p>
               </div>
+          
+<div class="content-actions">
+              <button class="ghost" type="button" id="sidebarCollapseBtn" aria-label="Ocultar menú lateral" aria-expanded="true">
+                <i data-lucide="panel-left-close"></i>
+                <span>Ocultar menú</span>
+              </button>
               <button class="ghost" type="button" id="printReport">
-                <i data-lucide="printer"></i> Imprimir reporte
+                <i data-lucide="printer"></i>
+                <span>Imprimir reporte</span>
               </button>
             </div>
 
