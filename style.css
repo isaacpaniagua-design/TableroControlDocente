@@ -1086,10 +1086,11 @@ nav button.active {
 }
 /* AÑADE ESTA NUEVA REGLA */
 .content-actions {
-  display: flex;          /* 1. Activa el modo "caja flexible" */
-  align-items: flex-start;  /* 2. Alinea los botones verticalmente en la parte superior */
-  gap: 0.75rem;           /* 3. Crea un espacio consistente entre los botones */
-  flex-shrink: 0;         /* 4. Evita que los botones se deformen si no hay espacio */
+  display: flex;
+  flex-wrap: wrap; /* Permite que los botones se ajusten en varias líneas */
+  justify-content: flex-end; /* Mantiene los botones alineados a la derecha */
+  align-items: flex-start;
+  gap: 0.75rem;
 }
 button.ghost {
   background: rgba(37, 99, 235, 0.12);
