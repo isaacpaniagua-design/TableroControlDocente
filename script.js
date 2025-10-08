@@ -442,10 +442,17 @@ function renderAllSections() {
 }
 function updateLayoutMode() {
   const dashboardVisible = !!currentUser;
+  
+  // 🔥 Cambiamos cómo se muestran y ocultan las secciones
+  if (elements.authSection) {
+    elements.authSection.style.display = dashboardVisible ? 'none' : 'flex';
+  }
+  if (elements.dashboard) {
+    elements.dashboard.style.display = dashboardVisible ? 'block' : 'none';
+  }
+
   document.body.classList.toggle("dashboard-active", dashboardVisible);
   document.body.classList.toggle("auth-active", !dashboardVisible);
-  elements.authSection?.classList.toggle("hidden", dashboardVisible);
-  elements.dashboard?.classList.toggle("hidden", !dashboardVisible);
 }
 function loginUser(user) {
   elements.headerUserMeta?.classList.remove("hidden");
