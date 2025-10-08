@@ -703,53 +703,73 @@ function handleFileSelect(event) {
 }
 
 async function processImportedData(usersToImport) {
-  const total = usersToImport.length;
-  const successes = [];
-  const failures = [];
+    const total = usersToImport.length;
+    const successes = [];
+    const failures = [];
 
-  if (total === 0) {
-    displayImportResults([], [{ user: { name: "Archivo Vacío" }, reason: "El archivo no contiene filas de datos." }]);
-    return;
-  }
-
-  for (let i = 0; i < total; i++) {
-    const user = usersToImport[i];
-    const progressPercent = ((i + 1) / total) * 100;
-
-    elements.importStatus.textContent = `Procesando ${i + 1} de ${total}...`;
-    elements.importProgressBar.style.width = `${progressPercent}%`;
-
-    // Validación básica
-    if (!user.name || !user.potroEmail) {
-      failures.push({ user, reason: "Faltan 'name' o 'potroEmail'." });
-      continue;
+    if (total === 0) {
+        displayImportResults([], [{ user: { name: "Archivo Vacío" }, reason: "El archivo no contiene filas de datos." }]);
+        return;
     }
 
-    const formattedUser = {
-      name: String(user.name).trim(),
-      potroEmail: String(user.potroEmail).trim().toLowerCase(),
-      role: String(user.role || 'docente').trim().toLowerCase(),
-      career: String(user.career || 'software').trim().toLowerCase(),
-      controlNumber: user.controlNumber ? String(user.controlNumber) : null,
-      institutionalEmail: user.institutionalEmail ? String(user.institutionalEmail).trim().toLowerCase() : null,
-      email: user.email ? String(user.email).trim().toLowerCase() : null,
-      phone: user.phone ? String(user.phone) : null,
-      allowExternalAuth: false, // Por seguridad, por defecto es falso
-      updatedBy: currentUser.email
-    };
+    const validRoles = ['administrador', 'docente', 'auxiliar'];
+    const validCareers = ['software', 'manufactura', 'mecatronica', 'global'];
+    const potroEmailRegex = /.+@potros\.itson\.edu\.mx$/;
 
-   const result = await persistImportedUser(formattedUser);
-    if (result.success) {
-      successes.push(formattedUser);
-    } else {
-      failures.push({ user: formattedUser, reason: result.message });
+    for (let i = 0; i < total; i++) {
+        const user = usersToImport[i];
+        const progressPercent = ((i + 1) / total) * 100;
+        
+        elements.importStatus.textContent = `Procesando ${i + 1} de ${total}...`;
+        elements.importProgressBar.style.width = `${progressPercent}%`;
+
+        // --- VALIDACIÓN MEJORADA ---
+        const lowerCaseRole = (user.role || 'docente').toString().trim().toLowerCase();
+        const lowerCaseCareer = (user.career || 'software').toString().trim().toLowerCase();
+        const lowerCasePotroEmail = (user.potroEmail || '').toString().trim().toLowerCase();
+
+        if (!user.name || !lowerCasePotroEmail) {
+            failures.push({ user, reason: "Faltan 'name' o 'potroEmail' obligatorios." });
+            continue;
+        }
+        if (!potroEmailRegex.test(lowerCasePotroEmail)) {
+            failures.push({ user, reason: `El correo '${user.potroEmail}' no es un correo @potros válido.` });
+            continue;
+        }
+        if (!validRoles.includes(lowerCaseRole)) {
+            failures.push({ user, reason: `El rol '${user.role}' no es válido. Usar: docente, auxiliar o administrador.` });
+            continue;
+        }
+        if (!validCareers.includes(lowerCaseCareer)) {
+            failures.push({ user, reason: `La carrera '${user.career}' no es válida.` });
+            continue;
+        }
+        // --- FIN DE LA VALIDACIÓN ---
+
+        const formattedUser = {
+            name: String(user.name).trim(),
+            potroEmail: lowerCasePotroEmail,
+            role: lowerCaseRole,
+            career: lowerCaseCareer,
+            controlNumber: user.controlNumber ? String(user.controlNumber) : null,
+            institutionalEmail: user.institutionalEmail ? String(user.institutionalEmail).trim().toLowerCase() : null,
+            email: user.email ? String(user.email).trim().toLowerCase() : null,
+            phone: user.phone ? String(user.phone) : null,
+            allowExternalAuth: false,
+            updatedBy: currentUser.email
+        };
+
+        const result = await persistImportedUser(formattedUser);
+        if (result.success) {
+            successes.push(formattedUser);
+        } else {
+            failures.push({ user: formattedUser, reason: result.message });
+        }
+        
+        await new Promise(res => setTimeout(res, 50));
     }
 
-    // Pequeña pausa para no sobrecargar Firestore en lotes grandes
-    await new Promise(res => setTimeout(res, 50));
-  }
-
-  displayImportResults(successes, failures);
+    displayImportResults(successes, failures);
 }
 
 function displayImportResults(successes, failures) {
