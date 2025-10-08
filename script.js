@@ -212,14 +212,20 @@ async function handleAuthStateChange(firebaseUser) {
   if (!isInitialAuthCheckDone) {
     isInitialAuthCheckDone = true;
 
-    // 1. Quita la clase del body para hacer visible el contenido correcto
+    // Las funciones loginUser() y applyLoggedOutState() ya han preparado
+    // la vista correcta (login o dashboard), pero sigue oculta (opacity: 0).
+
+    // 1. Añadimos la clase para iniciar la transición y mostrar el contenido.
+    document.body.classList.add('app-loaded');
     document.body.classList.remove('app-loading');
 
-    // 2. Elimina el loader con un efecto de desvanecimiento
+
+    // 2. Desvanecemos y eliminamos el loader.
     const loader = document.getElementById('loader');
     if (loader) {
         loader.style.opacity = '0';
-        setTimeout(() => loader.remove(), 400); // 400ms = duración de la transición en CSS
+        // Esperamos a que la transición del loader termine para quitarlo del DOM.
+        setTimeout(() => loader.remove(), 500); 
     }
   }
 }
