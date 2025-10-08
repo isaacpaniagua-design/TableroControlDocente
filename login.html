@@ -1,65 +1,259 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ingresar - Tablero de Control Docente</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body class="app-loading">
-  <div id="loader"><div class="spinner"></div></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tablero de Control Docente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/chart.js"
+      integrity="sha256-Lye89HGy1p3XhJT24hcvsoRw64Q4IOL5a7hdOflhjTA="
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://unpkg.com/lucide@latest"
+      integrity="sha384-s2Bf99fCTzOxWHpWEoXVtGJrqy0Ba0dc9EPd71KJR1gNx1kGozhYXtgSmVtprhVf"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="app-loading">
+    <div id="loader">
+      <div class="spinner"></div>
+    </div>
 
-  <header class="app-header">
-    <div class="app-header__inner">
-      <div class="brand-area">
-        <span class="brand-pill">ITSon</span>
-        <div>
-          <h1><i data-lucide="layout-dashboard"></i> Tablero de Control Docente</h1>
-          <p class="brand-description">Plataforma de gestión académica.</p>
-        </div>
+    <div id="changelogModal" class="modal hidden">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h3>Actualizaciones del Software</h3>
+          <button type="button" class="icon-button" id="closeChangelogBtn" aria-label="Cerrar ventana">
+            <svg class="custom-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </header>
+        <div id="changelogBody" class="modal-body"></div>
       </div>
     </div>
-  </header>
 
-  <main>
-    <section id="authSection">
-      <div class="auth-layout">
-        <div class="auth-hero">
-          <span class="eyebrow">Gestión académica</span>
-          <h2>Organiza el trabajo docente con claridad</h2>
-          <p>Centraliza indicadores, actividades y seguimientos en un solo lugar.</p>
-          <ul class="auth-highlights">
-            <li>Visualiza el avance de las actividades en tiempo real.</li>
-            <li>Coordina responsabilidades entre docentes y auxiliares.</li>
-            <li>Genera reportes claros para la toma de decisiones.</li>
-          </ul>
-        </div>
-        <div class="auth-panel">
-          <div class="card" id="loginCard">
-            <div class="card-header">
-              <div>
-                <span class="eyebrow">Bienvenido</span>
-                <h2>Ingresa a tu panel</h2>
-              </div>
-              <i data-lucide="lock"></i>
+    <div id="importModal" class="modal hidden">
+      <div class="modal-content import-modal-content">
+        <header class="modal-header">
+          <h3>Importar Usuarios desde Excel</h3>
+          <button type="button" class="icon-button" id="closeImportModalBtn" aria-label="Cerrar ventana">
+            <svg class="custom-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </header>
+        <div id="importModalBody" class="modal-body">
+          <div id="importInstructions">
+            <h4>Instrucciones</h4>
+            <p>Selecciona un archivo Excel (.xlsx o .xls) con las siguientes columnas:</p>
+            <ul class="instructions-list">
+              <li><strong>name</strong> (Nombre completo)</li>
+              <li><strong>potroEmail</strong> (Correo @potros.itson.edu.mx)</li>
+              <li><strong>role</strong> (Rol: <i>administrador, docente, auxiliar</i>)</li>
+              <li><strong>career</strong> (Carrera: <i>software, manufactura, mecatronica, global</i>)</li>
+              <li><i>Opcionales: controlNumber, institutionalEmail, email, phone</i></li>
+            </ul>
+            <label for="importFileInput" class="button primary upload-button">
+              <i data-lucide="upload"></i>
+              <span>Seleccionar Archivo</span>
+            </label>
+            <input type="file" id="importFileInput" class="hidden" accept=".xlsx, .xls, .csv">
+          </div>
+          <div id="importProgress" class="hidden">
+            <h4>Procesando archivo...</h4>
+            <p id="importStatus">Importando 0 de 0...</p>
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="importProgressBar"></div>
             </div>
-            <p>Accede con tu correo institucional <strong>@potros.itson.edu.mx</strong>.</p>
-            <div class="form-actions">
-              <button class="primary" type="button" id="googleSignInBtn">
-                <i data-lucide="log-in"></i>
-                <span>Ingresar con Google</span>
-              </button>
-            </div>
-            <p class="form-help">Solo se permiten cuentas autorizadas. Si necesitas acceso, contacta al administrador.</p>
-            <div class="alert error" id="loginError"></div>
+          </div>
+          <div id="importResults" class="hidden">
+            <h4>Resultados de la Importación</h4>
+            <div id="importResultsBody"></div>
           </div>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
 
-  <script src="auth-guard.js" type="module"></script>
-  <script src="login.js" type="module"></script>
-</body>
+    <header class="app-header">
+      <div class="app-header__inner">
+        <div class="brand-area">
+          <span class="brand-pill">ITSon</span>
+          <div>
+            <h1><i data-lucide="layout-dashboard"></i> Tablero de Control Docente</h1>
+            <p class="brand-description">Planifica, monitorea y comunica el trabajo académico.</p>
+          </div>
+        </div>
+        <div class="header-tools">
+          <div class="user-meta hidden" id="headerUserMeta">
+            <span id="headerUserName"></span>
+            <span class="badge" id="headerUserRole"></span>
+            <button id="logoutBtn" type="button">
+              <i data-lucide="log-out"></i><span>Cerrar sesión</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="dashboard">
+        <div class="dashboard-shell" id="dashboardShell">
+          <aside class="sidebar">
+            <div class="quick-access" id="quickAccess" hidden>
+              <h4>Accesos rápidos</h4>
+              <ul id="quickAccessList" class="quick-access__list"></ul>
+            </div>
+            <div class="sidebar-footer">
+              <p>Mantente al día con tus actividades y comparte avances.</p>
+              <button type="button" class="button-link" id="openChangelogBtn">
+                <i data-lucide="history"></i>
+                <span>Ver actualizaciones</span>
+              </button>
+            </div>
+          </aside>
+          <section class="content-area">
+            <button type="button" class="sidebar-toggle sidebar-toggle--floating" id="sidebarExpandBtn" aria-label="Mostrar menú lateral" hidden>
+              <i data-lucide="panel-left"></i>
+              <span>Mostrar menú</span>
+            </button>
+            <div class="content-intro" id="dashboardIntro">
+              <div>
+                <h2>Panel de control</h2>
+                <p>Revisa tus indicadores, tareas y reportes de manera organizada.</p>
+              </div>
+              <div class="content-actions">
+                <button class="ghost" type="button" id="sidebarCollapseBtn" aria-label="Ocultar menú lateral" aria-expanded="true">
+                  <i data-lucide="panel-left-close"></i>
+                  <span>Ocultar menú</span>
+                </button>
+                <button class="ghost" type="button" id="printReport">
+                  <i data-lucide="printer"></i>
+                  <span>Imprimir reporte</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="adminView" class="hidden">
+              <details class="dashboard-section" id="generalReportCard" open>
+                <summary class="dashboard-section__summary">
+                  <div class="dashboard-section__text">
+                    <h2>Reporte General</h2>
+                    <p class="card-subtitle">Analiza la actividad del departamento.</p>
+                  </div>
+                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
+                </summary>
+                <div class="dashboard-section__body">
+                  <div class="dashboard-section__actions">
+                    <button class="ghost" type="button" id="refreshDashboard">
+                      <i data-lucide="refresh-cw"></i> Actualizar
+                    </button>
+                  </div>
+                  <div class="chart-grid">
+                    <div class="chart-card">
+                      <header><h4>Usuarios por Carrera</h4></header>
+                      <canvas id="usersChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                      <header><h4>Estado de Actividades</h4></header>
+                      <canvas id="activitiesChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </details>
+
+              <details class="dashboard-section" id="userManagementCard" open>
+                <summary class="dashboard-section__summary">
+                  <div class="dashboard-section__text">
+                    <h2>Gestión de Usuarios</h2>
+                    <p class="card-subtitle">Agrega, edita y elimina usuarios.</p>
+                  </div>
+                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
+                </summary>
+                <div class="dashboard-section__body">
+                  <div id="admin-user-management">
+                    <div class="import-toolbar">
+                      <button class="primary" type="button" id="importTeachersBtn">
+                        <i data-lucide="file-input"></i>
+                        <span>Importar Usuarios desde Excel</span>
+                      </button>
+                      <div id="importTeachersAlert"></div>
+                    </div>
+                    <div class="user-management-actions">
+                      <button class="primary" type="button" id="startAddUserBtn" hidden>
+                        <i data-lucide="user-plus"></i>
+                        <span>Agregar usuario</span>
+                      </button>
+                    </div>
+                    <form id="userForm" class="user-form" hidden>
+                      <header class="user-form-header">
+                        <h3 id="userFormTitle">Agregar usuario</h3>
+                        <p id="userFormDescription">Registra un nuevo miembro del equipo.</p>
+                      </header>
+                      <div class="form-grid">
+                        <div class="form-field"><label for="userName">Nombre completo</label><input id="userName" name="name" type="text" required /></div>
+                        <div class="form-field"><label for="userRole">Rol</label><select id="userRole" name="role"><option value="docente" selected>Docente</option><option value="auxiliar">Auxiliar</option><option value="administrador">Administrador</option></select></div>
+                        <div class="form-field"><label for="userCareer">Carrera</label><select id="userCareer" name="career"><option value="software" selected>Ing. en Software</option><option value="manufactura">Ing. en Manufactura</option><option value="mecatronica">Ing. en Mecatrónica</option><option value="global">General</option></select></div>
+                        <div class="form-field"><label for="userControlNumber">N° de control</label><input id="userControlNumber" name="controlNumber" type="text" /></div>
+                        <div class="form-field"><label for="userPotroEmail">Correo Potro</label><input id="userPotroEmail" name="potroEmail" type="email" /></div>
+                        <div class="form-field"><label for="userInstitutionalEmail">Correo institucional</label><input id="userInstitutionalEmail" name="institutionalEmail" type="email" /></div>
+                        <div class="form-field"><label for="userAltEmail">Correo alterno</label><input id="userAltEmail" name="email" type="email" /></div>
+                        <div class="form-field"><label for="userPhone">Teléfono</label><input id="userPhone" name="phone" type="tel" /></div>
+                      </div>
+                      <label class="form-checkbox"><input type="checkbox" id="userAllowExternalAuth" name="allowExternalAuth" /><span>Permitir inicio de sesión con correo externo</span></label>
+                      <div class="form-actions">
+                        <button type="submit" class="primary" id="userFormSubmit">Guardar</button>
+                        <button type="button" class="ghost" id="cancelUserFormBtn">Cancelar</button>
+                      </div>
+                    </form>
+                    <div id="userFormAlert"></div>
+                    <div class="user-management-toolbar">
+                      <div id="userSyncStatus" class="user-sync-status"></div>
+                      <div id="userSummaryGrid" class="user-summary-grid"></div>
+                      <div class="user-management-filters">
+                        <div class="user-search"><i data-lucide="search"></i><input type="search" id="userSearchInput" placeholder="Buscar..." /></div>
+                        <select id="userRoleFilter"><option value="all">Todos los roles</option><option value="administrador">Admins</option><option value="docente">Docentes</option><option value="auxiliar">Auxiliares</option></select>
+                        <select id="userCareerFilter"><option value="all">Todas las carreras</option><option value="software">Software</option><option value="manufactura">Manufactura</option><option value="mecatronica">Mecatrónica</option><option value="global">General</option></select>
+                        <button type="button" class="ghost small" id="clearUserFiltersBtn"><i data-lucide="x-circle"></i><span>Limpiar</span></button>
+                      </div>
+                      <div id="userTableMeta" class="table-meta"></div>
+                    </div>
+                    <div id="userTableContainer" class="table-responsive"></div>
+                  </div>
+                </div>
+              </details>
+
+              <details class="dashboard-section" id="activityManagementCard" open>
+                <summary class="dashboard-section__summary">
+                  <div class="dashboard-section__text">
+                    <h2>Gestión de Actividades</h2>
+                    <p class="card-subtitle">Crea y asigna tareas al equipo.</p>
+                  </div>
+                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
+                </summary>
+                <div class="dashboard-section__body">
+                  <form id="adminActivityForm"></form>
+                  <div id="adminActivityAlert"></div>
+                  <div id="adminActivityList" class="activity-table"></div>
+                </div>
+              </details>
+            </div>
+
+            <div id="docenteView" class="hidden"></div>
+            <div id="auxiliarView" class="hidden"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="auth-guard.js" type="module"></script>
+    <script src="script.js" type="module"></script>
+  </body>
 </html>
