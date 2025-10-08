@@ -6,13 +6,19 @@
     <title>Tablero de Control Docente</title>
     <style>
       /* Solución anti-flickering crítica */
-      body.app-loading {
-        visibility: hidden;
+       body {
+        /* Oculta el body por defecto y prepara una transición suave */
+        opacity: 0;
+        transition: opacity 0.3s ease-in;
+      }
+      body.app-loaded {
+        /* Esta clase la añadirá JS para mostrar el contenido suavemente */
+        opacity: 1;
       }
       #loader {
         position: fixed; inset: 0; background: #f4f6fb;
         display: flex; align-items: center; justify-content: center;
-        z-index: 9999; transition: opacity 0.4s ease-out;
+        z-index: 9999; transition: opacity 0.5s ease-out;
       }
       .spinner {
         width: 56px; height: 56px; border-radius: 50%;
