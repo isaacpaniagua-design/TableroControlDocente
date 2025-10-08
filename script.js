@@ -102,7 +102,7 @@ function handleLogout() {
 function cacheDomElements() {
   const ids = [
     "dashboard", "dashboardShell", "logoutBtn", "headerUserMeta", "headerUserName", "headerUserRole",
-    "sidebarName", "sidebarEmail", "sidebarCareer", "quickAccess", "quickAccessList", "adminView",
+    "adminView",
     "docenteView", "auxiliarView", "userTableContainer", "startAddUserBtn", "userForm", "userFormTitle",
     "userFormDescription", "userFormSubmit", "cancelUserFormBtn", "userFormAlert", "userName",
     "userControlNumber", "userPotroEmail", "userInstitutionalEmail", "userAltEmail", "userPhone",
@@ -132,44 +132,17 @@ function attachEventListeners() {
     elements.userAuthFilter?.addEventListener("change", (e) => { userFilters.auth = e.target.value; renderUserTable(); });
     elements.clearUserFiltersBtn?.addEventListener("click", resetUserFilters);
     
-    elements.sidebarCollapseBtn?.addEventListener("click", () => {
-        const isCollapsed = elements.dashboardShell.classList.contains('sidebar-collapsed');
-        setSidebarCollapsed(!isCollapsed);
-    });
 
     elements.openChangelogBtn?.addEventListener("click", () => toggleChangelogModal(true));
     elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
     elements.changelogModal?.addEventListener('click', (event) => { if (event.target === elements.changelogModal) toggleChangelogModal(false); });
     elements.importModal?.addEventListener('click', (event) => { if (event.target === elements.importModal) toggleImportModal(false); });
-    elements.quickAccessList?.addEventListener('click', handleQuickAccessClick);
+    elements.quickAccessNav?.addEventListener('click', handleQuickAccessClick);
     elements.importTeachersBtn?.addEventListener('click', () => toggleImportModal(true));
     elements.closeImportModalBtn?.addEventListener('click', () => toggleImportModal(false));
     elements.importFileInput?.addEventListener('change', handleFileSelect);
 }
 
-function setSidebarCollapsed(value) {
-  elements.dashboardShell?.classList.toggle("sidebar-collapsed", value);
-
-  const button = elements.sidebarCollapseBtn;
-  if (button) {
-    if (value) {
-      // Estado colapsado: muestra el ícono para expandir
-      button.innerHTML = '<i data-lucide="panel-left"></i><span>Mostrar menú</span>';
-      button.setAttribute('aria-expanded', 'false');
-      button.setAttribute('aria-label', 'Mostrar menú lateral');
-    } else {
-      // Estado expandido: muestra el ícono para colapsar
-      button.innerHTML = '<i data-lucide="panel-left-close"></i><span>Ocultar menú</span>';
-      button.setAttribute('aria-expanded', 'true');
-      button.setAttribute('aria-label', 'Ocultar menú lateral');
-    }
-    
-    // Vuelve a renderizar los íconos de Lucide
-    if (window.lucide) {
-      window.lucide.createIcons();
-    }
-  }
-}
 
 function openUserForm(mode, user = null) {
   hideMessage(elements.userFormAlert);
@@ -280,27 +253,27 @@ function handleUserTableClick(event) {
   else if (button.dataset.action === "delete") requestUserDeletion(user);
 }
 
+// Reemplaza la función antigua con esta:
 function renderQuickAccessMenu(role) {
-  if (!elements.quickAccess || !elements.quickAccessList) return;
+  const navElement = document.getElementById('quickAccessNav');
+  if (!navElement) return;
+
   const links = QUICK_ACCESS_LINKS[role];
   if (links && links.length > 0) {
-    elements.quickAccess.hidden = false;
-    elements.quickAccessList.innerHTML = links.map(link => `
-      <li>
-        <button class="quick-access__button" data-target-id="${link.targetId}">
-          <span class="quick-access__icon"><i data-lucide="${link.icon}"></i></span>
-          <div class="quick-access__content"><strong>${link.label}</strong></div>
-        </button>
-      </li>`).join('');
+    navElement.innerHTML = links.map(link => `
+      <button type="button" data-target-id="${link.targetId}">
+        <i data-lucide="${link.icon}"></i>
+        <span>${link.label}</span>
+      </button>
+    `).join('');
     refreshIcons();
   } else {
-    elements.quickAccess.hidden = true;
-    elements.quickAccessList.innerHTML = '';
+    navElement.innerHTML = '';
   }
 }
 
 function handleQuickAccessClick(event) {
-  const button = event.target.closest('.quick-access__button');
+  const button = event.target.closest('button[data-target-id]');
   if (!button) return;
   const targetId = button.dataset.targetId;
   const targetElement = document.getElementById(targetId);
@@ -382,11 +355,6 @@ function configureRoleViews(role) {
     elements.auxiliarView?.classList.toggle("hidden", role !== 'auxiliar');
 }
 
-function renderSidebarUserCard(user) {
-    if (elements.sidebarName) elements.sidebarName.textContent = user.name;
-    if (elements.sidebarEmail) elements.sidebarEmail.textContent = user.potroEmail || user.email;
-    if (elements.sidebarCareer) elements.sidebarCareer.textContent = CAREER_LABELS[user.career] || "";
-}
 
 function renderUserSummary() {
     if (!elements.userSummaryGrid) return;
