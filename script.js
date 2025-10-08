@@ -216,8 +216,8 @@ async function handleAuthStateChange(firebaseUser) {
     // la vista correcta (login o dashboard), pero sigue oculta (opacity: 0).
 
     // 1. Añadimos la clase para iniciar la transición y mostrar el contenido.
-    document.body.classList.add('app-loaded');
-    document.body.classList.remove('app-loading');
+   document.body.style.transition = 'opacity 0.3s ease-in';
+    document.body.style.opacity = '1'
 
 
     // 2. Desvanecemos y eliminamos el loader.
