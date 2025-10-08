@@ -730,7 +730,7 @@ async function processImportedData(usersToImport) {
       updatedBy: currentUser.email
     };
 
-    const result = await persistUserChange(formattedUser);
+   const result = await persistImportedUser(formattedUser);
     if (result.success) {
       successes.push(formattedUser);
     } else {
@@ -767,4 +767,51 @@ function displayImportResults(successes, failures) {
   }
 
   elements.importResultsBody.innerHTML = html;
+}
+// --- FUNCIÓN DEDICADA PARA LA IMPORTACIÓN DE USUARIOS ---
+
+async function persistImportedUser(record) {
+    if (!db) return { success: false, message: "Base de datos no disponible." };
+    
+    try {
+        const docId = record.potroEmail; // En la importación, el ID siempre es el correo.
+        if (!docId) {
+           return { success: false, message: "El Correo Potro es un campo obligatorio." };
+        }
+        const docRef = doc(db, "users", docId);
+        const existingDoc = await getDoc(docRef);
+
+        // Prepara los datos que son comunes tanto para crear como para actualizar.
+        const payload = {
+            name: record.name,
+            controlNumber: record.controlNumber || null,
+            potroEmail: record.potroEmail || null,
+            institutionalEmail: record.institutionalEmail || null,
+            email: record.email || null,
+            phone: record.phone || null,
+            role: record.role,
+            career: record.career,
+            allowExternalAuth: record.allowExternalAuth,
+            updatedBy: record.updatedBy || null,
+            updatedAt: serverTimestamp(),
+        };
+
+        // Si el documento NO existe, es un usuario nuevo. Añadimos los campos de creación.
+        if (!existingDoc.exists()) {
+            payload.createdBy = record.updatedBy || null;
+            payload.createdAt = serverTimestamp();
+        }
+
+        // Usamos set con merge:true. Esto creará el documento si no existe,
+        // o lo actualizará si ya existe, sin intentar sobreescribir 'createdAt'.
+        await setDoc(docRef, payload, { merge: true });
+        return { success: true };
+
+    } catch (error) {
+        console.error("Error al sincronizar usuario importado:", error);
+        return { 
+          success: false, 
+          message: isPermissionDeniedError(error) ? "Error de permisos. Revisa tus reglas." : "No se pudo conectar con la base de datos."
+        };
+    }
 }
