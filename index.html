@@ -20,6 +20,7 @@
       integrity="sha384-s2Bf99fCTzOxWHpWEoXVtGJrqy0Ba0dc9EPd71KJR1gNx1kGozhYXtgSmVtprhVf"
       crossorigin="anonymous"
     ></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body class="app-loading">
@@ -41,7 +42,45 @@
       </div>
   </div>
 </div>
-
+<div id="importModal" class="modal hidden">
+  <div class="modal-content import-modal-content">
+    <header class="modal-header">
+      <h3>Importar Usuarios desde Excel</h3>
+      <button type="button" class="icon-button" id="closeImportModalBtn" aria-label="Cerrar ventana">
+         <svg class="custom-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </header>
+    <div id="importModalBody" class="modal-body">
+      <div id="importInstructions">
+        <h4>Instrucciones</h4>
+        <p>Selecciona un archivo Excel (.xlsx o .xls) con las siguientes columnas:</p>
+        <ul class="instructions-list">
+          <li><strong>name</strong> (Nombre completo del docente)</li>
+          <li><strong>potroEmail</strong> (Correo institucional @potros.itson.edu.mx)</li>
+          <li><strong>role</strong> (Rol: <i>administrador, docente, auxiliar</i>)</li>
+          <li><strong>career</strong> (Carrera: <i>software, manufactura, mecatronica, global</i>)</li>
+          <li><i>Opcionales: controlNumber, institutionalEmail, email, phone</i></li>
+        </ul>
+        <label for="importFileInput" class="button primary upload-button">
+          <i data-lucide="upload"></i>
+          <span>Seleccionar Archivo</span>
+        </label>
+        <input type="file" id="importFileInput" class="hidden" accept=".xlsx, .xls, .csv">
+      </div>
+      <div id="importProgress" class="hidden">
+        <h4>Procesando archivo...</h4>
+        <p id="importStatus">Importando 0 de 0...</p>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="importProgressBar"></div>
+        </div>
+      </div>
+      <div id="importResults" class="hidden">
+        <h4>Resultados de la Importación</h4>
+        <div id="importResultsBody"></div>
+      </div>
+    </div>
+  </div>
+</div>
     <header class="app-header">
       <div class="app-header__inner">
         <div class="brand-area">
@@ -321,9 +360,9 @@
                   <div id="admin-user-management">
                     <div class="import-toolbar">
                       <button class="primary" type="button" id="importTeachersBtn">
-                        <i data-lucide="file-input"></i>
-                        <span>Importar docentes de Ing. en Software</span>
-                      </button>
+  <i data-lucide="file-input"></i>
+  <span>Importar Usuarios desde Excel</span>
+</button>
                       <div id="importTeachersAlert"></div>
                     </div>
                     <div class="user-management-actions">
