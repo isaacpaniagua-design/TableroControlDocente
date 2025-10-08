@@ -1025,7 +1025,8 @@ nav button.active {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 0.25rem;
+  padding-inline: 1.5rem; /* <-- Ajuste clave: padding simétrico */
+  padding-block-end: 1.5rem; /* Espacio extra al final para el scroll */
 }
 
 #adminView {
