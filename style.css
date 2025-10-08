@@ -231,13 +231,10 @@ main > section {
 
 body.dashboard-active main {
   justify-content: flex-start;
-  --main-viewport-width: 96vw;
-  --main-max-width: 1500px;
-  --main-inline-padding: clamp(1rem, 2.5vw, 2.5rem);
   max-width: none;
   width: 100%;
   margin: 0;
-  padding-inline: var(--main-inline-padding);
+  padding: 0; /* <-- Cambio clave: elimina todo el padding */
 }
 
 body.dashboard-active .app-header__inner,
