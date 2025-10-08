@@ -4,30 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tablero de Control Docente</title>
-    <style>
-      /* Solución anti-flickering crítica */
-       body {
-        /* Oculta el body por defecto y prepara una transición suave */
-        opacity: 0;
-        transition: opacity 0.3s ease-in;
-      }
-      body.app-loaded {
-        /* Esta clase la añadirá JS para mostrar el contenido suavemente */
-        opacity: 1;
-      }
-      #loader {
-        position: fixed; inset: 0; background: #f4f6fb;
-        display: flex; align-items: center; justify-content: center;
-        z-index: 9999; transition: opacity 0.5s ease-out;
-      }
-      .spinner {
-        width: 56px; height: 56px; border-radius: 50%;
-        border: 6px solid rgba(37, 99, 235, 0.2);
-        border-top-color: #2563eb;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -47,7 +23,9 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body class="app-loading">
+  <body>
+
+    <script>document.body.style.opacity = '0';</script>
     <div id="loader">
       <div class="spinner"></div>
     </div>
