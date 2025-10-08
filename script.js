@@ -126,10 +126,18 @@ function attachEventListeners() {
             toggleChangelogModal(false);
         }
        });
+  elements.importModal?.addEventListener('click', (event) => {
+    if (event.target === elements.importModal) {
+        toggleImportModal(false);
+    }
+});
   elements.quickAccessList?.addEventListener('click', handleQuickAccessClick);
   elements.importTeachersBtn?.addEventListener('click', () => toggleImportModal(true));
 elements.closeImportModalBtn?.addEventListener('click', () => toggleImportModal(false));
 elements.importFileInput?.addEventListener('change', handleFileSelect);
+
+
+  
 }
 
 // --- LÓGICA DE AUTENTICACIÓN ---
