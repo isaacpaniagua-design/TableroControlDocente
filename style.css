@@ -2539,3 +2539,73 @@ button.small i {
     display: none;
   }
 }
+/* --- NUEVOS ESTILOS: LAYOUT SIN SIDEBAR Y CON MENÚ SUPERIOR --- */
+
+/* 1. Anular el layout de grid del dashboard */
+.dashboard-shell {
+  display: block; /* Forzar a que no sea una grilla */
+  grid-template-columns: 1fr !important; /* Asegurar una sola columna */
+}
+
+/* 2. Estilos para la nueva barra de navegación */
+.app-header__meta {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  padding: 0.75rem clamp(1rem, 2.5vw, 2.5rem);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 30px -15px rgba(15, 23, 42, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.quick-access-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.quick-access-nav button {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.quick-access-nav button:hover {
+  background: rgba(37, 99, 235, 0.15);
+  transform: translateY(-1px);
+}
+
+.meta-actions button.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+.meta-actions button.ghost:hover {
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--primary);
+}
+
+/* 3. Ocultar elementos obsoletos */
+.sidebar, #sidebarCollapseBtn, .sidebar-footer .button-link {
+  display: none !important;
+}
+
+/* 4. Responsividad para la nueva barra */
+@media (max-width: 768px) {
+  .app-header__meta {
+    flex-direction: column;
+    align-items: center;
+  }
+}
