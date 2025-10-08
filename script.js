@@ -143,21 +143,16 @@ function attachEventListeners() {
     elements.importFileInput?.addEventListener('change', handleFileSelect);
 }
 
-// 🔥 FUNCIÓN CORREGIDA 🔥
 function setSidebarCollapsed(value) {
   elements.dashboardShell?.classList.toggle("sidebar-collapsed", value);
-
   if (elements.sidebarCollapseBtn) {
-    // Si 'value' es true (colapsado), oculta el botón "Ocultar menú".
     elements.sidebarCollapseBtn.hidden = value;
   }
   if (elements.sidebarExpandBtn) {
-    // Si 'value' es true (colapsado), muestra el botón flotante "Mostrar menú".
     elements.sidebarExpandBtn.hidden = !value;
   }
 }
 
-// --- GESTIÓN DE USUARIOS Y RENDERIZADO ---
 function openUserForm(mode, user = null) {
   hideMessage(elements.userFormAlert);
   elements.userForm.hidden = false;
@@ -206,7 +201,7 @@ async function handleUserFormSubmit(event) {
   };
 
   if (!userData.name || (!editingUserId && !userData.potroEmail)) {
-    return showMessage(elements.userFormAlert, "El nombre y el Correo Potro son obligatorios para nuevos usuarios.");
+    return showMessage(elements.userFormAlert, "El nombre y el Correo Potro son obligatorios.");
   }
   
   const isDuplicate = users.some(user => user.id === userData.potroEmail && user.id !== editingUserId);
@@ -229,9 +224,7 @@ async function persistUserChange(record) {
   try {
     const isEdit = !!record.id;
     const docId = isEdit ? record.id : record.potroEmail;
-    if (!docId) {
-       return { success: false, message: "Error: El Correo Potro es necesario." };
-    }
+    if (!docId) return { success: false, message: "Error: El Correo Potro es necesario." };
     const docRef = doc(db, "users", docId);
     const payload = {
       name: record.name,
@@ -365,10 +358,6 @@ function loginUser(user) {
   renderAllSections();
 }
 
-// ... (El resto de funciones como renderUserTable, renderUserSummary, etc. se mantienen igual)
-// ... (No es necesario repetirlas todas, solo las que cambiaron)
-// Asegúrate de que las siguientes funciones auxiliares estén presentes:
-
 function configureRoleViews(role) {
     elements.adminView?.classList.toggle("hidden", role !== 'administrador');
     elements.docenteView?.classList.toggle("hidden", role !== 'docente');
@@ -401,7 +390,7 @@ function renderUserTable() {
         elements.userTableContainer.innerHTML = `<div class="empty-state">No hay usuarios para mostrar.</div>`;
         return;
     }
-    if (filteredUsers.length === 0 && userFilters.search) {
+    if (filteredUsers.length === 0) {
         elements.userTableContainer.innerHTML = `<div class="empty-state">No se encontraron usuarios con los filtros aplicados.</div>`;
         return;
     }
@@ -486,21 +475,6 @@ function syncHeaderHeight() {
     document.documentElement.style.setProperty("--header-height", `${header?.offsetHeight || 0}px`);
 }
 
-function setSidebarCollapsed(value) {
-  // 1. Aplica la clase principal que colapsa/expande visualmente la barra lateral.
-  elements.dashboardShell?.classList.toggle("sidebar-collapsed", value);
-
-  // 2. Lógica corregida para alternar la visibilidad de los botones.
-  if (elements.sidebarCollapseBtn) {
-    // Si 'value' es true (colapsado), oculta el botón "Ocultar menú".
-    elements.sidebarCollapseBtn.hidden = value;
-  }
-  if (elements.sidebarExpandBtn) {
-    // Si 'value' es true (colapsado), muestra el botón flotante "Mostrar menú".
-    elements.sidebarExpandBtn.hidden = !value;
-  }
-}
-
 function renderUserSyncStatus({ loading, error, lastUpdate }) {
     if (!elements.userSyncStatus) return;
     let cn = "user-sync-status", text = "";
@@ -564,10 +538,8 @@ function toggleImportModal(show) {
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
-
     elements.importInstructions.classList.add('hidden');
     elements.importProgress.classList.remove('hidden');
-
     const reader = new FileReader();
     reader.onload = async (e) => {
         const data = new Uint8Array(e.target.result);
@@ -582,32 +554,25 @@ async function processImportedData(usersToImport) {
     const total = usersToImport.length;
     const successes = [];
     const failures = [];
-
     for (let i = 0; i < total; i++) {
         const user = usersToImport[i];
         elements.importStatus.textContent = `Procesando ${i + 1} de ${total}...`;
         elements.importProgressBar.style.width = `${((i + 1) / total) * 100}%`;
-
-        // ... validaciones ...
-
         const formattedUser = {
             name: String(user.name).trim(),
             potroEmail: String(user.potroEmail).trim().toLowerCase(),
             role: String(user.role || 'docente').trim().toLowerCase(),
             career: String(user.career || 'software').trim().toLowerCase(),
-            // ... otros campos
             updatedBy: currentUser.email
         };
-
         const result = await persistImportedUser(formattedUser);
         if (result.success) {
             successes.push(formattedUser);
         } else {
             failures.push({ user, reason: result.message });
         }
-        await new Promise(res => setTimeout(res, 20)); // Pequeña pausa
+        await new Promise(res => setTimeout(res, 20));
     }
-
     displayImportResults(successes, failures);
 }
 
