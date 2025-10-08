@@ -197,9 +197,11 @@ main {
 }
 
 body.dashboard-active main {
-  /* Anula los límites cuando el dashboard está activo */
+  justify-content: flex-start;
   max-width: none;
-  padding: 0; /* Elimina TODO el padding para que se expanda */
+  width: 100%;
+  margin: 0;
+  padding: 0; /* Cambio clave: Elimina el padding lateral */
 }
 
 main > section {
@@ -213,12 +215,10 @@ main > section {
   isolation: isolate;
 }
 
-
-body.dashboard-active .app-header__inner,
-body.dashboard-active .dashboard-shell {
-  max-width: none; /* Elimina el ancho máximo */
-  width: 100%;     /* Asegura que ocupe todo el espacio */
-  margin: 0;       /* Elimina los márgenes automáticos */
+body.dashboard-active .app-header__inner {
+  width: 100%; /* Cambio clave: Ocupa todo el ancho */
+  max-width: none; /* Elimina cualquier límite de ancho */
+  padding-inline: clamp(1rem, 2.5vw, 2.5rem); /* Mantiene un padding interno */
 }
 
 body.dashboard-active .content-area {
