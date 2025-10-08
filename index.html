@@ -120,10 +120,6 @@
             </div>
           </aside>
           <section class="content-area">
-            <button type="button" class="sidebar-toggle sidebar-toggle--floating" id="sidebarExpandBtn" aria-label="Mostrar menú lateral" hidden>
-              <i data-lucide="panel-left"></i>
-              <span>Mostrar menú</span>
-            </button>
             <div class="content-intro" id="dashboardIntro">
               <div>
                 <h2>Panel de control</h2>
@@ -168,87 +164,8 @@
                   </div>
                 </div>
               </details>
-
-              <details class="dashboard-section" id="userManagementCard" open>
-                <summary class="dashboard-section__summary">
-                  <div class="dashboard-section__text">
-                    <h2>Gestión de Usuarios</h2>
-                    <p class="card-subtitle">Agrega, edita y elimina usuarios.</p>
-                  </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                </summary>
-                <div class="dashboard-section__body">
-                  <div id="admin-user-management">
-                    <div class="import-toolbar">
-                      <button class="primary" type="button" id="importTeachersBtn">
-                        <i data-lucide="file-input"></i>
-                        <span>Importar Usuarios desde Excel</span>
-                      </button>
-                      <div id="importTeachersAlert"></div>
-                    </div>
-                    <div class="user-management-actions">
-                      <button class="primary" type="button" id="startAddUserBtn" hidden>
-                        <i data-lucide="user-plus"></i>
-                        <span>Agregar usuario</span>
-                      </button>
-                    </div>
-                    <form id="userForm" class="user-form" hidden>
-                      <header class="user-form-header">
-                        <h3 id="userFormTitle">Agregar usuario</h3>
-                        <p id="userFormDescription">Registra un nuevo miembro del equipo.</p>
-                      </header>
-                      <div class="form-grid">
-                        <div class="form-field"><label for="userName">Nombre completo</label><input id="userName" name="name" type="text" required /></div>
-                        <div class="form-field"><label for="userRole">Rol</label><select id="userRole" name="role"><option value="docente" selected>Docente</option><option value="auxiliar">Auxiliar</option><option value="administrador">Administrador</option></select></div>
-                        <div class="form-field"><label for="userCareer">Carrera</label><select id="userCareer" name="career"><option value="software" selected>Ing. en Software</option><option value="manufactura">Ing. en Manufactura</option><option value="mecatronica">Ing. en Mecatrónica</option><option value="global">General</option></select></div>
-                        <div class="form-field"><label for="userControlNumber">N° de control</label><input id="userControlNumber" name="controlNumber" type="text" /></div>
-                        <div class="form-field"><label for="userPotroEmail">Correo Potro</label><input id="userPotroEmail" name="potroEmail" type="email" /></div>
-                        <div class="form-field"><label for="userInstitutionalEmail">Correo institucional</label><input id="userInstitutionalEmail" name="institutionalEmail" type="email" /></div>
-                        <div class="form-field"><label for="userAltEmail">Correo alterno</label><input id="userAltEmail" name="email" type="email" /></div>
-                        <div class="form-field"><label for="userPhone">Teléfono</label><input id="userPhone" name="phone" type="tel" /></div>
-                      </div>
-                      <label class="form-checkbox"><input type="checkbox" id="userAllowExternalAuth" name="allowExternalAuth" /><span>Permitir inicio de sesión con correo externo</span></label>
-                      <div class="form-actions">
-                        <button type="submit" class="primary" id="userFormSubmit">Guardar</button>
-                        <button type="button" class="ghost" id="cancelUserFormBtn">Cancelar</button>
-                      </div>
-                    </form>
-                    <div id="userFormAlert"></div>
-                    <div class="user-management-toolbar">
-                      <div id="userSyncStatus" class="user-sync-status"></div>
-                      <div id="userSummaryGrid" class="user-summary-grid"></div>
-                      <div class="user-management-filters">
-                        <div class="user-search"><i data-lucide="search"></i><input type="search" id="userSearchInput" placeholder="Buscar..." /></div>
-                        <select id="userRoleFilter"><option value="all">Todos los roles</option><option value="administrador">Admins</option><option value="docente">Docentes</option><option value="auxiliar">Auxiliares</option></select>
-                        <select id="userCareerFilter"><option value="all">Todas las carreras</option><option value="software">Software</option><option value="manufactura">Manufactura</option><option value="mecatronica">Mecatrónica</option><option value="global">General</option></select>
-                        <button type="button" class="ghost small" id="clearUserFiltersBtn"><i data-lucide="x-circle"></i><span>Limpiar</span></button>
-                      </div>
-                      <div id="userTableMeta" class="table-meta"></div>
-                    </div>
-                    <div id="userTableContainer" class="table-responsive"></div>
-                  </div>
-                </div>
-              </details>
-
-              <details class="dashboard-section" id="activityManagementCard" open>
-                <summary class="dashboard-section__summary">
-                  <div class="dashboard-section__text">
-                    <h2>Gestión de Actividades</h2>
-                    <p class="card-subtitle">Crea y asigna tareas al equipo.</p>
-                  </div>
-                  <span class="dashboard-section__chevron" aria-hidden="true"></span>
-                </summary>
-                <div class="dashboard-section__body">
-                  <form id="adminActivityForm"></form>
-                  <div id="adminActivityAlert"></div>
-                  <div id="adminActivityList" class="activity-table"></div>
-                </div>
-              </details>
-            </div>
-
-            <div id="docenteView" class="hidden"></div>
-            <div id="auxiliarView" class="hidden"></div>
-          </section>
+              </div>
+            </section>
         </div>
       </section>
     </main>
