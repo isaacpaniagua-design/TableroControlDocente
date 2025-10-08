@@ -94,7 +94,10 @@ function cacheDomElements() {
     "importTeachersBtn", "importTeachersAlert", "inviteAlert", "teacherPendingActivities",
     "teacherProgressSummary", "auxiliarActivityList", "auxiliarActivityAlert", "printReport",
     "refreshDashboard", "sidebarCollapseBtn", "sidebarExpandBtn",
-    "changelogModal", "openChangelogBtn", "closeChangelogBtn", "changelogBody", "modal-backdrop"
+    "changelogModal", "openChangelogBtn", "closeChangelogBtn", "changelogBody", "modal-backdrop",
+    "importModal", "closeImportModalBtn", "importModalBody", "importInstructions",
+"importFileInput", "importProgress", "importStatus", "importProgressBar", "importResults",
+"importResultsBody"
   ];
   ids.forEach(id => { elements[id] = document.getElementById(id); });
 }
@@ -124,6 +127,9 @@ function attachEventListeners() {
         }
        });
   elements.quickAccessList?.addEventListener('click', handleQuickAccessClick);
+  elements.importTeachersBtn?.addEventListener('click', () => toggleImportModal(true));
+elements.closeImportModalBtn?.addEventListener('click', () => toggleImportModal(false));
+elements.importFileInput?.addEventListener('change', handleFileSelect);
 }
 
 // --- LÓGICA DE AUTENTICACIÓN ---
@@ -646,4 +652,119 @@ function toggleChangelogModal(show) {
     return;
   }
   modal.classList.toggle("hidden", !show);
+}
+
+// --- LÓGICA DE IMPORTACIÓN DE EXCEL ---
+
+function toggleImportModal(show) {
+  if (!elements.importModal) return;
+  elements.importModal.classList.toggle('hidden', !show);
+  if (show) {
+    // Resetea el modal a su estado inicial cada vez que se abre
+    elements.importInstructions?.classList.remove('hidden');
+    elements.importProgress?.classList.add('hidden');
+    elements.importResults?.classList.add('hidden');
+    elements.importFileInput.value = ''; // Limpia la selección de archivo anterior
+  }
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  elements.importInstructions.classList.add('hidden');
+  elements.importProgress.classList.remove('hidden');
+  elements.importResults.classList.add('hidden');
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const json = XLSX.utils.sheet_to_json(worksheet);
+
+    await processImportedData(json);
+  };
+  reader.onerror = (error) => {
+    showMessage(elements.importTeachersAlert, "Error al leer el archivo.", "error");
+    console.error("File reading error:", error);
+    toggleImportModal(false);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function processImportedData(usersToImport) {
+  const total = usersToImport.length;
+  const successes = [];
+  const failures = [];
+
+  if (total === 0) {
+    displayImportResults([], [{ user: { name: "Archivo Vacío" }, reason: "El archivo no contiene filas de datos." }]);
+    return;
+  }
+
+  for (let i = 0; i < total; i++) {
+    const user = usersToImport[i];
+    const progressPercent = ((i + 1) / total) * 100;
+
+    elements.importStatus.textContent = `Procesando ${i + 1} de ${total}...`;
+    elements.importProgressBar.style.width = `${progressPercent}%`;
+
+    // Validación básica
+    if (!user.name || !user.potroEmail) {
+      failures.push({ user, reason: "Faltan 'name' o 'potroEmail'." });
+      continue;
+    }
+
+    const formattedUser = {
+      name: String(user.name).trim(),
+      potroEmail: String(user.potroEmail).trim().toLowerCase(),
+      role: String(user.role || 'docente').trim().toLowerCase(),
+      career: String(user.career || 'software').trim().toLowerCase(),
+      controlNumber: user.controlNumber ? String(user.controlNumber) : null,
+      institutionalEmail: user.institutionalEmail ? String(user.institutionalEmail).trim().toLowerCase() : null,
+      email: user.email ? String(user.email).trim().toLowerCase() : null,
+      phone: user.phone ? String(user.phone) : null,
+      allowExternalAuth: false, // Por seguridad, por defecto es falso
+      updatedBy: currentUser.email
+    };
+
+    const result = await persistUserChange(formattedUser);
+    if (result.success) {
+      successes.push(formattedUser);
+    } else {
+      failures.push({ user: formattedUser, reason: result.message });
+    }
+
+    // Pequeña pausa para no sobrecargar Firestore en lotes grandes
+    await new Promise(res => setTimeout(res, 50));
+  }
+
+  displayImportResults(successes, failures);
+}
+
+function displayImportResults(successes, failures) {
+  elements.importProgress.classList.add('hidden');
+  elements.importResults.classList.remove('hidden');
+
+  let html = `<p>${successes.length} usuarios importados correctamente. ${failures.length} errores.</p>`;
+
+  if (failures.length > 0) {
+    html += `<h4>Errores:</h4>
+    <table class="import-results-table">
+      <thead><tr><th>Nombre</th><th>Correo</th><th>Razón del Error</th></tr></thead>
+      <tbody>
+        ${failures.map(f => `
+          <tr>
+            <td>${escapeHtml(f.user.name || 'N/A')}</td>
+            <td>${escapeHtml(f.user.potroEmail || 'N/A')}</td>
+            <td class="error-reason">${escapeHtml(f.reason)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  elements.importResultsBody.innerHTML = html;
 }
