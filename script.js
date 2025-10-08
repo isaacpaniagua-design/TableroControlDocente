@@ -480,9 +480,18 @@ function syncHeaderHeight() {
 }
 
 function setSidebarCollapsed(value) {
+  // 1. Aplica la clase principal que colapsa/expande visualmente la barra lateral.
   elements.dashboardShell?.classList.toggle("sidebar-collapsed", value);
-  elements.sidebarCollapseBtn?.setAttribute("aria-expanded", String(!value));
-  if(elements.sidebarExpandBtn) elements.sidebarExpandBtn.hidden = !value;
+
+  // 2. Lógica corregida para alternar la visibilidad de los botones.
+  if (elements.sidebarCollapseBtn) {
+    // Si 'value' es true (colapsado), oculta el botón "Ocultar menú".
+    elements.sidebarCollapseBtn.hidden = value;
+  }
+  if (elements.sidebarExpandBtn) {
+    // Si 'value' es true (colapsado), muestra el botón flotante "Mostrar menú".
+    elements.sidebarExpandBtn.hidden = !value;
+  }
 }
 
 function renderUserSyncStatus({ loading, error, lastUpdate }) {
