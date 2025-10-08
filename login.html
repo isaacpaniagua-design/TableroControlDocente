@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ingresar - Tablero de Control Docente</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="app-loading">
+  <div id="loader"><div class="spinner"></div></div>
+
+  <header class="app-header">
+    <div class="app-header__inner">
+      <div class="brand-area">
+        <span class="brand-pill">ITSon</span>
+        <div>
+          <h1><i data-lucide="layout-dashboard"></i> Tablero de Control Docente</h1>
+          <p class="brand-description">Plataforma de gestión académica.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="authSection">
+      <div class="auth-layout">
+        <div class="auth-hero">
+          <span class="eyebrow">Gestión académica</span>
+          <h2>Organiza el trabajo docente con claridad</h2>
+          <p>Centraliza indicadores, actividades y seguimientos en un solo lugar.</p>
+          <ul class="auth-highlights">
+            <li>Visualiza el avance de las actividades en tiempo real.</li>
+            <li>Coordina responsabilidades entre docentes y auxiliares.</li>
+            <li>Genera reportes claros para la toma de decisiones.</li>
+          </ul>
+        </div>
+        <div class="auth-panel">
+          <div class="card" id="loginCard">
+            <div class="card-header">
+              <div>
+                <span class="eyebrow">Bienvenido</span>
+                <h2>Ingresa a tu panel</h2>
+              </div>
+              <i data-lucide="lock"></i>
+            </div>
+            <p>Accede con tu correo institucional <strong>@potros.itson.edu.mx</strong>.</p>
+            <div class="form-actions">
+              <button class="primary" type="button" id="googleSignInBtn">
+                <i data-lucide="log-in"></i>
+                <span>Ingresar con Google</span>
+              </button>
+            </div>
+            <p class="form-help">Solo se permiten cuentas autorizadas. Si necesitas acceso, contacta al administrador.</p>
+            <div class="alert error" id="loginError"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="auth-guard.js" type="module"></script>
+  <script src="login.js" type="module"></script>
+</body>
+</html>
