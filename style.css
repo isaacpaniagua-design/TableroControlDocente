@@ -2417,15 +2417,12 @@ button.small i {
   color: var(--primary); /* Azul primario de la aplicación */
 }
 
-/*
-  SOLUCIÓN DEFINITIVA PARA EL ÍCONO DEL BOTÓN DE CIERRE
-  Apunta directamente al SVG para garantizar el cambio de color.
+
+ /*
+  SOLUCIÓN UNIFICADA PARA TODOS LOS BOTONES DE CIERRE DE MODAL
+  Aplica el mismo estilo y comportamiento a ambos botones.
 */
-/*
-  SOLUCIÓN DEFINITIVA: Ícono de Cierre Personalizado y Sin Dependencias
-  Estos estilos aplican directamente al nuevo SVG en línea.
-*/
-#closeChangelogBtn {
+.modal-header .icon-button {
   background-color: transparent;
   border: none;
   border-radius: 50%;
@@ -2441,11 +2438,11 @@ button.small i {
   transition: transform 0.2s ease;
 }
 
-#closeChangelogBtn:hover {
+.modal-header .icon-button:hover {
   background-color: #f3f4f6; /* Fondo gris muy claro al pasar el mouse */
 }
 
-#closeChangelogBtn:hover .custom-close-icon {
+.modal-header .icon-button:hover .custom-close-icon {
   stroke: #1f2937; /* Color de trazo casi negro en hover */
   transform: scale(1.1);
 }
