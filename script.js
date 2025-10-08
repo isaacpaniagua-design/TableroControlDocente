@@ -20,33 +20,28 @@ import {
 import { auth, db } from "./firebase-config.js";
 
 // --- CONSTANTES Y CONFIGURACIÓN ---
-const PRIMARY_ADMIN_EMAIL = "isaac.paniagua@potros.itson.edu.mx";
-const PRIMARY_ADMIN_EMAIL_NORMALIZED = PRIMARY_ADMIN_EMAIL.toLowerCase();
-
+const PRIMARY_ADMIN_EMAIL_NORMALIZED = "isaac.paniagua@potros.itson.edu.mx";
 const CAREER_LABELS = {
   software: "Ing. en Software",
   manufactura: "Ing. en Manufactura",
   mecatronica: "Ing. en Mecatrónica",
-  global: "General (todas las carreras)",
+  global: "General",
 };
-
 const ROLE_LABELS = {
   administrador: "Administrador",
   docente: "Docente",
   auxiliar: "Auxiliar",
 };
-
 const ROLE_BADGE_CLASS = {
   administrador: "badge admin",
   docente: "badge docente",
   auxiliar: "badge auxiliar",
 };
-
 const QUICK_ACCESS_LINKS = {
   administrador: [
-    { label: 'Reporte por carrera', targetId: 'generalReportCard', icon: 'pie-chart' },
-    { label: 'Gestión de usuarios', targetId: 'userManagementCard', icon: 'users' },
-    { label: 'Gestión de actividades', targetId: 'activityManagementCard', icon: 'clipboard-list' }
+    { label: 'Reporte General', targetId: 'generalReportCard', icon: 'pie-chart' },
+    { label: 'Gestión de Usuarios', targetId: 'userManagementCard', icon: 'users' },
+    { label: 'Gestión de Actividades', targetId: 'activityManagementCard', icon: 'clipboard-list' }
   ]
 };
 
@@ -54,8 +49,7 @@ const QUICK_ACCESS_LINKS = {
 let users = [];
 let currentUser = null;
 let unsubscribeUsersListener = null;
-const userFilters = { search: "", role: "all", career: "all", auth: "all" };
-
+const userFilters = { search: "", role: "all", career: "all" };
 const elements = {};
 const charts = { users: null, activities: null };
 
@@ -63,6 +57,7 @@ const charts = { users: null, activities: null };
 document.addEventListener("DOMContentLoaded", () => {
   onAuthStateChanged(auth, (firebaseUser) => {
     if (firebaseUser) {
+      document.body.classList.add('dashboard-active');
       initializeDashboard(firebaseUser);
     }
   });
@@ -71,7 +66,6 @@ document.addEventListener("DOMContentLoaded", () => {
   attachEventListeners();
   initCharts();
   renderChangelog();
-  window.addEventListener("resize", syncHeaderHeight);
 });
 
 async function initializeDashboard(firebaseUser) {
@@ -101,19 +95,15 @@ function handleLogout() {
 
 function cacheDomElements() {
   const ids = [
-    "dashboard", "dashboardShell", "logoutBtn", "headerUserMeta", "headerUserName", "headerUserRole",
-    "adminView",
-    "docenteView", "auxiliarView", "userTableContainer", "startAddUserBtn", "userForm", "userFormTitle",
-    "userFormDescription", "userFormSubmit", "cancelUserFormBtn", "userFormAlert", "userName",
-    "userControlNumber", "userPotroEmail", "userInstitutionalEmail", "userAltEmail", "userPhone",
-    "userRole", "userCareer", "userAllowExternalAuth", "userSummaryGrid", "userSearchInput",
-    "userRoleFilter", "userCareerFilter", "userAuthFilter", "clearUserFiltersBtn", "userTableMeta",
-    "userSyncStatus", "adminActivityList", "adminActivityForm", "adminActivityAlert", "importTeachersBtn",
-    "importTeachersAlert", "teacherPendingActivities", "teacherProgressSummary", "auxiliarActivityList",
-    "auxiliarActivityAlert", "printReport", "refreshDashboard", "sidebarCollapseBtn",
-    "changelogModal", "openChangelogBtn", "closeChangelogBtn", "changelogBody", "importModal",
-    "closeImportModalBtn", "importModalBody", "importInstructions", "importFileInput", "importProgress",
-    "importStatus", "importProgressBar", "importResults", "importResultsBody"
+    "logoutBtn", "headerUserMeta", "headerUserName", "headerUserRole", "quickAccessNav", "adminView", "docenteView",
+    "auxiliarView", "userTableContainer", "startAddUserBtn", "userForm", "userFormTitle", "userFormDescription",
+    "userFormSubmit", "cancelUserFormBtn", "userFormAlert", "userName", "userControlNumber", "userPotroEmail",
+    "userInstitutionalEmail", "userAltEmail", "userPhone", "userRole", "userCareer", "userAllowExternalAuth",
+    "userSummaryGrid", "userSearchInput", "userRoleFilter", "userCareerFilter", "clearUserFiltersBtn", "userTableMeta",
+    "userSyncStatus", "printReport", "refreshDashboard", "openChangelogBtn", "closeChangelogBtn", "changelogModal",
+    "changelogBody", "importModal", "closeImportModalBtn", "importModalBody", "importInstructions", "importFileInput",
+    "importProgress", "importStatus", "importProgressBar", "importResults", "importResultsBody", "importTeachersBtn",
+    "usersChart", "activitiesChart"
   ];
   ids.forEach(id => { elements[id] = document.getElementById(id); });
 }
@@ -129,10 +119,7 @@ function attachEventListeners() {
     elements.userSearchInput?.addEventListener("input", (e) => { userFilters.search = e.target.value.trim(); renderUserTable(); });
     elements.userRoleFilter?.addEventListener("change", (e) => { userFilters.role = e.target.value; renderUserTable(); });
     elements.userCareerFilter?.addEventListener("change", (e) => { userFilters.career = e.target.value; renderUserTable(); });
-    elements.userAuthFilter?.addEventListener("change", (e) => { userFilters.auth = e.target.value; renderUserTable(); });
     elements.clearUserFiltersBtn?.addEventListener("click", resetUserFilters);
-    
-
     elements.openChangelogBtn?.addEventListener("click", () => toggleChangelogModal(true));
     elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
     elements.changelogModal?.addEventListener('click', (event) => { if (event.target === elements.changelogModal) toggleChangelogModal(false); });
@@ -143,6 +130,71 @@ function attachEventListeners() {
     elements.importFileInput?.addEventListener('change', handleFileSelect);
 }
 
+function renderAllSections() {
+    if (!currentUser) return;
+    
+    configureRoleViews(currentUser.role);
+    
+    if (currentUser.role === 'administrador') {
+        updateUserManagementControls();
+        renderUserSummary();
+        renderUserTable();
+    }
+    updateCharts();
+    refreshIcons();
+}
+
+function loginUser(user) {
+  elements.headerUserMeta?.classList.remove("hidden");
+  if(elements.headerUserName) elements.headerUserName.textContent = user.name;
+  if(elements.headerUserRole) {
+    elements.headerUserRole.textContent = ROLE_LABELS[user.role] || 'Usuario';
+    elements.headerUserRole.className = `badge ${ROLE_BADGE_CLASS[user.role]}`;
+  }
+  
+  if (user.role === 'administrador') {
+    subscribeToFirestoreUsers();
+  }
+  
+  renderQuickAccessMenu(user.role);
+  renderAllSections();
+}
+
+function configureRoleViews(role) {
+    elements.adminView?.classList.toggle("hidden", role !== 'administrador');
+    elements.docenteView?.classList.toggle("hidden", role !== 'docente');
+    elements.auxiliarView?.classList.toggle("hidden", role !== 'auxiliar');
+}
+
+function renderQuickAccessMenu(role) {
+  const navElement = elements.quickAccessNav;
+  if (!navElement) return;
+
+  const links = QUICK_ACCESS_LINKS[role];
+  if (links && links.length > 0) {
+    navElement.innerHTML = links.map(link => `
+      <button type="button" data-target-id="${link.targetId}">
+        <i data-lucide="${link.icon}"></i>
+        <span>${link.label}</span>
+      </button>
+    `).join('');
+    refreshIcons();
+  } else {
+    navElement.innerHTML = '';
+  }
+}
+
+function handleQuickAccessClick(event) {
+  const button = event.target.closest('button[data-target-id]');
+  if (!button) return;
+  const targetElement = document.getElementById(button.dataset.targetId);
+  if (targetElement) {
+    if (targetElement.tagName === 'DETAILS' && !targetElement.open) {
+      targetElement.open = true;
+    }
+    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
 
 function openUserForm(mode, user = null) {
   hideMessage(elements.userFormAlert);
@@ -153,15 +205,15 @@ function openUserForm(mode, user = null) {
   elements.userFormTitle.textContent = isEdit ? "Editar usuario" : "Agregar usuario";
   elements.userFormSubmit.textContent = isEdit ? "Guardar cambios" : "Crear usuario";
   if (isEdit) {
-    elements.userName.value = user.name || "";
-    elements.userControlNumber.value = user.controlNumber || "";
-    elements.userPotroEmail.value = user.potroEmail || "";
-    elements.userInstitutionalEmail.value = user.institutionalEmail || "";
-    elements.userAltEmail.value = user.email || "";
-    elements.userPhone.value = user.phone || "";
-    elements.userRole.value = user.role || "docente";
-    elements.userCareer.value = user.career || "software";
-    elements.userAllowExternalAuth.checked = user.allowExternalAuth || false;
+    document.getElementById('userName').value = user.name || "";
+    document.getElementById('userControlNumber').value = user.controlNumber || "";
+    document.getElementById('userPotroEmail').value = user.potroEmail || "";
+    document.getElementById('userInstitutionalEmail').value = user.institutionalEmail || "";
+    document.getElementById('userAltEmail').value = user.email || "";
+    document.getElementById('userPhone').value = user.phone || "";
+    document.getElementById('userRole').value = user.role || "docente";
+    document.getElementById('userCareer').value = user.career || "software";
+    document.getElementById('userAllowExternalAuth').checked = user.allowExternalAuth || false;
   }
 }
 
@@ -176,6 +228,7 @@ function hideUserForm({ reset = false } = {}) {
 async function handleUserFormSubmit(event) {
   event.preventDefault();
   if (!isPrimaryAdmin(currentUser)) return;
+  
   const form = event.target;
   const formData = new FormData(form);
   const editingUserId = form.dataset.editingId || null;
@@ -248,42 +301,9 @@ function handleUserTableClick(event) {
   if (!button) return;
   const userId = button.dataset.userId;
   const user = users.find(u => u.id === userId);
-  if (!user) return;
-  if (button.dataset.action === "edit") openUserForm("edit", user);
-  else if (button.dataset.action === "delete") requestUserDeletion(user);
-}
-
-// Reemplaza la función antigua con esta:
-function renderQuickAccessMenu(role) {
-  const navElement = document.getElementById('quickAccessNav');
-  if (!navElement) return;
-
-  const links = QUICK_ACCESS_LINKS[role];
-  if (links && links.length > 0) {
-    navElement.innerHTML = links.map(link => `
-      <button type="button" data-target-id="${link.targetId}">
-        <i data-lucide="${link.icon}"></i>
-        <span>${link.label}</span>
-      </button>
-    `).join('');
-    refreshIcons();
-  } else {
-    navElement.innerHTML = '';
-  }
-}
-
-function handleQuickAccessClick(event) {
-  const button = event.target.closest('button[data-target-id]');
-  if (!button) return;
-  const targetId = button.dataset.targetId;
-  const targetElement = document.getElementById(targetId);
-  if (targetElement) {
-    if (targetElement.tagName === 'DETAILS' && !targetElement.open) {
-      targetElement.open = true;
-    }
-    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    targetElement.classList.add('is-targeted');
-    setTimeout(() => targetElement.classList.remove('is-targeted'), 1500);
+  if (user) {
+    if (button.dataset.action === "edit") openUserForm("edit", user);
+    else if (button.dataset.action === "delete") requestUserDeletion(user);
   }
 }
 
@@ -319,43 +339,6 @@ function subscribeToFirestoreUsers() {
   });
 }
 
-function renderAllSections() {
-    if (currentUser) {
-        renderSidebarUserCard(currentUser);
-        configureRoleViews(currentUser.role);
-        if (currentUser.role === 'administrador') {
-            updateUserManagementControls();
-            renderUserSummary();
-            renderUserTable();
-        }
-    } else {
-        configureRoleViews(null);
-    }
-    updateCharts();
-    refreshIcons();
-}
-
-function loginUser(user) {
-  elements.headerUserMeta?.classList.remove("hidden");
-  if(elements.headerUserName) elements.headerUserName.textContent = user.name;
-  if(elements.headerUserRole) {
-    elements.headerUserRole.textContent = ROLE_LABELS[user.role] || 'Usuario';
-    elements.headerUserRole.className = ROLE_BADGE_CLASS[user.role] || "badge";
-  }
-  if (user.role === 'administrador') {
-    subscribeToFirestoreUsers();
-  }
-  renderQuickAccessMenu(user.role);
-  renderAllSections();
-}
-
-function configureRoleViews(role) {
-    elements.adminView?.classList.toggle("hidden", role !== 'administrador');
-    elements.docenteView?.classList.toggle("hidden", role !== 'docente');
-    elements.auxiliarView?.classList.toggle("hidden", role !== 'auxiliar');
-}
-
-
 function renderUserSummary() {
     if (!elements.userSummaryGrid) return;
     const total = users.length;
@@ -376,7 +359,7 @@ function renderUserTable() {
         elements.userTableContainer.innerHTML = `<div class="empty-state">No hay usuarios para mostrar.</div>`;
         return;
     }
-    if (filteredUsers.length === 0) {
+    if (filteredUsers.length === 0 && (userFilters.search || userFilters.role !== 'all' || userFilters.career !== 'all')) {
         elements.userTableContainer.innerHTML = `<div class="empty-state">No se encontraron usuarios con los filtros aplicados.</div>`;
         return;
     }
@@ -453,12 +436,9 @@ function hideMessage(element) {
 }
 
 function refreshIcons() {
-  if (window.lucide) window.lucide.createIcons();
-}
-
-function syncHeaderHeight() {
-    const header = document.querySelector(".app-header");
-    document.documentElement.style.setProperty("--header-height", `${header?.offsetHeight || 0}px`);
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
 }
 
 function renderUserSyncStatus({ loading, error, lastUpdate }) {
@@ -473,15 +453,11 @@ function renderUserSyncStatus({ loading, error, lastUpdate }) {
 
 function initCharts() {
     const chartOptions = { responsive: true, maintainAspectRatio: false };
-    if (document.getElementById("usersChart")) {
-        const canvas = document.getElementById("usersChart");
-        canvas.parentElement.style.height = '320px';
-        charts.users = new Chart(canvas, { type: "bar", data: { labels: [], datasets: [{ label: 'Usuarios', data: [] }] }, options: chartOptions });
+    if (elements.usersChart) {
+        charts.users = new Chart(elements.usersChart, { type: "bar", data: { labels: [], datasets: [{ label: 'Usuarios', data: [], backgroundColor: "rgba(37, 99, 235, 0.6)" }] }, options: chartOptions });
     }
-    if (document.getElementById("activitiesChart")) {
-        const canvas = document.getElementById("activitiesChart");
-        canvas.parentElement.style.height = '320px';
-        charts.activities = new Chart(canvas, { type: "doughnut", data: { labels: [], datasets: [{ data: [] }] }, options: chartOptions });
+    if (elements.activitiesChart) {
+        charts.activities = new Chart(elements.activitiesChart, { type: "doughnut", data: { labels: [], datasets: [{ data: [], backgroundColor: ["#facc15", "#2563eb", "#10b981"] }] }, options: chartOptions });
     }
 }
 
@@ -511,13 +487,12 @@ function toggleChangelogModal(show) {
 }
 
 function toggleImportModal(show) {
-  if (!elements.importModal) return;
-  elements.importModal.classList.toggle('hidden', !show);
+  elements.importModal?.classList.toggle("hidden", !show);
   if (show) {
-    elements.importInstructions?.classList.remove('hidden');
-    elements.importProgress?.classList.add('hidden');
-    elements.importResults?.classList.add('hidden');
-    elements.importFileInput.value = '';
+    elements.importInstructions?.classList.remove("hidden");
+    elements.importProgress?.classList.add("hidden");
+    elements.importResults?.classList.add("hidden");
+    if (elements.importFileInput) elements.importFileInput.value = '';
   }
 }
 
@@ -544,20 +519,26 @@ async function processImportedData(usersToImport) {
         const user = usersToImport[i];
         elements.importStatus.textContent = `Procesando ${i + 1} de ${total}...`;
         elements.importProgressBar.style.width = `${((i + 1) / total) * 100}%`;
+        
         const formattedUser = {
-            name: String(user.name).trim(),
-            potroEmail: String(user.potroEmail).trim().toLowerCase(),
-            role: String(user.role || 'docente').trim().toLowerCase(),
-            career: String(user.career || 'software').trim().toLowerCase(),
+            name: String(user.name || "").trim(),
+            potroEmail: String(user.potroEmail || "").trim().toLowerCase(),
+            role: String(user.role || "docente").trim().toLowerCase(),
+            career: String(user.career || "software").trim().toLowerCase(),
             updatedBy: currentUser.email
         };
-        const result = await persistImportedUser(formattedUser);
-        if (result.success) {
-            successes.push(formattedUser);
+
+        if (formattedUser.name && formattedUser.potroEmail) {
+            const result = await persistImportedUser(formattedUser);
+            if (result.success) {
+                successes.push(formattedUser);
+            } else {
+                failures.push({ user, reason: result.message });
+            }
         } else {
-            failures.push({ user, reason: result.message });
+            failures.push({ user, reason: "Nombre o Correo Potro faltante en el archivo." });
         }
-        await new Promise(res => setTimeout(res, 20));
+        await new Promise(res => setTimeout(res, 20)); 
     }
     displayImportResults(successes, failures);
 }
@@ -565,11 +546,11 @@ async function processImportedData(usersToImport) {
 function displayImportResults(successes, failures) {
   elements.importProgress.classList.add('hidden');
   elements.importResults.classList.remove('hidden');
-  let html = `<p>${successes.length} importados, ${failures.length} errores.</p>`;
+  let html = `<p><b>Resultados:</b> ${successes.length} usuarios importados, ${failures.length} errores.</p>`;
   if (failures.length > 0) {
-    html += `<h4>Errores:</h4><table class="import-results-table">
+    html += `<h4>Registros con errores:</h4><table class="import-results-table">
       <thead><tr><th>Nombre</th><th>Error</th></tr></thead>
-      <tbody>${failures.map(f => `<tr><td>${escapeHtml(f.user.name)}</td><td>${escapeHtml(f.reason)}</td></tr>`).join('')}</tbody>
+      <tbody>${failures.map(f => `<tr><td>${escapeHtml(f.user.name || 'N/A')}</td><td class="error-reason">${escapeHtml(f.reason)}</td></tr>`).join('')}</tbody>
     </table>`;
   }
   elements.importResultsBody.innerHTML = html;
@@ -586,6 +567,7 @@ async function persistImportedUser(record) {
         await setDoc(docRef, payload, { merge: true });
         return { success: true };
     } catch (error) {
-        return { success: false, message: "Error de base de datos." };
+        console.error("Error de importación:", error);
+        return { success: false, message: "Error al escribir en la base de datos." };
     }
 }
