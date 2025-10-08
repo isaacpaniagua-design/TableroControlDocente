@@ -61,7 +61,6 @@ const charts = { users: null, activities: null };
 
 // --- CICLO DE VIDA DE LA APLICACIÓN ---
 document.addEventListener("DOMContentLoaded", () => {
-  // auth-guard.js ya validó al usuario. Este listener carga los datos del dashboard.
   onAuthStateChanged(auth, (firebaseUser) => {
     if (firebaseUser) {
       initializeDashboard(firebaseUser);
@@ -81,7 +80,7 @@ async function initializeDashboard(firebaseUser) {
     const userDoc = await getDoc(userDocRef);
     if (userDoc.exists()) {
       currentUser = { ...userDoc.data(), id: userDoc.id, name: userDoc.data().name || firebaseUser.displayName };
-      loginUser(currentUser); // Configura la UI del dashboard
+      loginUser(currentUser);
     } else {
       console.error("Usuario autenticado, pero sin perfil en la base de datos.");
       handleLogout();
@@ -98,10 +97,8 @@ function handleLogout() {
     unsubscribeUsersListener = null;
   }
   signOut(auth).catch(error => console.error("Error al cerrar sesión:", error));
-  // auth-guard.js se encargará de redirigir a login.html
 }
 
-// --- INICIALIZACIÓN Y MANEJO DEL DOM ---
 function cacheDomElements() {
   const ids = [
     "dashboard", "dashboardShell", "logoutBtn", "headerUserMeta", "headerUserName", "headerUserRole",
@@ -138,16 +135,26 @@ function attachEventListeners() {
     elements.sidebarExpandBtn?.addEventListener("click", () => setSidebarCollapsed(false));
     elements.openChangelogBtn?.addEventListener("click", () => toggleChangelogModal(true));
     elements.closeChangelogBtn?.addEventListener("click", () => toggleChangelogModal(false));
-    elements.changelogModal?.addEventListener('click', (event) => {
-        if (event.target === elements.changelogModal) toggleChangelogModal(false);
-    });
-    elements.importModal?.addEventListener('click', (event) => {
-        if (event.target === elements.importModal) toggleImportModal(false);
-    });
+    elements.changelogModal?.addEventListener('click', (event) => { if (event.target === elements.changelogModal) toggleChangelogModal(false); });
+    elements.importModal?.addEventListener('click', (event) => { if (event.target === elements.importModal) toggleImportModal(false); });
     elements.quickAccessList?.addEventListener('click', handleQuickAccessClick);
     elements.importTeachersBtn?.addEventListener('click', () => toggleImportModal(true));
     elements.closeImportModalBtn?.addEventListener('click', () => toggleImportModal(false));
     elements.importFileInput?.addEventListener('change', handleFileSelect);
+}
+
+// 🔥 FUNCIÓN CORREGIDA 🔥
+function setSidebarCollapsed(value) {
+  elements.dashboardShell?.classList.toggle("sidebar-collapsed", value);
+
+  if (elements.sidebarCollapseBtn) {
+    // Si 'value' es true (colapsado), oculta el botón "Ocultar menú".
+    elements.sidebarCollapseBtn.hidden = value;
+  }
+  if (elements.sidebarExpandBtn) {
+    // Si 'value' es true (colapsado), muestra el botón flotante "Mostrar menú".
+    elements.sidebarExpandBtn.hidden = !value;
+  }
 }
 
 // --- GESTIÓN DE USUARIOS Y RENDERIZADO ---
