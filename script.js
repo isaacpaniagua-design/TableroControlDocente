@@ -142,9 +142,7 @@ function attachEventListeners() {
     elements.cancelActivityFormBtn?.addEventListener("click", () => hideActivityForm({ reset: true }));
     elements.adminActivityForm?.addEventListener("submit", handleActivityFormSubmit);
     elements.adminActivityList?.addEventListener("click", handleActivityListClick);
-   elements.importActivitiesBtn?.addEventListener("click", () => {
-      alert("TODO: Implementar la función para importar actividades.");
-      });
+    elements.importActivitiesBtn?.addEventListener("click", () => toggleImportModal(true, 'activities'));
 }
 
 function renderAllSections() {
@@ -513,17 +511,44 @@ function toggleChangelogModal(show) {
   elements.changelogModal?.classList.toggle("hidden", !show);
 }
 
-function toggleImportModal(show) {
+function toggleImportModal(show, type = 'users') { // --> MODIFICADO: Se añade un parámetro 'type'
   elements.importModal?.classList.toggle("hidden", !show);
   if (show) {
+    // --> NUEVO: Se personaliza el modal según el tipo de importación
+    const title = type === 'users' ? 'Importar Usuarios desde Excel' : 'Importar Actividades desde Excel';
+    const instructions = type === 'users'
+      ? `<h4>Instrucciones</h4>
+         <p>Selecciona un archivo Excel (.xlsx o .xls) con las siguientes columnas:</p>
+         <ul class="instructions-list">
+             <li><strong>name</strong>, <strong>potroEmail</strong>, <strong>role</strong>, <strong>career</strong></li>
+             <li><i>Opcionales: controlNumber, institutionalEmail, email, phone</i></li>
+         </ul>`
+      : `<h4>Instrucciones</h4>
+         <p>Selecciona un archivo Excel (.xlsx o .xls) con las siguientes columnas:</p>
+         <ul class="instructions-list">
+             <li><strong>name</strong>, <strong>description</strong>, <strong>dueDate</strong>, <strong>assigneeEmail</strong></li>
+             <li><i>La fecha (dueDate) debe estar en formato AAAA-MM-DD.</i></li>
+         </ul>`;
+
+    document.querySelector('#importModal .modal-header h3').textContent = title;
+    elements.importInstructions.innerHTML = `${instructions}
+      <label for="importFileInput" class="button primary upload-button">
+          <i data-lucide="upload"></i> <span>Seleccionar Archivo</span>
+      </label>
+      <input type="file" id="importFileInput" class="hidden" accept=".xlsx, .xls, .csv">`;
+    
+    // Se re-asigna el listener porque el input se recrea dinámicamente
+    document.getElementById('importFileInput').addEventListener('change', (e) => handleFileSelect(e, type));
+    refreshIcons();
+
     elements.importInstructions?.classList.remove("hidden");
     elements.importProgress?.classList.add("hidden");
     elements.importResults?.classList.add("hidden");
-    if (elements.importFileInput) elements.importFileInput.value = '';
   }
 }
 
-function handleFileSelect(event) {
+
+function handleFileSelect(event, type) { // --> MODIFICADO
     const file = event.target.files[0];
     if (!file) return;
     elements.importInstructions.classList.add('hidden');
@@ -533,12 +558,18 @@ function handleFileSelect(event) {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-        await processImportedData(json);
+        // --> MODIFICADO: Se elige qué función de procesamiento llamar
+        if (type === 'users') {
+          await processImportedUserData(json);
+        } else if (type === 'activities') {
+          await processImportedActivityData(json);
+        }
     };
     reader.readAsArrayBuffer(file);
 }
 
-async function processImportedData(usersToImport) {
+
+async function processImportedUserData(usersToImport) { // --> RENOMBRADO: De processImportedData a processImportedUserData
     const total = usersToImport.length;
     const successes = [];
     const failures = [];
@@ -569,15 +600,56 @@ async function processImportedData(usersToImport) {
     }
     displayImportResults(successes, failures);
 }
+async function processImportedActivityData(activitiesToImport) {
+    const total = activitiesToImport.length;
+    const successes = [];
+    const failures = [];
+    const validUsers = new Map(users.map(u => [u.potroEmail, u]));
 
-function displayImportResults(successes, failures) {
+    for (let i = 0; i < total; i++) {
+        const activity = activitiesToImport[i];
+        elements.importStatus.textContent = `Procesando ${i + 1} de ${total}...`;
+        elements.importProgressBar.style.width = `${((i + 1) / total) * 100}%`;
+        
+        const assigneeEmail = String(activity.assigneeEmail || "").trim().toLowerCase();
+        const selectedUser = validUsers.get(assigneeEmail);
+
+        const formattedActivity = {
+            name: String(activity.name || "").trim(),
+            description: String(activity.description || "").trim(),
+            dueDate: activity.dueDate,
+            assigneeEmail: assigneeEmail,
+            assigneeName: selectedUser ? selectedUser.name : "No asignado",
+            career: selectedUser ? selectedUser.career : "global",
+            updatedBy: currentUser.email
+        };
+        
+        if (formattedActivity.name && formattedActivity.dueDate && formattedActivity.assigneeEmail && selectedUser) {
+            const result = await persistActivityChange(formattedActivity);
+            if (result.success) {
+                successes.push(formattedActivity);
+            } else {
+                failures.push({ item: activity, reason: result.message });
+            }
+        } else if (!selectedUser) {
+            failures.push({ item: activity, reason: `El email '${assigneeEmail}' no corresponde a un usuario válido.` });
+        } else {
+            failures.push({ item: activity, reason: "Faltan datos obligatorios (name, dueDate, assigneeEmail)." });
+        }
+        await new Promise(res => setTimeout(res, 20)); 
+    }
+    displayImportResults(successes, failures, 'activities');
+}
+
+function displayImportResults(successes, failures, type = 'users') {
   elements.importProgress.classList.add('hidden');
   elements.importResults.classList.remove('hidden');
-  let html = `<p><b>Resultados:</b> ${successes.length} usuarios importados, ${failures.length} errores.</p>`;
+  const itemType = type === 'users' ? 'usuarios' : 'actividades';
+  let html = `<p><b>Resultados:</b> ${successes.length} ${itemType} importados, ${failures.length} errores.</p>`;
   if (failures.length > 0) {
     html += `<h4>Registros con errores:</h4><table class="import-results-table">
       <thead><tr><th>Nombre</th><th>Error</th></tr></thead>
-      <tbody>${failures.map(f => `<tr><td>${escapeHtml(f.user.name || 'N/A')}</td><td class="error-reason">${escapeHtml(f.reason)}</td></tr>`).join('')}</tbody>
+      <tbody>${failures.map(f => `<tr><td>${escapeHtml(f.item.name || 'N/A')}</td><td class="error-reason">${escapeHtml(f.reason)}</td></tr>`).join('')}</tbody>
     </table>`;
   }
   elements.importResultsBody.innerHTML = html;
@@ -646,17 +718,20 @@ async function handleActivityFormSubmit(event) {
 
   const assigneeEmail = String(formData.get("assignee") || "").trim();
   const selectedUser = users.find(u => u.potroEmail === assigneeEmail);
+const dateValue = formData.get("dueDate");
+  const [year, month, day] = dateValue.split('-').map(Number);
+  const dueDate = new Date(year, month - 1, day);
 
   const activityData = {
     name: String(formData.get("name") || "").trim(),
     description: String(formData.get("description") || "").trim(),
-    dueDate: new Date(formData.get("dueDate")),
+    dueDate: dueDate,
     assigneeEmail: assigneeEmail,
     assigneeName: selectedUser ? selectedUser.name : "No asignado",
     career: selectedUser ? selectedUser.career : "global",
   };
 
-  if (!activityData.name || !activityData.dueDate || !activityData.assigneeEmail) {
+  if (!activityData.name || !dateValue || !activityData.assigneeEmail) {
     return showMessage(elements.adminActivityAlert, "Nombre, fecha y responsable son obligatorios.");
   }
 
@@ -670,6 +745,7 @@ async function handleActivityFormSubmit(event) {
     showMessage(elements.adminActivityAlert, result.message, "error");
   }
 }
+
 
 async function persistActivityChange(record) {
   if (!db) return { success: false, message: "Base de datos no disponible." };
