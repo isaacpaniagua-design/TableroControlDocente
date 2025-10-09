@@ -152,12 +152,12 @@ function renderAllSections() {
     
     configureRoleViews(currentUser.role);
     
-    if (currentUser.role === 'administrador') {
+    if (currentUser.role === 'administrador' || currentUser.role === 'auxiliar') {
         updateUserManagementControls();
         renderUserSummary();
         renderUserTable();
-        renderActivityList(); // <<--- AÑADIDO
-        populateAssigneeDropdown(); // <<--- AÑADIDO
+        renderActivityList();
+        populateAssigneeDropdown();
     }
     updateCharts();
     refreshIcons();
@@ -171,9 +171,9 @@ function loginUser(user) {
     elements.headerUserRole.className = `badge ${ROLE_BADGE_CLASS[user.role]}`;
   }
   
-  if (user.role === 'administrador') {
+  if (user.role === 'administrador' || user.role === 'auxiliar') {
     subscribeToFirestoreUsers();
-    subscribeToFirestoreActivities(); // <<--- AÑADIDO
+    subscribeToFirestoreActivities();
   }
   
   renderQuickAccessMenu(user.role);
@@ -181,9 +181,9 @@ function loginUser(user) {
 }
 
 function configureRoleViews(role) {
-    elements.adminView?.classList.toggle("hidden", role !== 'administrador');
+    elements.adminView?.classList.toggle("hidden", role !== 'administrador' && role !== 'auxiliar');
     elements.docenteView?.classList.toggle("hidden", role !== 'docente');
-    elements.auxiliarView?.classList.toggle("hidden", role !== 'auxiliar');
+    elements.auxiliarView?.classList.toggle("hidden", true); // 
 }
 
 function renderQuickAccessMenu(role) {
