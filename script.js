@@ -113,7 +113,7 @@ function cacheDomElements() {
     "changelogBody", "importModal", "closeImportModalBtn", "importModalBody", "importInstructions", "importFileInput",
     "importProgress", "importStatus", "importProgressBar", "importResults", "importResultsBody", "importTeachersBtn",
     "usersChart", "activitiesChart", "startAddActivityBtn", "adminActivityForm", "activityFormTitle", "cancelActivityFormBtn", "activityFormSubmit",
-    "activityName", "activityDescription", "activityDueDate", "activityAssignee", "adminActivityAlert", "adminActivityList",
+    "activityName", "activityDescription", "activityDueDate", "activityAssignee", "adminActivityAlert", "adminActivityList", "importActivitiesBtn", 
   ];
   ids.forEach(id => { elements[id] = document.getElementById(id); });
 }
@@ -142,6 +142,9 @@ function attachEventListeners() {
     elements.cancelActivityFormBtn?.addEventListener("click", () => hideActivityForm({ reset: true }));
     elements.adminActivityForm?.addEventListener("submit", handleActivityFormSubmit);
     elements.adminActivityList?.addEventListener("click", handleActivityListClick);
+   elements.importActivitiesBtn?.addEventListener("click", () => {
+      alert("TODO: Implementar la función para importar actividades.");
+      });
 }
 
 function renderAllSections() {
