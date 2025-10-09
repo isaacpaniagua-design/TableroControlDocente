@@ -12,6 +12,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  addDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   onAuthStateChanged,
@@ -45,10 +46,18 @@ const QUICK_ACCESS_LINKS = {
   ]
 };
 
+const ACTIVITY_STATUS_LABELS = { // <<--- AÑADIDO
+  pendiente: "Pendiente",
+  en_progreso: "En Progreso",
+  completada: "Completada",
+};
+
 // --- ESTADO GLOBAL DE LA APLICACIÓN ---
 let users = [];
+let activities = [];
 let currentUser = null;
 let unsubscribeUsersListener = null;
+let unsubscribeActivitiesListener = null;
 const userFilters = { search: "", role: "all", career: "all" };
 const elements = {};
 const charts = { users: null, activities: null };
@@ -86,10 +95,10 @@ async function initializeDashboard(firebaseUser) {
 }
 
 function handleLogout() {
-  if (unsubscribeUsersListener) {
-    unsubscribeUsersListener();
-    unsubscribeUsersListener = null;
-  }
+  if (unsubscribeUsersListener) unsubscribeUsersListener();
+  if (unsubscribeActivitiesListener) unsubscribeActivitiesListener(); // <<--- AÑADIDO
+  unsubscribeUsersListener = null;
+  unsubscribeActivitiesListener = null; // <<--- AÑADIDO
   signOut(auth).catch(error => console.error("Error al cerrar sesión:", error));
 }
 
@@ -103,7 +112,8 @@ function cacheDomElements() {
     "userSyncStatus", "printReport", "refreshDashboard", "openChangelogBtn", "closeChangelogBtn", "changelogModal",
     "changelogBody", "importModal", "closeImportModalBtn", "importModalBody", "importInstructions", "importFileInput",
     "importProgress", "importStatus", "importProgressBar", "importResults", "importResultsBody", "importTeachersBtn",
-    "usersChart", "activitiesChart"
+    "usersChart", "activitiesChart", "startAddActivityBtn", "adminActivityForm", "activityFormTitle", "cancelActivityFormBtn", "activityFormSubmit",
+    "activityName", "activityDescription", "activityDueDate", "activityAssignee", "adminActivityAlert", "adminActivityList",
   ];
   ids.forEach(id => { elements[id] = document.getElementById(id); });
 }
@@ -128,6 +138,10 @@ function attachEventListeners() {
     elements.importTeachersBtn?.addEventListener('click', () => toggleImportModal(true));
     elements.closeImportModalBtn?.addEventListener('click', () => toggleImportModal(false));
     elements.importFileInput?.addEventListener('change', handleFileSelect);
+    elements.startAddActivityBtn?.addEventListener("click", () => openActivityForm("create"));
+    elements.cancelActivityFormBtn?.addEventListener("click", () => hideActivityForm({ reset: true }));
+    elements.adminActivityForm?.addEventListener("submit", handleActivityFormSubmit);
+    elements.adminActivityList?.addEventListener("click", handleActivityListClick);
 }
 
 function renderAllSections() {
@@ -139,6 +153,8 @@ function renderAllSections() {
         updateUserManagementControls();
         renderUserSummary();
         renderUserTable();
+        renderActivityList(); // <<--- AÑADIDO
+        populateAssigneeDropdown(); // <<--- AÑADIDO
     }
     updateCharts();
     refreshIcons();
@@ -154,6 +170,7 @@ function loginUser(user) {
   
   if (user.role === 'administrador') {
     subscribeToFirestoreUsers();
+    subscribeToFirestoreActivities(); // <<--- AÑADIDO
   }
   
   renderQuickAccessMenu(user.role);
@@ -332,6 +349,7 @@ function subscribeToFirestoreUsers() {
   unsubscribeUsersListener = onSnapshot(q, (snapshot) => {
     users = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
     renderUserSyncStatus({ lastUpdate: new Date() });
+    populateAssigneeDropdown();
     renderAllSections();
   }, (error) => {
     console.error("Error al suscribirse a los usuarios:", error);
@@ -467,6 +485,12 @@ function updateCharts() {
     charts.users.data.labels = Object.keys(careerCounts).map(key => CAREER_LABELS[key] || key);
     charts.users.data.datasets[0].data = Object.values(careerCounts);
     charts.users.update();
+    if (charts.activities && activities.length > 0) {
+    const statusCounts = activities.reduce((acc, activity) => { acc[activity.status] = (acc[activity.status] || 0) + 1; return acc; }, {});
+    charts.activities.data.labels = Object.keys(statusCounts).map(key => ACTIVITY_STATUS_LABELS[key] || key);
+    charts.activities.data.datasets[0].data = Object.values(statusCounts);
+    charts.activities.update();
+  }
   }
 }
 
@@ -570,4 +594,196 @@ async function persistImportedUser(record) {
         console.error("Error de importación:", error);
         return { success: false, message: "Error al escribir en la base de datos." };
     }
+}
+
+// --- NUEVAS FUNCIONES PARA GESTIÓN DE ACTIVIDADES ---
+
+function subscribeToFirestoreActivities() {
+  if (!db || unsubscribeActivitiesListener) return;
+  const q = query(collection(db, "activities"), orderBy("dueDate", "desc"));
+  unsubscribeActivitiesListener = onSnapshot(q, (snapshot) => {
+    activities = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    renderActivityList();
+    updateCharts();
+  }, (error) => {
+    console.error("Error al suscribirse a las actividades:", error);
+    elements.adminActivityList.innerHTML = `<p class="alert error show">No se pudieron cargar las actividades.</p>`;
+  });
+}
+
+function openActivityForm(mode, activity = null) {
+  hideMessage(elements.adminActivityAlert);
+  elements.adminActivityForm.hidden = false;
+  elements.adminActivityForm.reset();
+  const isEdit = mode === 'edit' && activity;
+  elements.adminActivityForm.dataset.editingId = isEdit ? activity.id : "";
+  elements.activityFormTitle.textContent = isEdit ? "Editar Actividad" : "Crear Nueva Actividad";
+  elements.activityFormSubmit.textContent = isEdit ? "Guardar Cambios" : "Crear Actividad";
+  if (isEdit) {
+    elements.activityName.value = activity.name || "";
+    elements.activityDescription.value = activity.description || "";
+    elements.activityDueDate.value = activity.dueDate ? new Date(activity.dueDate.toMillis()).toISOString().split('T')[0] : "";
+    elements.activityAssignee.value = activity.assigneeEmail || "";
+  }
+}
+
+function hideActivityForm({ reset = false } = {}) {
+  elements.adminActivityForm.hidden = true;
+  if (reset) {
+    elements.adminActivityForm.reset();
+    delete elements.adminActivityForm.dataset.editingId;
+  }
+}
+
+async function handleActivityFormSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+  const editingActivityId = form.dataset.editingId || null;
+
+  const assigneeEmail = String(formData.get("assignee") || "").trim();
+  const selectedUser = users.find(u => u.potroEmail === assigneeEmail);
+
+  const activityData = {
+    name: String(formData.get("name") || "").trim(),
+    description: String(formData.get("description") || "").trim(),
+    dueDate: new Date(formData.get("dueDate")),
+    assigneeEmail: assigneeEmail,
+    assigneeName: selectedUser ? selectedUser.name : "No asignado",
+    career: selectedUser ? selectedUser.career : "global",
+  };
+
+  if (!activityData.name || !activityData.dueDate || !activityData.assigneeEmail) {
+    return showMessage(elements.adminActivityAlert, "Nombre, fecha y responsable son obligatorios.");
+  }
+
+  const recordToPersist = { ...activityData, id: editingActivityId, updatedBy: currentUser.email };
+  const result = await persistActivityChange(recordToPersist);
+
+  if (result.success) {
+    hideActivityForm({ reset: true });
+    showMessage(elements.adminActivityAlert, editingActivityId ? "Actividad actualizada." : "Actividad agregada.", "success");
+  } else {
+    showMessage(elements.adminActivityAlert, result.message, "error");
+  }
+}
+
+async function persistActivityChange(record) {
+  if (!db) return { success: false, message: "Base de datos no disponible." };
+  try {
+    const isEdit = !!record.id;
+    const payload = {
+      name: record.name,
+      description: record.description,
+      dueDate: record.dueDate,
+      assigneeEmail: record.assigneeEmail,
+      assigneeName: record.assigneeName,
+      career: record.career,
+      updatedBy: record.updatedBy,
+      updatedAt: serverTimestamp(),
+    };
+
+    if (isEdit) {
+      const docRef = doc(db, "activities", record.id);
+      await setDoc(docRef, payload, { merge: true });
+    } else {
+      payload.status = "pendiente";
+      payload.createdBy = record.updatedBy;
+      payload.createdAt = serverTimestamp();
+      await addDoc(collection(db, "activities"), payload);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error("Error al sincronizar actividad:", error);
+    return { success: false, message: "No se pudo conectar con la base de datos." };
+  }
+}
+
+function handleActivityListClick(event) {
+    const button = event.target.closest("button[data-action][data-activity-id]");
+    if (!button) return;
+    const activityId = button.dataset.activityId;
+    const activity = activities.find(a => a.id === activityId);
+    if (activity) {
+        if (button.dataset.action === "edit-activity") openActivityForm("edit", activity);
+        else if (button.dataset.action === "delete-activity") requestActivityDeletion(activity);
+    }
+}
+
+async function requestActivityDeletion(activity) {
+    if (confirm(`¿Estás seguro de que quieres eliminar la actividad "${activity.name}"?`)) {
+        try {
+            await deleteDoc(doc(db, "activities", activity.id));
+            showMessage(elements.adminActivityAlert, "Actividad eliminada.", "success");
+        } catch (error) {
+            showMessage(elements.adminActivityAlert, "No se pudo eliminar la actividad.", "error");
+            console.error("Error al eliminar actividad:", error);
+        }
+    }
+}
+
+function renderActivityList() {
+    if (!elements.adminActivityList) return;
+
+    if (activities.length === 0) {
+        elements.adminActivityList.innerHTML = `<div class="empty-state">No hay actividades creadas. ¡Añade una para empezar!</div>`;
+        return;
+    }
+
+    const activitiesByCareer = activities.reduce((acc, activity) => {
+        const career = activity.career || 'global';
+        if (!acc[career]) {
+            acc[career] = [];
+        }
+        acc[career].push(activity);
+        return acc;
+    }, {});
+
+    let html = '';
+    for (const career in activitiesByCareer) {
+        html += `
+            <div class="activity-career-group">
+                <header class="activity-group-header">
+                    <h3>${CAREER_LABELS[career] || 'General'}</h3>
+                    <span class="activity-group-count">${activitiesByCareer[career].length} Actividades</span>
+                </header>
+                <div class="activity-cards">
+                    ${activitiesByCareer[career].map(activity => renderActivityCard(activity)).join('')}
+                </div>
+            </div>`;
+    }
+    elements.adminActivityList.innerHTML = html;
+    refreshIcons();
+}
+
+function renderActivityCard(activity) {
+    const dueDate = activity.dueDate ? new Date(activity.dueDate.toMillis()).toLocaleDateString() : 'N/A';
+    return `
+        <div class="activity-card status-${activity.status}">
+            <header>
+                <div>
+                    <h4>${escapeHtml(activity.name)}</h4>
+                    <p>${escapeHtml(activity.description)}</p>
+                </div>
+                <span class="status-badge status-${activity.status}">${ACTIVITY_STATUS_LABELS[activity.status]}</span>
+            </header>
+            <div class="activity-meta">
+                <span><i data-lucide="user"></i> ${escapeHtml(activity.assigneeName)}</span>
+                <span><i data-lucide="calendar"></i> ${dueDate}</span>
+            </div>
+            <div class="action-buttons">
+                <button type="button" class="icon-button" data-action="edit-activity" data-activity-id="${activity.id}"><i data-lucide="pencil"></i></button>
+                <button type="button" class="icon-button danger" data-action="delete-activity" data-activity-id="${activity.id}"><i data-lucide="trash-2"></i></button>
+            </div>
+        </div>
+    `;
+}
+
+function populateAssigneeDropdown() {
+    if (!elements.activityAssignee) return;
+    const options = users
+        .filter(u => u.role === 'docente' || u.role === 'auxiliar')
+        .map(user => `<option value="${user.potroEmail}">${user.name}</option>`)
+        .join('');
+    elements.activityAssignee.innerHTML = `<option value="">Selecciona un responsable...</option>${options}`;
 }
